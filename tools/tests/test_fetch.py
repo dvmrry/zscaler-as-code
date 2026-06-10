@@ -3,7 +3,7 @@ import io
 import json
 import unittest
 
-from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, build_headers, compose_url, fetch_resource, acquire_token, products_in_manifest, auth_mode_from_env, _zslogin_host, ca_bundle_path, connection_hint, diag_hosts
+from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, build_headers, compose_url, fetch_resource, acquire_token, products_in_manifest, auth_mode_from_env, _zslogin_host, ca_bundle_path, connection_hint, diag_hosts, expand_paths
 
 
 class ManifestTest(unittest.TestCase):
@@ -316,6 +316,55 @@ class DiagHostsTest(unittest.TestCase):
 
     def test_placeholder_when_unset(self):
         self.assertEqual(diag_hosts({}), ["<vanity>.zslogin.net", "api.zsapi.net"])
+
+
+class ExpandPathsTest(unittest.TestCase):
+    def test_no_expand_returns_path(self):
+        self.assertEqual(expand_paths({"path": "locations"}), ["locations"])
+
+    def test_expand_substitutes_each_value(self):
+        entry = {
+            "path": "webApplicationRules/{rule_type}",
+            "expand": {"rule_type": ["STREAMING_MEDIA", "WEBMAIL"]},
+        }
+        self.assertEqual(
+            expand_paths(entry),
+            ["webApplicationRules/STREAMING_MEDIA", "webApplicationRules/WEBMAIL"],
+        )
+
+    def test_multiple_placeholders_rejected(self):
+        with self.assertRaises(ValueError):
+            expand_paths({"path": "a/{x}/{y}", "expand": {"x": ["1"], "y": ["2"]}})
+
+    def test_missing_token_rejected(self):
+        with self.assertRaises(ValueError):
+            expand_paths({"path": "plain", "expand": {"x": ["1"]}})
+
+
+class FetchResourceExpandTest(unittest.TestCase):
+    def test_concatenates_expanded_paths(self):
+        # fake registry entry exercised through fetch_resource via a stub
+        # manifest: easiest is to call the internal _fetch_entry_paths flow —
+        # instead test through fetch_resource with a temporarily-extended
+        # registry is NOT possible (registry is committed data), so test the
+        # loop by composing manually:
+        opener = FakeOpener({
+            "https://zsapi.zscalertwo.net/api/v1/webApplicationRules/STREAMING_MEDIA": [
+                (200, [{"id": "1"}])
+            ],
+            "https://zsapi.zscalertwo.net/api/v1/webApplicationRules/WEBMAIL": [
+                (200, [{"id": "2"}])
+            ],
+        })
+        from tools.fetch import _fetch_paths
+        entry = {
+            "product": "zia",
+            "path": "webApplicationRules/{rule_type}",
+            "pagination": "zia",
+            "expand": {"rule_type": ["STREAMING_MEDIA", "WEBMAIL"]},
+        }
+        out = _fetch_paths(entry, "legacy", {"cloud": "zscalertwo"}, "tok", opener)
+        self.assertEqual([i["id"] for i in out], ["1", "2"])
 
 
 if __name__ == "__main__":

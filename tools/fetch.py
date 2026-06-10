@@ -232,15 +232,39 @@ def real_opener(env=None):
 _PAGINATORS = {"zia": paginate_zia, "zpa": paginate_zpa}
 
 
-def fetch_resource(resource_type, auth_mode, ctx, token, opener):
-    """List one resource type into a list of detail-shaped dicts."""
-    entry = manifest_entry(resource_type)
+def expand_paths(entry):
+    """List of concrete API paths for a fetch entry. Entries may declare
+    {"expand": {"placeholder": [values]}} with "{placeholder}" in path —
+    per-type APIs like webApplicationRules/{rule_type}. One placeholder
+    max (no product needs more)."""
+    path = entry["path"]
+    expand = entry.get("expand") or {}
+    if not expand:
+        return [path]
+    if len(expand) != 1:
+        raise ValueError("expand supports exactly one placeholder: %r" % sorted(expand))
+    key = sorted(expand)[0]
+    token = "{%s}" % key
+    if token not in path:
+        raise ValueError("expand key %r not present in path %r" % (key, path))
+    return [path.replace(token, value) for value in expand[key]]
+
+
+def _fetch_paths(entry, auth_mode, ctx, token, opener):
     product = entry["product"]
-    url = compose_url(auth_mode, product, entry["path"], ctx)
     headers = build_headers(token)
     query = entry.get("query") or {}
     paginate = _PAGINATORS[entry.get("pagination", product)]
-    return paginate(opener, url, headers, query)
+    items = []
+    for path in expand_paths(entry):
+        url = compose_url(auth_mode, product, path, ctx)
+        items.extend(paginate(opener, url, headers, query))
+    return items
+
+
+def fetch_resource(resource_type, auth_mode, ctx, token, opener):
+    """List one resource type into a list of detail-shaped dicts."""
+    return _fetch_paths(manifest_entry(resource_type), auth_mode, ctx, token, opener)
 
 
 def _require(env, name):
