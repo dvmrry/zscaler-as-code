@@ -1,0 +1,15 @@
+{
+  "import_id": "{id}",
+  "acknowledged_drops": [
+    "config_space",
+    "creation_time",
+    "id",
+    "microtenant_name",
+    "modified_by",
+    "modified_time",
+    "policy_migrated",
+    "read_only",
+    "tcp_keep_alive_enabled",
+    "zscaler_managed"
+  ]
+}

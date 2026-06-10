@@ -10,6 +10,8 @@
     "policyMigrated": true,
     "tcpKeepAliveEnabled": "1",
     "microtenantName": "Default",
+    "readOnly": false,
+    "zscalerManaged": false,
     "applications": [
       {
         "id": "216199618143442101",

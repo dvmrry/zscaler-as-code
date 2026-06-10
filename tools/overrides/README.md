@@ -14,5 +14,8 @@ resource (all keys optional): `key_field` (map key source, default
 always removed), `references` (force `{id,...}` unwrapping),
 `drop_if_default` (remove a field when it equals the given value —
 perma-diff suppression), `import_id` (format template over the item's
-snake_cased original fields, default `"{id}"`). Exceptions are data, not
-code: prefer an entry here over editing the transform.
+snake_cased original fields, default `"{id}"`), `acknowledged_drops`
+(list of dotted drop paths that are expected/known-unmanageable — suppressed
+from the drop report so only new provider-coverage surprises surface; the
+fields are still removed from the generated tfvars). Exceptions are data,
+not code: prefer an entry here over editing the transform.
