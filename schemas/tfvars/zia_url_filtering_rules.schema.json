@@ -1,0 +1,378 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "block_override": {
+            "type": "boolean"
+          },
+          "browser_eun_template_id": {
+            "type": "number"
+          },
+          "cbi_profile": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "profile_seq": {
+                  "type": "number"
+                },
+                "url": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "ciparule": {
+            "type": "boolean"
+          },
+          "departments": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "description": {
+            "type": "string"
+          },
+          "device_groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "device_trust_levels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "devices": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "end_user_notification_url": {
+            "type": "string"
+          },
+          "enforce_time_validity": {
+            "type": "boolean"
+          },
+          "groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "labels": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "location_groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "locations": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "order": {
+            "type": "number"
+          },
+          "override_groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "override_users": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "protocols": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "rank": {
+            "type": "number"
+          },
+          "request_methods": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "size_quota": {
+            "type": "number"
+          },
+          "source_countries": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "source_ip_groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "state": {
+            "type": "string"
+          },
+          "time_quota": {
+            "type": "number"
+          },
+          "time_windows": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "timeouts": {
+            "additionalProperties": false,
+            "properties": {
+              "create": {
+                "type": "string"
+              },
+              "update": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "url_categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "user_agent_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "user_risk_score_levels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "users": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "validity_end_time": {
+            "type": "string"
+          },
+          "validity_start_time": {
+            "type": "string"
+          },
+          "validity_time_zone_id": {
+            "type": "string"
+          },
+          "workload_groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "number"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "name",
+          "order",
+          "protocols"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zia_url_filtering_rules tfvars",
+  "type": "object"
+}

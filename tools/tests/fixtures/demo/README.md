@@ -26,6 +26,10 @@ IDs, names, and cross-references are consistent within the cassettes (e.g.
 | `zia_location_management.json` | `zia/cassettes/TestLocationManagement.yaml` | `/locations` |
 | `zia_ssl_inspection_rules.json` | `zia/cassettes/TestSSLInspectionRules.yaml` | `/sslInspectionRules` |
 | `zia_cloud_app_control_rule.json` | `zia/cassettes/TestCloudAppControl.yaml` | `/webApplicationRules/STREAMING_MEDIA` |
+| `zia_url_filtering_rules.json` | `zia/cassettes/TestURLFilteringRule.yaml` | `/urlFilteringRules` |
+| `zia_rule_labels.json` | `zia/cassettes/TestRuleLabels.yaml` | `/ruleLabels` |
+| `zpa_app_connector_group.json` | `zpa/cassettes/TestAppConnectorGroup.yaml` | `/appConnectorGroup` |
+| `zpa_application_server.json` | `zpa/cassettes/TestApplicationServer.yaml` | `/server` |
 
 ## Regeneration
 

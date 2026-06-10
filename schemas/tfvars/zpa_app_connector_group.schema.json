@@ -1,0 +1,105 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "city_country": {
+            "type": "string"
+          },
+          "country_code": {
+            "type": "string"
+          },
+          "dc_hosting_info": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "dns_query_type": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "enrollment_cert_id": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "longitude": {
+            "type": "string"
+          },
+          "lss_app_connector_group": {
+            "type": "boolean"
+          },
+          "microtenant_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "override_version_profile": {
+            "type": "boolean"
+          },
+          "pra_enabled": {
+            "type": "boolean"
+          },
+          "tcp_quick_ack_app": {
+            "type": "boolean"
+          },
+          "tcp_quick_ack_assistant": {
+            "type": "boolean"
+          },
+          "tcp_quick_ack_read_assistant": {
+            "type": "boolean"
+          },
+          "upgrade_day": {
+            "type": "string"
+          },
+          "upgrade_time_in_secs": {
+            "type": "string"
+          },
+          "use_in_dr_mode": {
+            "type": "boolean"
+          },
+          "user_codes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "version_profile_id": {
+            "type": "string"
+          },
+          "version_profile_name": {
+            "type": "string"
+          },
+          "waf_disabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "latitude",
+          "location",
+          "longitude",
+          "name"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zpa_app_connector_group tfvars",
+  "type": "object"
+}

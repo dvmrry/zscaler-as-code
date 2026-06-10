@@ -38,5 +38,21 @@
         "STREAMING_MEDIA", "SYSTEM_AND_DEVELOPMENT", "WEBMAIL"
       ]}
     }
+  },
+  "zia_url_filtering_rules": {
+    "product": "zia", "generate": true,
+    "fetch": {"path": "urlFilteringRules", "pagination": "zia"}
+  },
+  "zia_rule_labels": {
+    "product": "zia", "generate": true,
+    "fetch": {"path": "ruleLabels", "pagination": "zia"}
+  },
+  "zpa_app_connector_group": {
+    "product": "zpa", "generate": true,
+    "fetch": {"path": "appConnectorGroup", "pagination": "zpa"}
+  },
+  "zpa_application_server": {
+    "product": "zpa", "generate": true,
+    "fetch": {"path": "server", "pagination": "zpa"}
   }
 }
