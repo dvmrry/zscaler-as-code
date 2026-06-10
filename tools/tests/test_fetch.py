@@ -3,7 +3,7 @@ import io
 import json
 import unittest
 
-from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, build_headers, compose_url, fetch_resource, acquire_token, products_in_manifest, auth_mode_from_env, _zslogin_host, ca_bundle_path
+from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, build_headers, compose_url, fetch_resource, acquire_token, products_in_manifest, auth_mode_from_env, _zslogin_host, ca_bundle_path, connection_hint
 
 
 class ManifestTest(unittest.TestCase):
@@ -279,6 +279,19 @@ class CaBundleTest(unittest.TestCase):
 
     def test_ssl_cert_file_fallback(self):
         self.assertEqual(ca_bundle_path({"SSL_CERT_FILE": "/b.pem"}), "/b.pem")
+
+
+class ConnectionHintTest(unittest.TestCase):
+    def test_ssl_failures_point_at_ca_bundle(self):
+        hint = connection_hint("[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed")
+        self.assertIn("REQUESTS_CA_BUNDLE", hint)
+
+    def test_blocked_egress_points_at_proxy(self):
+        self.assertIn("HTTPS_PROXY", connection_hint("Connection refused"))
+        self.assertIn("HTTPS_PROXY", connection_hint("timed out"))
+
+    def test_unknown_points_at_docs(self):
+        self.assertIn("FETCH.md", connection_hint("weird failure"))
 
 
 if __name__ == "__main__":

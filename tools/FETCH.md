@@ -55,9 +55,23 @@ either standard variable (same ones curl and requests honor):
     REQUESTS_CA_BUNDLE=/path/to/corp-root-ca.pem    # preferred
     SSL_CERT_FILE=/path/to/corp-root-ca.pem          # fallback
 
-Outbound proxy routing uses the usual `HTTPS_PROXY`/`NO_PROXY` variables,
-which urllib honors automatically. No verification bypass is provided by
+The bundle is ADDED on top of system trust, not substituted for it — hosts
+the proxy bypasses from inspection (auth endpoints often are) present real
+public certs and still verify. No verification bypass is provided by
 design — trust the corporate root explicitly.
+
+Proxy routing:
+
+- **Transparent interception** (Zscaler Client Connector tunnel): nothing
+  to configure; only the CA bundle above matters.
+- **Explicit proxy**: set the usual `HTTPS_PROXY` (and `NO_PROXY`)
+  variables — urllib honors them, and macOS system proxy settings,
+  automatically. PAC files are not evaluated by Python: if your network
+  uses one, set `HTTPS_PROXY` to the proxy host it resolves to.
+
+Connection failures print a one-line cause and a remediation hint
+(certificate → CA bundle; refused/timeout → proxy), so the fix is visible
+where the error happens.
 
 ## Validation order
 

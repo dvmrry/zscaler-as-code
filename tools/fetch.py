@@ -156,6 +156,29 @@ def ca_bundle_path(env):
     return env.get("REQUESTS_CA_BUNDLE") or env.get("SSL_CERT_FILE") or None
 
 
+def connection_hint(reason):
+    """One-line remediation for common connection failures, so the error is
+    actionable where it happens instead of requiring a relayed traceback."""
+    text = reason.lower()
+    if "certificate" in text or "ssl" in text:
+        return (
+            "hint: corporate TLS inspection? set REQUESTS_CA_BUNDLE to the "
+            "exported proxy root CA (it is ADDED to system trust)"
+        )
+    if (
+        "refused" in text
+        or "timed out" in text
+        or "unreachable" in text
+        or "nodename" in text
+        or "name or service" in text
+    ):
+        return (
+            "hint: blocked egress? if an explicit proxy is required set "
+            "HTTPS_PROXY (and NO_PROXY); transparent agents need nothing"
+        )
+    return "hint: see tools/FETCH.md (proxy and TLS notes)"
+
+
 def real_opener(env=None):
     """Default opener over urllib with a cookie jar — wraps GET/POST into
     (status, bytes). The jar persists the ZIA legacy session cookie across
@@ -176,9 +199,13 @@ def real_opener(env=None):
     handlers = [urllib.request.HTTPCookieProcessor(jar)]
     bundle = ca_bundle_path(env)
     if bundle:
-        handlers.append(
-            urllib.request.HTTPSHandler(context=ssl.create_default_context(cafile=bundle))
-        )
+        # ADD the corporate root on top of system trust (not instead of it):
+        # hosts the proxy bypasses from inspection present their real public
+        # certs and must still verify. build_opener keeps the default
+        # ProxyHandler, so HTTPS_PROXY/NO_PROXY env vars are honored.
+        context = ssl.create_default_context()
+        context.load_verify_locations(cafile=bundle)
+        handlers.append(urllib.request.HTTPSHandler(context=context))
     url_opener = urllib.request.build_opener(*handlers)
 
     def _open(method, url, headers, body):
@@ -188,6 +215,12 @@ def real_opener(env=None):
             return resp.getcode(), resp.read()
         except urllib.error.HTTPError as e:  # surface status for caller
             return e.code, e.read()
+        except urllib.error.URLError as e:
+            # Self-explanatory on this side — no traceback relay needed.
+            raise SystemExit(
+                "cannot reach %s: %s\n%s"
+                % (url.split("?")[0], e.reason, connection_hint(str(e.reason)))
+            )
 
     return _open
 
