@@ -70,3 +70,67 @@ def filter_item(item, block, path, drops):
         else:
             drops.append(child_path)
     return out
+
+
+def _coerce_primitive(value, prim):
+    if prim == "string":
+        if isinstance(value, bool):
+            return "true" if value else "false"
+        if isinstance(value, (int, float)):
+            return ("%d" % value) if isinstance(value, int) else repr(value)
+        return value
+    if prim == "number":
+        if isinstance(value, str):
+            try:
+                return int(value)
+            except ValueError:
+                try:
+                    return float(value)
+                except ValueError:
+                    return value
+        return value
+    if prim == "bool":
+        if isinstance(value, str):
+            if value.lower() in ("true", "1"):
+                return True
+            if value.lower() in ("false", "0"):
+                return False
+        return value
+    return value
+
+
+def _unwrap_ref(value):
+    if isinstance(value, dict) and "id" in value:
+        return value["id"]
+    return value
+
+
+def coerce_item(item, block):
+    """Schema-driven coercion + mechanical {id,...} reference unwrapping.
+
+    When the schema expects a primitive (or collection of primitives) and
+    the API handed us reference objects, unwrap to ids before coercing.
+    Block values recurse with their inner schema.
+    """
+    attrs = block.get("attributes") or {}
+    block_types = block.get("block_types") or {}
+    out = {}
+    for key in sorted(item):
+        value = item[key]
+        if key in block_types:
+            inner = block_types[key]["block"]
+            out[key] = [coerce_item(v, inner) for v in value] if isinstance(value, list) else value
+            continue
+        enc = attrs.get(key, {}).get("type")
+        if isinstance(enc, str):
+            out[key] = _coerce_primitive(_unwrap_ref(value), enc)
+        elif isinstance(enc, list) and len(enc) == 2 and isinstance(enc[1], str):
+            if isinstance(value, list):
+                out[key] = [
+                    _coerce_primitive(_unwrap_ref(v), enc[1]) for v in value
+                ]
+            else:
+                out[key] = value
+        else:
+            out[key] = value
+    return out

@@ -1,7 +1,7 @@
 """Tests for tools/transform.py. All fixture data is fictional."""
 import unittest
 
-from tools.transform import filter_item, slugify, snake, snake_keys
+from tools.transform import coerce_item, filter_item, slugify, snake, snake_keys
 from tools.tfschema import load_resource
 
 
@@ -73,6 +73,40 @@ class FilterTest(unittest.TestCase):
         out = filter_item(item, rs["block"], "", drops)
         self.assertEqual(out, {"url_keyword_counts": [{"total_url_count": 5}]})
         self.assertEqual(drops, [])
+
+
+class CoerceTest(unittest.TestCase):
+    def test_primitive_coercions(self):
+        rs = load_resource("zia_url_categories")
+        item = {"custom_category": "true", "configured_name": 7}
+        out = coerce_item(item, rs["block"])
+        self.assertIs(out["custom_category"], True)
+        self.assertEqual(out["configured_name"], "7")
+
+    def test_number_from_string(self):
+        fake_block = {"attributes": {"port": {"type": "number", "optional": True}}}
+        self.assertEqual(coerce_item({"port": "443"}, fake_block), {"port": 443})
+
+    def test_mechanical_ref_unwrap_scalar_and_list(self):
+        fake_block = {
+            "attributes": {
+                "group_id": {"type": "number", "optional": True},
+                "label_ids": {"type": ["set", "number"], "optional": True},
+            }
+        }
+        item = {
+            "group_id": {"id": 7, "name": "G"},
+            "label_ids": [{"id": 1, "name": "a"}, {"id": 2}],
+        }
+        self.assertEqual(
+            coerce_item(item, fake_block), {"group_id": 7, "label_ids": [1, 2]}
+        )
+
+    def test_blocks_recurse(self):
+        rs = load_resource("zpa_segment_group")
+        item = {"applications": [{"id": 123}]}
+        out = coerce_item(item, rs["block"])
+        self.assertEqual(out["applications"], [{"id": "123"}])
 
 
 if __name__ == "__main__":
