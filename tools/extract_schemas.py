@@ -4,7 +4,7 @@ Reads the combined schema JSON on stdin and writes
 schemas/provider/<name>.json for each provider in PROVIDERS, with sorted
 keys and a trailing newline so regeneration is byte-deterministic.
 
-Run from the repo root via `make schemas`. Stdlib-only, Python 3.8-floor
+Run from the repo root via `make schemas`. Stdlib-only, Python 3.6-floor
 syntax — see AGENTS.md rule 5.
 """
 import json

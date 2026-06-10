@@ -14,7 +14,7 @@ repo. See `AGENTS.md` for the repo invariants.
   Schemas are generated, committed, and checked for drift in CI.
 - Generated output is deterministic — provider bumps produce reviewable
   git diffs.
-- Python tooling is stdlib-only at a Python 3.8 syntax floor so it runs
+- Python tooling is stdlib-only at a Python 3.6 syntax floor so it runs
   in restricted enterprise environments.
 - All logic lives in `make` targets; CI pipelines are thin shells.
 
@@ -28,7 +28,7 @@ invent other invocation paths.
     modules/<resource-type>/   GENERATED Terraform modules — never hand-edit
     schemas/provider/          pinned provider schema dumps (make schemas)
     schemas/tfvars/            generated JSON Schemas for config files
-    tools/                     stdlib-only Python (3.8-floor) + overrides
+    tools/                     stdlib-only Python (3.6-floor) + overrides
     envs/{tenant-a,tenant-b}/  root modules, split state
     config/{tenant-a,tenant-b}/ fictional sample tfvars
     imports/{tenant-a,tenant-b}/ transform-emitted import blocks

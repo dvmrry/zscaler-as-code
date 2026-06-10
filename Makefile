@@ -9,8 +9,8 @@ help: ## List available targets
 test: ## Run Python unit tests with the local interpreter
 	$(PYTHON) -m unittest discover -s tools/tests -t . -v
 
-test-floor: ## Run unit tests under Python 3.8 in Docker (requires colima/docker running)
-	docker run --rm -v "$$(pwd)":/repo -w /repo python:3.8-slim \
+test-floor: ## Run unit tests under Python 3.6 in Docker (optional dev check; needs docker)
+	docker run --rm -v "$$(pwd)":/repo -w /repo python:3.6.8-slim \
 		python -m unittest discover -s tools/tests -t . -v
 
 validate: ## Terraform formatting checks

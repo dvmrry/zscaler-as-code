@@ -20,10 +20,12 @@ instead of being clever.
 
 ## Code rules
 
-5. Python under `tools/` is stdlib-only with Python 3.8-floor syntax: no
-   `match`, no `X | Y` unions, no f-string `=`, no pip dependencies at
-   runtime, so it runs in restricted enterprise environments.
-   `make test-floor` verifies this under a real Python 3.8.
+5. Python under `tools/` is stdlib-only with Python 3.6-floor syntax: no
+   `match`, no `X | Y` unions, no walrus `:=`, no f-string `=`, no
+   `dataclasses`, no pip dependencies at runtime, so it runs in
+   restricted enterprise environments. `make test-floor` verifies this
+   under a real Python 3.6 where Docker is available (optional dev
+   check — CI runs `make test` with whatever interpreter the agent has).
 6. `modules/` is generated output. Never hand-edit it. Change the generator
    or add an override under `tools/overrides/`, then run `make generate`.
    CI fails on any drift (`make generate CHECK=1`).
