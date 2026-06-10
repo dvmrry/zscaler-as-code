@@ -1,7 +1,7 @@
 PYTHON ?= python3
 TF     ?= terraform
 
-.PHONY: help env test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens test-envs validate-imports plan drift check-envs validate-config
+.PHONY: help env test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens test-modules test-envs validate-imports plan drift check-envs validate-config
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -77,6 +77,14 @@ fetch: ## Pull API JSON into pulls/<tenant> (TENANT=<name>; needs ZSCALER_*/ZIA_
 
 fetch-diag: ## Probe TLS to the fetcher's hosts under system trust and +bundle
 	$(PYTHON) -m tools.fetch --diag
+
+test-modules: ## Run mock-provider terraform tests across all generated modules
+	@set -e; for d in modules/*/; do \
+		echo "== $$d"; \
+		$(TF) -chdir=$$d init -backend=false -input=false > /dev/null; \
+		$(TF) -chdir=$$d test; \
+		rm -rf $$d/.terraform $$d/.terraform.lock.hcl; \
+	done
 
 test-envs: ## Run mock-provider smoke tests across a tenant's env roots (TENANT=<label>)
 	@test -n "$(TENANT)" || { echo "usage: make test-envs TENANT=<label>"; exit 2; }
