@@ -48,3 +48,48 @@ def obfuscate_api_key(api_key, timestamp):
     for ch in low:
         obfuscated += api_key[int(ch) + 2]
     return obfuscated
+
+
+try:
+    from urllib.parse import urlencode
+except ImportError:  # pragma: no cover - py2 guard, never hit on 3.6+
+    from urllib import urlencode
+
+
+def _get_json(opener, url, headers, query):
+    full = url + ("?" + urlencode(query) if query else "")
+    status, body = opener("GET", full, headers, None)
+    if status != 200:
+        raise RuntimeError("GET %s returned HTTP %d" % (url, status))
+    return json.loads(body.decode())
+
+
+def paginate_zia(opener, url, headers, query, page_size=1000):
+    """ZIA: page until a page returns fewer than page_size items."""
+    items = []
+    page = 1
+    while True:
+        q = dict(query)
+        q.update({"page": page, "pageSize": page_size})
+        batch = _get_json(opener, url, headers, q)
+        if not isinstance(batch, list):
+            raise RuntimeError("ZIA %s did not return a list page" % url)
+        items.extend(batch)
+        if len(batch) < page_size:
+            return items
+        page += 1
+
+
+def paginate_zpa(opener, url, headers, query, page_size=500):
+    """ZPA: page up to totalPages, collecting the `list` field."""
+    items = []
+    page = 1
+    while True:
+        q = dict(query)
+        q.update({"page": page, "pagesize": page_size})
+        payload = _get_json(opener, url, headers, q)
+        items.extend(payload.get("list") or [])
+        total = int(payload.get("totalPages", 1) or 1)
+        if page >= total:
+            return items
+        page += 1
