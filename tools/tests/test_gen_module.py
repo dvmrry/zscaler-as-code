@@ -183,6 +183,8 @@ class GoldenTest(unittest.TestCase):
         ("zpa_segment_group", "versions.tf", "render_versions"),
         ("zia_url_categories", "variables.tf", "render_variables"),
         ("zia_url_categories", "main.tf", "render_main"),
+        ("zia_url_categories", "outputs.tf", "render_outputs"),
+        ("zia_url_categories", "versions.tf", "render_versions"),
     ]
 
     def test_rendered_output_matches_blessed_goldens(self):
