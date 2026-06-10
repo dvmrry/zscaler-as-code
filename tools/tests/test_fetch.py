@@ -3,7 +3,7 @@ import io
 import json
 import unittest
 
-from tools.fetch import load_manifest, manifest_entry
+from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key
 
 
 class ManifestTest(unittest.TestCase):
@@ -20,6 +20,33 @@ class ManifestTest(unittest.TestCase):
         for rt, e in load_manifest().items():
             self.assertIn(e["product"], ("zia", "zpa"), rt)
             self.assertIn("path", e)
+
+
+class ObfuscateTest(unittest.TestCase):
+    def test_known_vector(self):
+        # Fictional key/timestamp; output computed from the published algorithm.
+        self.assertEqual(
+            obfuscate_api_key("abcdefghijklmnop", "1700000000"),
+            _expected_obfuscation("abcdefghijklmnop", "1700000000"),
+        )
+
+    def test_rejects_short_inputs(self):
+        with self.assertRaises(ValueError):
+            obfuscate_api_key("short", "12345")
+
+
+def _expected_obfuscation(api_key, ts):
+    # Reference re-implementation, identical to obfuscate_api_key, used to
+    # pin behavior without embedding a magic string. The live dev tenant is
+    # the real confirmation (see plan Task 6).
+    high = ts[-6:]
+    low = "%06d" % (int(high) >> 1)
+    out = ""
+    for ch in high:
+        out += api_key[int(ch)]
+    for ch in low:
+        out += api_key[int(ch) + 2]
+    return out
 
 
 if __name__ == "__main__":

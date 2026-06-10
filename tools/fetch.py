@@ -30,3 +30,21 @@ def manifest_entry(resource_type):
             % resource_type
         )
     return manifest[resource_type]
+
+
+def obfuscate_api_key(api_key, timestamp):
+    """Port of the ZIA legacy key-obfuscation algorithm (public SDK).
+
+    timestamp is milliseconds-since-epoch as a string. Raises ValueError
+    on inputs too short to index, matching the SDK guard.
+    """
+    if len(timestamp) < 6 or len(api_key) < 12:
+        raise ValueError("timestamp or api key below required length")
+    high = timestamp[-6:]
+    low = "%06d" % (int(high) >> 1)
+    obfuscated = ""
+    for ch in high:
+        obfuscated += api_key[int(ch)]
+    for ch in low:
+        obfuscated += api_key[int(ch) + 2]
+    return obfuscated
