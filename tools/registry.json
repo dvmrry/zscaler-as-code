@@ -18,5 +18,25 @@
     "product": "zia",
     "generate": true,
     "fetch": {"path": "urlCategories", "pagination": "zia", "query": {"customOnly": "true"}}
+  },
+  "zia_location_management": {
+    "product": "zia", "generate": true,
+    "fetch": {"path": "locations", "pagination": "zia"}
+  },
+  "zia_ssl_inspection_rules": {
+    "product": "zia", "generate": true,
+    "fetch": {"path": "sslInspectionRules", "pagination": "zia"}
+  },
+  "zia_cloud_app_control_rule": {
+    "product": "zia", "generate": true,
+    "fetch": {
+      "path": "webApplicationRules/{rule_type}", "pagination": "zia",
+      "expand": {"rule_type": [
+        "AI_ML", "BUSINESS_PRODUCTIVITY", "CONSUMER", "DNS_OVER_HTTPS",
+        "ENTERPRISE_COLLABORATION", "FILE_SHARE", "FINANCE", "HOSTING_PROVIDER",
+        "INSTANT_MESSAGING", "IT_SERVICES", "SOCIAL_NETWORKING",
+        "STREAMING_MEDIA", "SYSTEM_AND_DEVELOPMENT", "WEBMAIL"
+      ]}
+    }
   }
 }

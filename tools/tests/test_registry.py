@@ -8,7 +8,15 @@ class RegistryTest(unittest.TestCase):
     def test_generated_types_sorted(self):
         self.assertEqual(
             generated_types(),
-            ["zia_url_categories", "zpa_application_segment", "zpa_segment_group", "zpa_server_group"],
+            [
+                "zia_cloud_app_control_rule",
+                "zia_location_management",
+                "zia_ssl_inspection_rules",
+                "zia_url_categories",
+                "zpa_application_segment",
+                "zpa_segment_group",
+                "zpa_server_group",
+            ],
         )
 
     def test_fetch_entry_shape(self):

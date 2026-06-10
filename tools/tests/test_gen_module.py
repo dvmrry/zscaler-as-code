@@ -181,6 +181,12 @@ class GoldenTest(unittest.TestCase):
         ("zpa_server_group", "main.tf", "render_main"),
         ("zpa_application_segment", "variables.tf", "render_variables"),
         ("zpa_application_segment", "main.tf", "render_main"),
+        ("zia_location_management", "variables.tf", "render_variables"),
+        ("zia_location_management", "main.tf", "render_main"),
+        ("zia_ssl_inspection_rules", "variables.tf", "render_variables"),
+        ("zia_ssl_inspection_rules", "main.tf", "render_main"),
+        ("zia_cloud_app_control_rule", "variables.tf", "render_variables"),
+        ("zia_cloud_app_control_rule", "main.tf", "render_main"),
     ]
 
     def test_rendered_output_matches_blessed_goldens(self):

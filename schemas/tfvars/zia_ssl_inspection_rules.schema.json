@@ -1,0 +1,419 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "decrypt_sub_actions": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "block_ssl_traffic_with_no_sni_enabled": {
+                        "type": "boolean"
+                      },
+                      "block_undecrypt": {
+                        "type": "boolean"
+                      },
+                      "http2_enabled": {
+                        "type": "boolean"
+                      },
+                      "min_client_tls_version": {
+                        "type": "string"
+                      },
+                      "min_server_tls_version": {
+                        "type": "string"
+                      },
+                      "ocsp_check": {
+                        "type": "boolean"
+                      },
+                      "server_certificates": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "do_not_decrypt_sub_actions": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "block_ssl_traffic_with_no_sni_enabled": {
+                        "type": "boolean"
+                      },
+                      "bypass_other_policies": {
+                        "type": "boolean"
+                      },
+                      "min_tls_version": {
+                        "type": "string"
+                      },
+                      "ocsp_check": {
+                        "type": "boolean"
+                      },
+                      "server_certificates": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "override_default_certificate": {
+                  "type": "boolean"
+                },
+                "show_eun": {
+                  "type": "boolean"
+                },
+                "show_eunatp": {
+                  "type": "boolean"
+                },
+                "ssl_interception_cert": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "number"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "type": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "cloud_applications": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "departments": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "description": {
+            "type": "string"
+          },
+          "dest_ip_groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "device_groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "device_trust_levels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "devices": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "labels": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "location_groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "locations": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "order": {
+            "type": "number"
+          },
+          "platforms": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "proxy_gateways": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "rank": {
+            "type": "number"
+          },
+          "road_warrior_for_kerberos": {
+            "type": "boolean"
+          },
+          "source_ip_groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "state": {
+            "type": "string"
+          },
+          "time_windows": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "timeouts": {
+            "additionalProperties": false,
+            "properties": {
+              "create": {
+                "type": "string"
+              },
+              "update": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "url_categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "user_agent_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "users": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "workload_groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "number"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "zpa_app_segments": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "external_id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "external_id",
+                "name"
+              ],
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "name",
+          "order"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zia_ssl_inspection_rules tfvars",
+  "type": "object"
+}

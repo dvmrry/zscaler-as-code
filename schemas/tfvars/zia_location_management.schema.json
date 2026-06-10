@@ -1,0 +1,288 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "aup_block_internet_until_accepted": {
+            "type": "boolean"
+          },
+          "aup_enabled": {
+            "type": "boolean"
+          },
+          "aup_force_ssl_inspection": {
+            "type": "boolean"
+          },
+          "aup_timeout_in_days": {
+            "type": "number"
+          },
+          "auth_required": {
+            "type": "boolean"
+          },
+          "basic_auth_enabled": {
+            "type": "boolean"
+          },
+          "caution_enabled": {
+            "type": "boolean"
+          },
+          "cookies_and_proxy": {
+            "type": "boolean"
+          },
+          "country": {
+            "type": "string"
+          },
+          "default_extranet_dns": {
+            "type": "boolean"
+          },
+          "default_extranet_ts_pool": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": "string"
+          },
+          "digest_auth_enabled": {
+            "type": "boolean"
+          },
+          "display_time_unit": {
+            "type": "string"
+          },
+          "dn_bandwidth": {
+            "type": "number"
+          },
+          "exclude_from_dynamic_groups": {
+            "type": "boolean"
+          },
+          "exclude_from_manual_groups": {
+            "type": "boolean"
+          },
+          "extranet": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "extranet_dns": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "extranet_ip_pool": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "idle_time_in_minutes": {
+            "type": "number"
+          },
+          "iot_discovery_enabled": {
+            "type": "boolean"
+          },
+          "iot_enforce_policy_set": {
+            "type": "boolean"
+          },
+          "ip_addresses": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "ips_control": {
+            "type": "boolean"
+          },
+          "ipv6_dns_64prefix": {
+            "type": "boolean"
+          },
+          "ipv6_enabled": {
+            "type": "boolean"
+          },
+          "kerberos_auth": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "ofw_enabled": {
+            "type": "boolean"
+          },
+          "other6_sub_location": {
+            "type": "boolean"
+          },
+          "other_sub_location": {
+            "type": "boolean"
+          },
+          "parent_id": {
+            "type": "number"
+          },
+          "ports": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "profile": {
+            "type": "string"
+          },
+          "ssl_scan_enabled": {
+            "type": "boolean"
+          },
+          "state": {
+            "type": "string"
+          },
+          "static_location_groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "sub_loc_acc_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "sub_loc_scope": {
+            "type": "string"
+          },
+          "sub_loc_scope_values": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "surrogate_ip": {
+            "type": "boolean"
+          },
+          "surrogate_ip_enforced_for_known_browsers": {
+            "type": "boolean"
+          },
+          "surrogate_refresh_time_in_minutes": {
+            "type": "number"
+          },
+          "surrogate_refresh_time_unit": {
+            "type": "string"
+          },
+          "tz": {
+            "type": "string"
+          },
+          "up_bandwidth": {
+            "type": "number"
+          },
+          "virtual_zen_clusters": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "virtual_zens": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "vpn_credentials": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "fqdn": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "number"
+                },
+                "ip_address": {
+                  "type": "string"
+                },
+                "pre_shared_key": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "xff_forward_enabled": {
+            "type": "boolean"
+          },
+          "zapp_ssl_scan_enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zia_location_management tfvars",
+  "type": "object"
+}

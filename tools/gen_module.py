@@ -149,7 +149,7 @@ def render_outputs(resource_type, resource_schema):
         % resource_type
         + "  value = %s.this\n}\n" % resource_type
     )
-    if "name" in attrs and "id" in attrs:
+    if attrs.get("name", {}).get("required") and "id" in attrs:
         out += (
             '\noutput "name_to_id" {\n'
             + '  description = "Map of resource name to provider-assigned id."\n'
