@@ -199,5 +199,33 @@ class GoldenTest(unittest.TestCase):
             self.assertEqual(rendered, expected, "%s/%s drifted — make update-goldens after intentional changes" % (resource_type, fname))
 
 
+class AllComputedBlockTest(unittest.TestCase):
+    FAKE = {
+        "block": {
+            "attributes": {"name": {"type": "string", "required": True}},
+            "block_types": {
+                "user": {
+                    "nesting_mode": "set",
+                    "block": {
+                        "attributes": {
+                            "username": {"type": "string", "computed": True}
+                        }
+                    },
+                }
+            },
+        }
+    }
+
+    def test_render_main_raises_on_all_computed_block(self):
+        from tools.gen_module import render_main
+        with self.assertRaises(ValueError):
+            render_main("zpa_fake", self.FAKE)
+
+    def test_render_variables_raises_on_all_computed_block(self):
+        from tools.gen_module import render_variables
+        with self.assertRaises(ValueError):
+            render_variables("zpa_fake", self.FAKE)
+
+
 if __name__ == "__main__":
     unittest.main()

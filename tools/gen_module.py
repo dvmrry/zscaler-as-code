@@ -28,6 +28,28 @@ def _provider_of(resource_type):
     return resource_type.split("_", 1)[0]
 
 
+def _check_block_has_inputs(name, block):
+    """Fail loudly on blocks with no settable inputs anywhere.
+
+    An all-computed leaf block would render an empty content {} that
+    terraform rejects. None exist in the scoped resources today; when one
+    arrives, decide deliberately (exclude it like computed-only attrs, or
+    add an override) instead of generating broken HCL.
+    """
+    cls = classify_attributes(block)
+    if cls["required"] or cls["optional"]:
+        return
+    if block.get("block_types"):
+        for child_name, bt in sorted(block["block_types"].items()):
+            _check_block_has_inputs(child_name, bt["block"])
+        return
+    raise ValueError(
+        "block %r has only computed attributes; the generator would emit "
+        "an empty content {} — exclude it via an override or extend the "
+        "generator deliberately" % name
+    )
+
+
 def _block_object_type(block, indent):
     """HCL object({...}) type for a nested block's input shape."""
     cls = classify_attributes(block)
@@ -38,12 +60,13 @@ def _block_object_type(block, indent):
         lines.append("%s%s = optional(%s)" % (pad, name, attr_t))
     for name, bt in sorted((block.get("block_types") or {}).items()):
         lines.append(
-            "%s%s = optional(%s)" % (pad, name, _block_input_type(bt, indent + 2))
+            "%s%s = optional(%s)" % (pad, name, _block_input_type(bt, indent + 2, name))
         )
     return "object({\n%s\n%s})" % ("\n".join(lines), " " * indent)
 
 
-def _block_input_type(block_type, indent):
+def _block_input_type(block_type, indent, name="<unknown>"):
+    _check_block_has_inputs(name, block_type["block"])
     inner = _block_object_type(block_type["block"], indent)
     mode = block_type["nesting_mode"]
     if mode == "single":
@@ -65,6 +88,7 @@ def _render_block_body(block, ref, indent):
     for name in cls["required"] + cls["optional"]:
         lines.append("%s%s = %s.%s" % (pad, name, ref, name))
     for name, bt in sorted((block.get("block_types") or {}).items()):
+        _check_block_has_inputs(name, bt["block"])
         source = "%s.%s" % (ref, name)
         if bt["nesting_mode"] == "single":
             iterable = "%s == null ? [] : [%s]" % (source, source)
@@ -102,7 +126,7 @@ def render_variables(resource_type, resource_schema):
             "    %s = optional(%s)" % (name, hcl_type(block["attributes"][name]["type"]))
         )
     for name, bt in sorted((block.get("block_types") or {}).items()):
-        lines.append("    %s = optional(%s)" % (name, _block_input_type(bt, 4)))
+        lines.append("    %s = optional(%s)" % (name, _block_input_type(bt, 4, name)))
     return (
         _header(resource_type, _provider_of(resource_type))
         + 'variable "items" {\n'
@@ -230,7 +254,7 @@ def generate_module(resource_type, out_root=MODULES_ROOT, overrides_root=OVERRID
         os.path.join("tests", "sample.auto.tfvars.json"): render_sample(resource_type, rs),
     }
     for rel, text in sorted(files.items()):
-        if fmt and rel.endswith(".tf"):
+        if fmt and (rel.endswith(".tf") or rel.endswith(".tftest.hcl")):
             text = _fmt(text)
         with open(os.path.join(base, rel), "w") as f:
             f.write(text)
