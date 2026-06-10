@@ -203,7 +203,9 @@ def transform_items(raw_items, resource_type, override):
         filtered = filter_item(normalized, block, "", drops)
         items[key] = coerce_item(filtered, block)
         originals[key] = normalized
-    return items, originals, sorted(set(drops))
+    acknowledged = set(override.get("acknowledged_drops") or [])
+    reported = sorted(d for d in set(drops) if d not in acknowledged)
+    return items, originals, reported
 
 
 def render_tfvars(items):
@@ -261,6 +263,8 @@ def main(argv=None):
         f.write(render_tfvars(items))
     with open(imports_path, "w") as f:
         f.write(render_imports(resource_type, originals, override))
+    # drops contains only unacknowledged paths; acknowledged_drops in the override
+    # suppress known-unmanageable metadata from this report (fields still removed).
     for path in drops:
         sys.stderr.write("dropped %s.%s\n" % (resource_type, path))
     sys.stderr.write("wrote %s\nwrote %s\n" % (tfvars_path, imports_path))

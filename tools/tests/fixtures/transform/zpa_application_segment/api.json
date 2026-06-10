@@ -1,0 +1,33 @@
+[
+  {
+    "id": "216199618143880001",
+    "name": "Fictional App Segment Beta",
+    "description": "Fictional sample application segment for testing",
+    "enabled": true,
+    "domainNames": ["fictional-app.example.test", "fictional-app-alt.example.test"],
+    "segmentGroupId": "216199618143990001",
+    "segmentGroupName": "Fictional Segment Group",
+    "tcpPortRange": [
+      {"from": "443", "to": "443"},
+      {"from": "8443", "to": "8443"}
+    ],
+    "serverGroups": [
+      {
+        "id": "216199618143550001",
+        "name": "Fictional Server Group Alpha",
+        "enabled": true,
+        "dynamicDiscovery": false,
+        "configSpace": "DEFAULT"
+      }
+    ],
+    "bypassType": "NEVER",
+    "healthCheckType": "DEFAULT",
+    "healthReporting": "ON_ACCESS",
+    "doubleEncrypt": false,
+    "isCnameEnabled": true,
+    "ipAnchored": false,
+    "creationTime": "1700300000",
+    "modifiedBy": "216199618143440000",
+    "modifiedTime": "1700400000"
+  }
+]

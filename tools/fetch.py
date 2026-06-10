@@ -3,7 +3,7 @@
 Runs with real credentials ONLY in trusted environments; here it is
 exercised against fictional canned responses via an injected opener.
 Stdlib-only, Python 3.6-floor. Per-resource knowledge lives in
-tools/fetch_manifest.json (data); only auth/pagination patterns are code.
+tools/registry.json (data); only auth/pagination patterns are code.
 See AGENTS.md rules 1-5.
 """
 import json
@@ -11,26 +11,20 @@ import os
 import sys
 import time
 
-MANIFEST_PATH = os.path.join("tools", "fetch_manifest.json")
-
-_manifest_cache = {}
-
-
 def load_manifest():
-    if not _manifest_cache:
-        with open(MANIFEST_PATH) as f:
-            _manifest_cache.update(json.load(f))
-    return _manifest_cache
+    from tools.registry import load_registry
+    out = {}
+    for rt, e in load_registry().items():
+        if "fetch" in e:
+            entry = dict(e["fetch"])
+            entry["product"] = e["product"]
+            out[rt] = entry
+    return out
 
 
 def manifest_entry(resource_type):
-    manifest = load_manifest()
-    if resource_type not in manifest:
-        raise KeyError(
-            "%r not in fetch manifest; add it to tools/fetch_manifest.json"
-            % resource_type
-        )
-    return manifest[resource_type]
+    from tools.registry import fetch_entry
+    return fetch_entry(resource_type)
 
 
 def obfuscate_api_key(api_key, timestamp):
@@ -328,6 +322,7 @@ def acquire_token(auth_mode, product, env, ctx, opener, now_ms=None):
 
 def products_in_manifest():
     return sorted({e["product"] for e in load_manifest().values()})
+
 
 
 def diag_hosts(env):

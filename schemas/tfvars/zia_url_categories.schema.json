@@ -1,0 +1,180 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "configured_name": {
+            "type": "string"
+          },
+          "custom_category": {
+            "type": "boolean"
+          },
+          "custom_ip_ranges_count": {
+            "type": "number"
+          },
+          "custom_urls_count": {
+            "type": "number"
+          },
+          "db_categorized_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "description": {
+            "type": "string"
+          },
+          "editable": {
+            "type": "boolean"
+          },
+          "ip_ranges": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "ip_ranges_retaining_parent_category": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "ip_ranges_retaining_parent_category_count": {
+            "type": "number"
+          },
+          "keywords": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "keywords_retaining_parent_category": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "regex_patterns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "regex_patterns_retaining_parent_category": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "scopes": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "scope_entities": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "items": {
+                          "type": "number"
+                        },
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "id"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "scope_group_member_entities": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "items": {
+                          "type": "number"
+                        },
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "id"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "type": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "super_category": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "url_keyword_counts": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "retain_parent_keyword_count": {
+                  "type": "number"
+                },
+                "retain_parent_url_count": {
+                  "type": "number"
+                },
+                "total_keyword_count": {
+                  "type": "number"
+                },
+                "total_url_count": {
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "url_type": {
+            "type": "string"
+          },
+          "urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "urls_retaining_parent_category_count": {
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zia_url_categories tfvars",
+  "type": "object"
+}

@@ -1,7 +1,7 @@
 PYTHON ?= python3
 TF     ?= terraform
 
-.PHONY: help env test test-floor validate schemas generate transform fetch fetch-diag update-goldens
+.PHONY: help env test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -48,11 +48,22 @@ ifeq ($(CHECK),1)
 		echo "Never hand-edit modules/ — fix the generator or an override,"; \
 		echo "run 'make generate', and commit the result."; \
 		exit 1; }
+	@test -z "$$(git status --porcelain -- modules schemas/tfvars)" || { \
+		echo ""; \
+		echo "Generated but UNCOMMITTED output (a generate=true registry"; \
+		echo "entry whose module was never committed):"; \
+		git status --porcelain -- modules schemas/tfvars; \
+		echo "Commit it, or set generate=false in tools/registry.json."; \
+		exit 1; }
 endif
+
+gen-env: ## Generate env roots for a tenant (TENANT=<label>)
+	@test -n "$(TENANT)" || { echo "usage: make gen-env TENANT=<label>"; exit 2; }
+	$(PYTHON) -m tools.gen_env "$(TENANT)"
 
 transform: ## Transform pulled API JSON into tfvars + imports (IN=<dir> TENANT=<name>)
 	@test -n "$(IN)" -a -n "$(TENANT)" || { echo "usage: make transform IN=pulls/<tenant> TENANT=<tenant>"; exit 2; }
-	@for rt in $$(grep -vE '^\s*(#|$$)' tools/resources.txt); do \
+	@for rt in $$($(PYTHON) -c "from tools.registry import generated_types; print('\n'.join(generated_types()))"); do \
 		if [ -f "$(IN)/$$rt.json" ]; then \
 			$(PYTHON) -m tools.transform "$$rt" "$(IN)/$$rt.json" "$(TENANT)" || exit 1; \
 		else \
@@ -76,3 +87,7 @@ update-goldens: ## Re-bless generator golden fixtures from current output
 		tools/tests/fixtures/gen/zpa_segment_group/
 	mkdir -p tools/tests/fixtures/gen/zia_url_categories
 	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zia_url_categories'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zia_url_categories/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"
+	mkdir -p tools/tests/fixtures/gen/zpa_server_group
+	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zpa_server_group'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zpa_server_group/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"
+	mkdir -p tools/tests/fixtures/gen/zpa_application_segment
+	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zpa_application_segment'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zpa_application_segment/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"

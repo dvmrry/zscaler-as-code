@@ -127,7 +127,7 @@ class CoerceTest(unittest.TestCase):
 
 class OverrideTest(unittest.TestCase):
     def test_missing_override_is_empty(self):
-        self.assertEqual(load_override("zpa_segment_group"), {})
+        self.assertEqual(load_override("zpa_nonexistent_type"), {})
 
     def test_renames_and_drop_if_default(self):
         ov = {"renames": {"old_name": "new_name"}, "drop_if_default": {"flag": False}}
@@ -208,6 +208,26 @@ class PipelineTest(unittest.TestCase):
         self.assertIn('id = "CUSTOM:10"', text)
 
 
+class AcknowledgedDropsTest(unittest.TestCase):
+    def test_acknowledged_drops_suppressed_from_report(self):
+        raw = [{"id": "1", "name": "A", "config_space": "X", "creation_time": "9"}]
+        override = {"acknowledged_drops": ["config_space", "id"]}
+        items, originals, drops = transform_items(raw, "zpa_segment_group", override)
+        # acknowledged paths absent from the report...
+        self.assertNotIn("config_space", drops)
+        self.assertNotIn("id", drops)
+        # ...but unacknowledged ones still surface
+        self.assertIn("creation_time", drops)
+        # and the field is still removed from the item regardless
+        self.assertNotIn("config_space", items["a"])
+
+    def test_no_acknowledged_drops_reports_all(self):
+        raw = [{"id": "1", "name": "A", "config_space": "X"}]
+        _, _, drops = transform_items(raw, "zpa_segment_group", {})
+        self.assertIn("config_space", drops)
+        self.assertIn("id", drops)
+
+
 class SlimWarningTest(unittest.TestCase):
     def test_warns_on_slim_input(self):
         rs = load_resource("zia_url_categories")
@@ -254,6 +274,12 @@ class GoldenTransformTest(unittest.TestCase):
 
     def test_zia_url_categories_golden(self):
         self._roundtrip("zia_url_categories")
+
+    def test_zpa_server_group_golden(self):
+        self._roundtrip("zpa_server_group")
+
+    def test_zpa_application_segment_golden(self):
+        self._roundtrip("zpa_application_segment")
 
 
 if __name__ == "__main__":

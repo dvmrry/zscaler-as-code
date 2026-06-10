@@ -1,0 +1,143 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "app_connector_groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "applications": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "config_space": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "dynamic_discovery": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "extranet_dto": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "location_dto": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "location_group_dto": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "zpn_er_id": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "extranet_enabled": {
+            "type": "boolean"
+          },
+          "ip_anchored": {
+            "type": "boolean"
+          },
+          "microtenant_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "servers": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zpa_server_group tfvars",
+  "type": "object"
+}
