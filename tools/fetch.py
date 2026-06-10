@@ -236,3 +236,42 @@ def acquire_token(auth_mode, product, env, ctx, opener, now_ms=None):
                 raise SystemExit("ZIA session auth failed: HTTP %d" % status)
             return None
     raise SystemExit("unknown ZS_AUTH=%r" % auth_mode)
+
+
+def products_in_manifest():
+    return sorted({e["product"] for e in load_manifest().values()})
+
+
+def main(argv=None):
+    argv = argv if argv is not None else sys.argv[1:]
+    if len(argv) != 1:
+        sys.stderr.write("usage: python -m tools.fetch <tenant>\n")
+        return 2
+    tenant = argv[0]
+    env = os.environ
+    auth_mode = _require(env, "ZS_AUTH")
+    opener = real_opener()
+    ctx = {
+        "cloud": env.get("ZS_CLOUD", ""),
+        "customer_id": env.get("ZS_ZPA_CUSTOMER_ID", ""),
+    }
+    tokens = {}
+    for product in products_in_manifest():
+        tokens[product] = acquire_token(auth_mode, product, env, ctx, opener)
+    out_dir = os.path.join("pulls", tenant)
+    os.makedirs(out_dir, exist_ok=True)
+    for resource_type in sorted(load_manifest()):
+        product = manifest_entry(resource_type)["product"]
+        items = fetch_resource(
+            resource_type, auth_mode, ctx, tokens[product], opener
+        )
+        path = os.path.join(out_dir, resource_type + ".json")
+        with open(path, "w") as f:
+            json.dump(items, f, indent=2, sort_keys=True)
+            f.write("\n")
+        sys.stderr.write("wrote %s (%d items)\n" % (path, len(items)))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

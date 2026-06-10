@@ -3,7 +3,7 @@ import io
 import json
 import unittest
 
-from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, build_headers, compose_url, fetch_resource, acquire_token
+from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, build_headers, compose_url, fetch_resource, acquire_token, products_in_manifest
 
 
 class ManifestTest(unittest.TestCase):
@@ -167,6 +167,11 @@ class FetchResourceTest(unittest.TestCase):
         )
         self.assertEqual(out, [{"id": "CUSTOM_1"}])
         self.assertIn("customOnly=true", opener.calls[0])
+
+
+class ProductsTest(unittest.TestCase):
+    def test_products_in_manifest(self):
+        self.assertEqual(products_in_manifest(), ["zia", "zpa"])
 
 
 class AcquireTokenTest(unittest.TestCase):
