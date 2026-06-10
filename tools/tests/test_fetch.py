@@ -3,7 +3,7 @@ import io
 import json
 import unittest
 
-from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa
+from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, build_headers, compose_url
 
 
 class ManifestTest(unittest.TestCase):
@@ -100,6 +100,48 @@ class PaginateZpaTest(unittest.TestCase):
             "https://x/s": [(200, {"list": [{"id": "1"}], "totalPages": "1"})]
         })
         self.assertEqual(len(paginate_zpa(opener, "https://x/s", {}, {}, page_size=500)), 1)
+
+
+class ComposeUrlTest(unittest.TestCase):
+    def test_oneapi_zia(self):
+        self.assertEqual(
+            compose_url("oneapi", "zia", "urlCategories", {"customer_id": "C"}),
+            "https://api.zscaler.com/zia/api/v1/urlCategories",
+        )
+
+    def test_oneapi_zpa_uses_customer(self):
+        self.assertEqual(
+            compose_url("oneapi", "zpa", "segmentGroup", {"customer_id": "C9"}),
+            "https://api.zscaler.com/zpa/mgmtconfig/v1/admin/customers/C9/segmentGroup",
+        )
+
+    def test_legacy_zia(self):
+        self.assertEqual(
+            compose_url("legacy", "zia", "urlCategories", {"cloud": "zscalertwo"}),
+            "https://zsapi.zscalertwo.net/api/v1/urlCategories",
+        )
+
+    def test_legacy_zpa(self):
+        self.assertEqual(
+            compose_url("legacy", "zpa", "segmentGroup", {"customer_id": "C9"}),
+            "https://config.private.zscaler.com/mgmtconfig/v1/admin/customers/C9/segmentGroup",
+        )
+
+    def test_unknown_mode_raises(self):
+        with self.assertRaises(ValueError):
+            compose_url("nope", "zia", "x", {})
+
+
+class BuildHeadersTest(unittest.TestCase):
+    def test_bearer(self):
+        self.assertEqual(
+            build_headers("tok"), {"Authorization": "Bearer tok", "Accept": "application/json"}
+        )
+
+    def test_no_token_is_cookie_mode(self):
+        # ZIA legacy authenticates by session cookie (held in the opener),
+        # so there is no bearer header.
+        self.assertEqual(build_headers(None), {"Accept": "application/json"})
 
 
 if __name__ == "__main__":
