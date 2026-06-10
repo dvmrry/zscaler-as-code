@@ -3,7 +3,7 @@ import io
 import json
 import unittest
 
-from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, build_headers, compose_url, fetch_resource, acquire_token, products_in_manifest, auth_mode_from_env, _zslogin_host
+from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, build_headers, compose_url, fetch_resource, acquire_token, products_in_manifest, auth_mode_from_env, _zslogin_host, ca_bundle_path
 
 
 class ManifestTest(unittest.TestCase):
@@ -265,6 +265,20 @@ class ZsloginHostTest(unittest.TestCase):
 
     def test_other_cloud_suffix(self):
         self.assertEqual(_zslogin_host("acme", "beta"), "https://acme.zsloginbeta.net")
+
+
+class CaBundleTest(unittest.TestCase):
+    def test_none_by_default(self):
+        self.assertIsNone(ca_bundle_path({}))
+
+    def test_requests_bundle_preferred(self):
+        self.assertEqual(
+            ca_bundle_path({"REQUESTS_CA_BUNDLE": "/a.pem", "SSL_CERT_FILE": "/b.pem"}),
+            "/a.pem",
+        )
+
+    def test_ssl_cert_file_fallback(self):
+        self.assertEqual(ca_bundle_path({"SSL_CERT_FILE": "/b.pem"}), "/b.pem")
 
 
 if __name__ == "__main__":

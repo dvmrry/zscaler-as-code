@@ -143,21 +143,43 @@ def build_headers(token):
     return {"Authorization": "Bearer " + token, "Accept": "application/json"}
 
 
-def real_opener():
+def ca_bundle_path(env):
+    """Path to a CA bundle that trusts the corporate TLS-inspection root,
+    or None to use the system defaults.
+
+    Zscaler (and most enterprise proxies) MITM-inspect outbound HTTPS —
+    including, ironically, traffic to the Zscaler API itself — presenting a
+    corporate root CA that Python does not trust out of the box, so the
+    handshake fails. Point one of the de-facto-standard vars at the
+    exported root (the same ones curl/requests honor); no new var invented.
+    """
+    return env.get("REQUESTS_CA_BUNDLE") or env.get("SSL_CERT_FILE") or None
+
+
+def real_opener(env=None):
     """Default opener over urllib with a cookie jar — wraps GET/POST into
     (status, bytes). The jar persists the ZIA legacy session cookie across
     calls, so legacy-ZIA GETs authenticate after the session POST without
-    any explicit token. Untested here (it touches the network); the fake
-    opener in tests exercises everything that consumes an opener.
+    any explicit token. If a CA bundle is configured (see ca_bundle_path),
+    HTTPS verifies against it so corporate TLS inspection does not break the
+    handshake. Untested here (it touches the network); the fake opener in
+    tests exercises everything that consumes an opener.
     """
     import http.cookiejar
+    import ssl
     import urllib.error
     import urllib.request
 
+    if env is None:
+        env = os.environ
     jar = http.cookiejar.CookieJar()
-    url_opener = urllib.request.build_opener(
-        urllib.request.HTTPCookieProcessor(jar)
-    )
+    handlers = [urllib.request.HTTPCookieProcessor(jar)]
+    bundle = ca_bundle_path(env)
+    if bundle:
+        handlers.append(
+            urllib.request.HTTPSHandler(context=ssl.create_default_context(cafile=bundle))
+        )
+    url_opener = urllib.request.build_opener(*handlers)
 
     def _open(method, url, headers, body):
         req = urllib.request.Request(url, data=body, headers=headers or {}, method=method)

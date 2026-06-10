@@ -44,6 +44,21 @@ Credentials are read from the environment at runtime only. They are never
 written to disk, never logged, and never enter `pulls/` output. Real pulls
 under `pulls/<tenant>/` are gitignored and must never be committed.
 
+## Corporate TLS inspection (Zscaler proxy)
+
+Enterprise proxies — Zscaler's included — MITM-inspect outbound HTTPS,
+presenting a corporate root CA that Python does not trust by default, so
+the fetcher's TLS handshake fails (ironically, even when reaching the
+Zscaler API itself). Point the fetcher at the exported inspection root via
+either standard variable (same ones curl and requests honor):
+
+    REQUESTS_CA_BUNDLE=/path/to/corp-root-ca.pem    # preferred
+    SSL_CERT_FILE=/path/to/corp-root-ca.pem          # fallback
+
+Outbound proxy routing uses the usual `HTTPS_PROXY`/`NO_PROXY` variables,
+which urllib honors automatically. No verification bypass is provided by
+design — trust the corporate root explicitly.
+
 ## Validation order
 
 Validate against the dev tenant (OneAPI) first, then production (legacy).
