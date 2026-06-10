@@ -1,8 +1,10 @@
-# Example Azure DevOps pipeline — a starting point, not a working config.
-# Copy or point a pipeline definition at this file and adapt it to your
-# environment: agent pool, terraform availability on the agents, and any
-# proxy/registry mirrors. Keep it a thin shell over make — all logic lives
-# in the Makefile (see AGENTS.md rule 9).
+# Example Azure DevOps pipeline — reference material, not a working config.
+# Bootstrapping a NEW environment: copy this file to azure-pipelines.yml in
+# your repo and adapt it (agent pool, terraform availability on the agents,
+# proxy/registry mirrors). If an adapted azure-pipelines.yml already exists,
+# keep it — never delete it or repoint CI at this example.
+# Keep pipelines thin shells over make — all logic lives in the Makefile
+# (see AGENTS.md rule 9).
 trigger:
   branches:
     include:
