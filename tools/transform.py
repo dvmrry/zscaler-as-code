@@ -130,8 +130,10 @@ def coerce_item(item, block):
                 out[key] = [
                     _coerce_primitive(_unwrap_ref(v), enc[1]) for v in value
                 ]
-            else:
+            elif value is None:
                 out[key] = value
+            else:
+                out[key] = [_coerce_primitive(_unwrap_ref(value), enc[1])]
         else:
             out[key] = value
     return out

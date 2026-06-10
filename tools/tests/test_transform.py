@@ -1,9 +1,11 @@
 """Tests for tools/transform.py. All fixture data is fictional."""
+import io
 import json
 import os
+import sys
 import unittest
 
-from tools.transform import apply_overrides, coerce_item, derive_key, filter_item, load_override, render_imports, render_tfvars, slugify, snake, snake_keys, transform_items
+from tools.transform import apply_overrides, coerce_item, derive_key, filter_item, load_override, render_imports, render_tfvars, slugify, snake, snake_keys, transform_items, _warn_if_slim
 from tools.tfschema import load_resource
 
 
@@ -110,6 +112,18 @@ class CoerceTest(unittest.TestCase):
         out = coerce_item(item, rs["block"])
         self.assertEqual(out["applications"], [{"id": "123"}])
 
+    def test_scalar_upgraded_to_collection(self):
+        fake_block = {
+            "attributes": {
+                "ids": {"type": ["list", "number"], "optional": True},
+                "names": {"type": ["set", "string"], "optional": True},
+            }
+        }
+        item = {"ids": 10, "names": "solo"}
+        self.assertEqual(
+            coerce_item(item, fake_block), {"ids": [10], "names": ["solo"]}
+        )
+
 
 class OverrideTest(unittest.TestCase):
     def test_missing_override_is_empty(self):
@@ -187,6 +201,36 @@ class PipelineTest(unittest.TestCase):
         self.assertIn(
             'to = module.zpa_segment_group.zpa_segment_group.this["a"]', text
         )
+
+    def test_import_id_template_multi_field(self):
+        originals = {"a": {"id": "10", "type": "CUSTOM"}}
+        text = render_imports("zia_fake", originals, {"import_id": "{type}:{id}"})
+        self.assertIn('id = "CUSTOM:10"', text)
+
+
+class SlimWarningTest(unittest.TestCase):
+    def test_warns_on_slim_input(self):
+        rs = load_resource("zia_url_categories")
+        old = sys.stderr
+        sys.stderr = io.StringIO()
+        try:
+            _warn_if_slim([{"id": "1"}, {"id": "2"}], rs["block"], "zia_url_categories")
+            output = sys.stderr.getvalue()
+        finally:
+            sys.stderr = old
+        self.assertIn("looks slim", output)
+
+    def test_quiet_on_detail_input(self):
+        rs = load_resource("zpa_segment_group")
+        item = {"name": "x", "description": "d", "enabled": True, "microtenant_id": "1"}
+        old = sys.stderr
+        sys.stderr = io.StringIO()
+        try:
+            _warn_if_slim([item], rs["block"], "zpa_segment_group")
+            output = sys.stderr.getvalue()
+        finally:
+            sys.stderr = old
+        self.assertEqual(output, "")
 
 
 class GoldenTransformTest(unittest.TestCase):
