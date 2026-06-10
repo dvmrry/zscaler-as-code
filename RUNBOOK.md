@@ -31,7 +31,7 @@ The diagnostic probes the fetcher's target hosts and prints the certificate
 chain or the exact failure. Fix any error here before proceeding.
 
 **Toolchain.** Terraform >= 1.5 and GNU make must be on `$PATH`. Verify with
-`make env`. Python 3.8+ stdlib only — no pip install needed.
+`make env`. Python 3.6+ stdlib only — no pip install needed.
 
 **Real pulls are gitignored.** `pulls/` must never be committed.
 
@@ -120,7 +120,7 @@ Apply using your Terraform invocation or CI pipeline. After state is
 populated, remove the import blocks file:
 
 ```
-rm envs/<label>/<type>_imports.tf
+rm envs/<label>/<type>/<type>_imports.tf
 ```
 
 Import blocks error once resources are already managed. Removal is required.

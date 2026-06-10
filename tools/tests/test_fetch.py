@@ -340,6 +340,10 @@ class ExpandPathsTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             expand_paths({"path": "plain", "expand": {"x": ["1"]}})
 
+    def test_values_are_url_encoded(self):
+        entry = {"path": "a/{x}", "expand": {"x": ["HAS SPACE"]}}
+        self.assertEqual(expand_paths(entry), ["a/HAS%20SPACE"])
+
 
 class FetchResourceExpandTest(unittest.TestCase):
     def test_concatenates_expanded_paths(self):

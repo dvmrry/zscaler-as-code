@@ -46,9 +46,9 @@ def obfuscate_api_key(api_key, timestamp):
 
 
 try:
-    from urllib.parse import urlencode
+    from urllib.parse import quote as _quote, urlencode
 except ImportError:  # pragma: no cover - py2 guard, never hit on 3.6+
-    from urllib import urlencode
+    from urllib import quote as _quote, urlencode
 
 
 def _get_json(opener, url, headers, query):
@@ -247,7 +247,7 @@ def expand_paths(entry):
     token = "{%s}" % key
     if token not in path:
         raise ValueError("expand key %r not present in path %r" % (key, path))
-    return [path.replace(token, value) for value in expand[key]]
+    return [path.replace(token, _quote(value, safe="")) for value in expand[key]]
 
 
 def _fetch_paths(entry, auth_mode, ctx, token, opener):

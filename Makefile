@@ -104,14 +104,17 @@ validate-imports: ## Validate fixture import addresses against a tenant's roots 
 
 plan: ## Terraform plan for a tenant's roots (TENANT=<label> [RESOURCE=<type>]; real creds via env)
 	@test -n "$(TENANT)" || { echo "usage: make plan TENANT=<label> [RESOURCE=<type>]"; exit 2; }
-	@set -e; for d in envs/$(TENANT)/$(or $(RESOURCE),*)/; do \
+	@set -e; planned=0; for d in envs/$(TENANT)/$(or $(RESOURCE),*)/; do \
+		test -d "$$d" || continue; \
 		rt=$$(basename $$d); \
 		vf="$(abspath config/$(TENANT))/$$rt.auto.tfvars.json"; \
 		test -f "$$vf" || { echo "skip $$rt (no $$vf)"; continue; }; \
 		echo "== plan $$rt"; \
 		$(TF) -chdir=$$d init -input=false > /dev/null; \
 		$(TF) -chdir=$$d plan -input=false -var-file="$$vf"; \
-	done
+		planned=$$((planned+1)); \
+	done; \
+	test $$planned -gt 0 || { echo "error: no roots planned for TENANT=$(TENANT) (typo? missing config/?)"; exit 1; }
 
 drift: ## Fetch + transform + report config diff for a tenant (TENANT=<label>; real creds via env)
 	@test -n "$(TENANT)" || { echo "usage: make drift TENANT=<label>"; exit 2; }
