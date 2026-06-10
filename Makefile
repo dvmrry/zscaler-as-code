@@ -1,7 +1,7 @@
 PYTHON ?= python3
 TF     ?= terraform
 
-.PHONY: help env test test-floor validate schemas generate
+.PHONY: help env test test-floor validate schemas generate update-goldens
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -48,3 +48,13 @@ ifeq ($(CHECK),1)
 		echo "run 'make generate', and commit the result."; \
 		exit 1; }
 endif
+
+update-goldens: ## Re-bless generator golden fixtures from current output
+	$(PYTHON) -m tools.gen_module
+	rm -rf tools/tests/fixtures/gen
+	mkdir -p tools/tests/fixtures/gen/zpa_segment_group
+	cp modules/zpa_segment_group/variables.tf modules/zpa_segment_group/main.tf \
+		modules/zpa_segment_group/outputs.tf modules/zpa_segment_group/versions.tf \
+		tools/tests/fixtures/gen/zpa_segment_group/
+	mkdir -p tools/tests/fixtures/gen/zia_url_categories
+	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, _fmt; rs = load_resource('zia_url_categories'); open('tools/tests/fixtures/gen/zia_url_categories/variables.tf','w').write(_fmt(render_variables('zia_url_categories', rs))); open('tools/tests/fixtures/gen/zia_url_categories/main.tf','w').write(_fmt(render_main('zia_url_categories', rs)))"

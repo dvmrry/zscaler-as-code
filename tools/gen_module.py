@@ -18,6 +18,12 @@ def _header(resource_type, provider):
     )
 
 
+_PROVIDER_SOURCES = {
+    "zia": "zscaler/zia",
+    "zpa": "zscaler/zpa",
+}
+
+
 def _provider_of(resource_type):
     return resource_type.split("_", 1)[0]
 
@@ -137,6 +143,21 @@ def render_readme(resource_type, resource_schema):
     )
 
 
+def render_versions(resource_type, resource_schema):
+    provider = _provider_of(resource_type)
+    source = _PROVIDER_SOURCES[provider]
+    return (
+        _header(resource_type, provider)
+        + "terraform {\n"
+        + "  required_providers {\n"
+        + '    %s = {\n' % provider
+        + '      source = "%s"\n' % source
+        + "    }\n"
+        + "  }\n"
+        + "}\n"
+    )
+
+
 def render_sample(resource_type, resource_schema):
     cls = classify_attributes(resource_schema["block"])
     item = {}
@@ -201,6 +222,7 @@ def generate_module(resource_type, out_root=MODULES_ROOT, overrides_root=OVERRID
         main_text = render_main(resource_type, rs)
     files = {
         "variables.tf": render_variables(resource_type, rs),
+        "versions.tf": render_versions(resource_type, rs),
         "main.tf": main_text,
         "outputs.tf": render_outputs(resource_type, rs),
         "README.md": render_readme(resource_type, rs),

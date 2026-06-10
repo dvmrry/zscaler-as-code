@@ -1,9 +1,10 @@
 """Tests for tools/gen_module.py renderers, pinned to the committed dumps."""
 import os
+import shutil
 import tempfile
 import unittest
 
-from tools.gen_module import render_main, render_variables, render_outputs, render_readme, render_test, render_sample, generate_module, read_resource_list
+from tools.gen_module import render_main, render_variables, render_outputs, render_readme, render_test, render_sample, render_versions, generate_module, read_resource_list
 from tools.tfschema import load_resource
 
 EXPECTED_SEGMENT_GROUP_VARIABLES = '''\
@@ -134,13 +135,24 @@ class RenderRestTest(unittest.TestCase):
         self.assertIn("command = plan", out)
         self.assertIn("length(var.items) == 1", out)
 
+    def test_versions_contains_provider_source(self):
+        rs = load_resource("zpa_segment_group")
+        out = render_versions("zpa_segment_group", rs)
+        self.assertIn('source = "zscaler/zpa"', out)
+        self.assertIn("required_providers", out)
+
+    def test_versions_zia_source(self):
+        rs = load_resource("zia_url_categories")
+        out = render_versions("zia_url_categories", rs)
+        self.assertIn('source = "zscaler/zia"', out)
+
 
 class GenerateModuleTest(unittest.TestCase):
     def test_writes_all_files(self):
         with tempfile.TemporaryDirectory() as td:
             generate_module("zpa_segment_group", out_root=td, overrides_root=os.path.join(td, "none"), fmt=False)
             base = os.path.join(td, "zpa_segment_group")
-            for fname in ("variables.tf", "main.tf", "outputs.tf", "README.md"):
+            for fname in ("variables.tf", "versions.tf", "main.tf", "outputs.tf", "README.md"):
                 self.assertTrue(os.path.exists(os.path.join(base, fname)), fname)
             self.assertTrue(os.path.exists(os.path.join(base, "tests", "defaults.tftest.hcl")))
             self.assertTrue(os.path.exists(os.path.join(base, "tests", "sample.auto.tfvars.json")))
@@ -161,6 +173,28 @@ class GenerateModuleTest(unittest.TestCase):
             with open(path, "w") as f:
                 f.write("# comment\n\nzpa_segment_group\n")
             self.assertEqual(read_resource_list(path), ["zpa_segment_group"])
+
+
+class GoldenTest(unittest.TestCase):
+    GOLDENS = [
+        ("zpa_segment_group", "variables.tf", "render_variables"),
+        ("zpa_segment_group", "main.tf", "render_main"),
+        ("zpa_segment_group", "outputs.tf", "render_outputs"),
+        ("zpa_segment_group", "versions.tf", "render_versions"),
+        ("zia_url_categories", "variables.tf", "render_variables"),
+        ("zia_url_categories", "main.tf", "render_main"),
+    ]
+
+    def test_rendered_output_matches_blessed_goldens(self):
+        if shutil.which("terraform") is None:
+            self.skipTest("terraform not on PATH — generator goldens are authoring-side")
+        import tools.gen_module as g
+        for resource_type, fname, renderer in self.GOLDENS:
+            path = os.path.join("tools", "tests", "fixtures", "gen", resource_type, fname)
+            with open(path) as f:
+                expected = f.read()
+            rendered = g._fmt(getattr(g, renderer)(resource_type, load_resource(resource_type)))
+            self.assertEqual(rendered, expected, "%s/%s drifted — make update-goldens after intentional changes" % (resource_type, fname))
 
 
 if __name__ == "__main__":
