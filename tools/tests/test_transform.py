@@ -125,6 +125,15 @@ class OverrideTest(unittest.TestCase):
         item = {"server_groups": [{"id": "9", "name": "g"}]}
         self.assertEqual(apply_overrides(item, ov), {"server_groups": ["9"]})
 
+    def test_unconditional_drops(self):
+        ov = {"drops": ["noise_field"]}
+        item = {"noise_field": "anything", "keep": 1}
+        self.assertEqual(apply_overrides(item, ov), {"keep": 1})
+
+    def test_drops_missing_field_is_noop(self):
+        ov = {"drops": ["absent"]}
+        self.assertEqual(apply_overrides({"keep": 1}, ov), {"keep": 1})
+
 
 class DeriveKeyTest(unittest.TestCase):
     def test_default_name_slug(self):

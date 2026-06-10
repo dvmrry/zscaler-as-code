@@ -149,12 +149,14 @@ def load_override(resource_type):
 
 
 def apply_overrides(item, override):
-    """Renames, forced reference unwrapping, drop-if-default. Post-snake,
-    pre-filter, so renamed fields are filtered under their schema names."""
+    """Renames, unconditional drops, forced reference unwrapping, drop-if-default.
+    Post-snake, pre-filter, so renamed fields are filtered under their schema names."""
     out = dict(item)
     for old, new in sorted((override.get("renames") or {}).items()):
         if old in out:
             out[new] = out.pop(old)
+    for field in sorted(override.get("drops") or []):
+        out.pop(field, None)
     for field in sorted(override.get("references") or {}):
         if field in out:
             value = out[field]
