@@ -343,19 +343,26 @@ def diag_hosts(env):
 
 
 def _try_tls(host, context):
-    """(ok, detail) for a TLS handshake to host:443 under context."""
-    import socket
-    import ssl as _ssl
+    """(ok, detail) for an HTTPS request to host under context.
+
+    Goes through urllib — the same stack the fetcher uses — so it is
+    proxy-aware (HTTPS_PROXY/system proxy) exactly like production. A raw
+    socket probe would bypass the proxy and hang on networks that block
+    direct egress, diagnosing a problem the fetcher does not have. Any
+    HTTP status (even 401/403) means TLS succeeded.
+    """
+    import urllib.error
+    import urllib.request
+    opener = urllib.request.build_opener(
+        urllib.request.HTTPSHandler(context=context)
+    )
     try:
-        with socket.create_connection((host, 443), timeout=10) as sock:
-            with context.wrap_socket(sock, server_hostname=host) as tls:
-                cert = tls.getpeercert() or {}
-                issuer = dict(
-                    item for pair in cert.get("issuer", ()) for item in pair
-                )
-                return True, issuer.get("organizationName", "verified")
-    except _ssl.SSLError as e:
-        return False, str(e.reason or e)
+        resp = opener.open("https://%s/" % host, timeout=15)
+        return True, "HTTP %d" % resp.getcode()
+    except urllib.error.HTTPError as e:
+        return True, "HTTP %d" % e.code
+    except urllib.error.URLError as e:
+        return False, str(e.reason)
     except OSError as e:
         return False, str(e)
 
