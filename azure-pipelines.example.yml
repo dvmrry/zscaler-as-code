@@ -16,5 +16,12 @@ steps:
     displayName: Toolchain versions
   - script: make test
     displayName: Python unit tests
+  # `make validate` requires terraform on the agent. Hosted ubuntu images
+  # ship it; for self-hosted pools either bake terraform into the agent
+  # image or insert your installer task above this step, e.g. the
+  # Microsoft DevLabs extension:
+  # - task: TerraformInstaller@1
+  #   inputs:
+  #     terraformVersion: "1.15.4"
   - script: make validate
     displayName: Terraform format check
