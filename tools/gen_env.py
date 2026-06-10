@@ -61,9 +61,17 @@ def render_env_readme(resource_type, tenant):
     )
 
 
-def render_env_test(resource_type, tenant):
+def render_env_test(resource_type, tenant, has_config=False):
+    """Render the smoke test HCL for an env root.
+
+    Always emits an empty_plan run block (mock provider, no credentials).
+    When has_config is True, appends a config_plan block that loads the
+    committed config via jsondecode(file(...)). Regenerate with
+    ``make gen-env TENANT=<label>``; regenerating after adding config
+    upgrades the smoke test automatically — check-envs keeps it honest.
+    """
     provider = _provider_of(resource_type)
-    return (
+    base = (
         "# GENERATED smoke test — the root composes and plans against a\n"
         "# mocked provider; no credentials. Regenerate: make gen-env TENANT=%s\n"
         'mock_provider "%s" {}\n\n'
@@ -74,6 +82,17 @@ def render_env_test(resource_type, tenant):
         "  }\n"
         "}\n" % (tenant, provider)
     )
+    if not has_config:
+        return base
+    config_block = (
+        '\nrun "config_plan" {\n'
+        "  command = plan\n\n"
+        "  variables {\n"
+        '    items = jsondecode(file("../../../config/%s/%s.auto.tfvars.json")).items\n'
+        "  }\n"
+        "}\n" % (tenant, resource_type)
+    )
+    return base + config_block
 
 
 def _fmt(text):
@@ -97,7 +116,12 @@ def generate_env(tenant, out_root=ENVS_ROOT, fmt=True):
             f.write(render_env_readme(resource_type, tenant))
         tests_dir = os.path.join(base, "tests")
         os.makedirs(tests_dir, exist_ok=True)
-        test_text = render_env_test(resource_type, tenant)
+        # Config existence is evaluated against the repo's config dir regardless
+        # of out_root — committed config drives committed tests.
+        has_config = os.path.exists(
+            os.path.join("config", tenant, resource_type + ".auto.tfvars.json")
+        )
+        test_text = render_env_test(resource_type, tenant, has_config=has_config)
         if fmt:
             test_text = _fmt(test_text)
         with open(os.path.join(tests_dir, "smoke.tftest.hcl"), "w") as f:
