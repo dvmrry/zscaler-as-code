@@ -3,7 +3,7 @@ import io
 import json
 import unittest
 
-from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, build_headers, compose_url
+from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, build_headers, compose_url, fetch_resource
 
 
 class ManifestTest(unittest.TestCase):
@@ -142,6 +142,31 @@ class BuildHeadersTest(unittest.TestCase):
         # ZIA legacy authenticates by session cookie (held in the opener),
         # so there is no bearer header.
         self.assertEqual(build_headers(None), {"Accept": "application/json"})
+
+
+class FetchResourceTest(unittest.TestCase):
+    def test_zpa_resource_via_fake(self):
+        opener = FakeOpener({
+            "https://api.zscaler.com/zpa/mgmtconfig/v1/admin/customers/C/segmentGroup": [
+                (200, {"list": [{"id": "1", "name": "G"}], "totalPages": "1"})
+            ]
+        })
+        out = fetch_resource(
+            "zpa_segment_group", "oneapi", {"customer_id": "C"}, "tok", opener
+        )
+        self.assertEqual(out, [{"id": "1", "name": "G"}])
+
+    def test_zia_resource_passes_manifest_query(self):
+        opener = FakeOpener({
+            "https://zsapi.zscalertwo.net/api/v1/urlCategories": [
+                (200, [{"id": "CUSTOM_1"}])
+            ]
+        })
+        out = fetch_resource(
+            "zia_url_categories", "legacy", {"cloud": "zscalertwo"}, "tok", opener
+        )
+        self.assertEqual(out, [{"id": "CUSTOM_1"}])
+        self.assertIn("customOnly=true", opener.calls[0])
 
 
 if __name__ == "__main__":

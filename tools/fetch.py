@@ -157,3 +157,17 @@ def real_opener():
             return e.code, e.read()
 
     return _open
+
+
+_PAGINATORS = {"zia": paginate_zia, "zpa": paginate_zpa}
+
+
+def fetch_resource(resource_type, auth_mode, ctx, token, opener):
+    """List one resource type into a list of detail-shaped dicts."""
+    entry = manifest_entry(resource_type)
+    product = entry["product"]
+    url = compose_url(auth_mode, product, entry["path"], ctx)
+    headers = build_headers(token)
+    query = entry.get("query") or {}
+    paginate = _PAGINATORS[entry.get("pagination", product)]
+    return paginate(opener, url, headers, query)
