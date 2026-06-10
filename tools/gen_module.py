@@ -5,6 +5,9 @@ Consuming environments never run it. Stdlib-only, Python 3.6-floor syntax
 — see AGENTS.md rules 5-7.
 """
 import json
+import os
+import subprocess
+import sys
 from tools.tfschema import classify_attributes, hcl_type, load_resource
 
 
@@ -156,3 +159,66 @@ def render_test(resource_type, resource_schema):
         "  }\n"
         "}\n" % provider
     )
+
+
+OVERRIDES_ROOT = os.path.join("tools", "overrides")
+MODULES_ROOT = "modules"
+RESOURCES_FILE = os.path.join("tools", "resources.txt")
+
+
+def read_resource_list(path):
+    out = []
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#"):
+                out.append(line)
+    return out
+
+
+def _fmt(text):
+    """Pipe rendered HCL through terraform fmt for canonical formatting.
+
+    Generation is authoring-side only (AGENTS.md / README), so requiring
+    terraform here is fine; fail loudly rather than committing unformatted
+    output that `make validate` would reject.
+    """
+    proc = subprocess.run(
+        ["terraform", "fmt", "-"], input=text.encode(), stdout=subprocess.PIPE, check=True
+    )
+    return proc.stdout.decode()
+
+
+def generate_module(resource_type, out_root=MODULES_ROOT, overrides_root=OVERRIDES_ROOT, fmt=True):
+    rs = load_resource(resource_type)
+    base = os.path.join(out_root, resource_type)
+    os.makedirs(os.path.join(base, "tests"), exist_ok=True)
+    override_main = os.path.join(overrides_root, resource_type, "main.tf")
+    if os.path.exists(override_main):
+        with open(override_main) as f:
+            main_text = f.read()
+    else:
+        main_text = render_main(resource_type, rs)
+    files = {
+        "variables.tf": render_variables(resource_type, rs),
+        "main.tf": main_text,
+        "outputs.tf": render_outputs(resource_type, rs),
+        "README.md": render_readme(resource_type, rs),
+        os.path.join("tests", "defaults.tftest.hcl"): render_test(resource_type, rs),
+        os.path.join("tests", "sample.auto.tfvars.json"): render_sample(resource_type, rs),
+    }
+    for rel, text in sorted(files.items()):
+        if fmt and rel.endswith(".tf"):
+            text = _fmt(text)
+        with open(os.path.join(base, rel), "w") as f:
+            f.write(text)
+        sys.stderr.write("wrote %s\n" % os.path.join(base, rel))
+
+
+def main():
+    for resource_type in read_resource_list(RESOURCES_FILE):
+        generate_module(resource_type)
+
+
+if __name__ == "__main__":
+    main()

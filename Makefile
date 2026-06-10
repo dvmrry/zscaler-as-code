@@ -1,7 +1,7 @@
 PYTHON ?= python3
 TF     ?= terraform
 
-.PHONY: help env test test-floor validate schemas
+.PHONY: help env test test-floor validate schemas generate
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -35,5 +35,16 @@ ifeq ($(CHECK),1)
 		echo "Compare the resolved versions above with the pins in"; \
 		echo "tools/schema-extract/main.tf — version drift is the usual cause."; \
 		echo "Never hand-edit schemas/provider/; fix the pins and regenerate."; \
+		exit 1; }
+endif
+
+generate: ## Generate modules + tfvars schemas from provider dumps (CHECK=1 fails on drift)
+	$(PYTHON) -m tools.gen_module
+ifeq ($(CHECK),1)
+	@git diff --exit-code --stat -- modules schemas/tfvars || { \
+		echo ""; \
+		echo "Generated output drifted from what is committed."; \
+		echo "Never hand-edit modules/ — fix the generator or an override,"; \
+		echo "run 'make generate', and commit the result."; \
 		exit 1; }
 endif

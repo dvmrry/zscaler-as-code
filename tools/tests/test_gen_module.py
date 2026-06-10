@@ -1,7 +1,9 @@
 """Tests for tools/gen_module.py renderers, pinned to the committed dumps."""
+import os
+import tempfile
 import unittest
 
-from tools.gen_module import render_main, render_variables, render_outputs, render_readme, render_test, render_sample
+from tools.gen_module import render_main, render_variables, render_outputs, render_readme, render_test, render_sample, generate_module, read_resource_list
 from tools.tfschema import load_resource
 
 EXPECTED_SEGMENT_GROUP_VARIABLES = '''\
@@ -131,6 +133,34 @@ class RenderRestTest(unittest.TestCase):
         self.assertIn('mock_provider "zpa" {}', out)
         self.assertIn("command = plan", out)
         self.assertIn("length(var.items) == 1", out)
+
+
+class GenerateModuleTest(unittest.TestCase):
+    def test_writes_all_files(self):
+        with tempfile.TemporaryDirectory() as td:
+            generate_module("zpa_segment_group", out_root=td, overrides_root=os.path.join(td, "none"), fmt=False)
+            base = os.path.join(td, "zpa_segment_group")
+            for fname in ("variables.tf", "main.tf", "outputs.tf", "README.md"):
+                self.assertTrue(os.path.exists(os.path.join(base, fname)), fname)
+            self.assertTrue(os.path.exists(os.path.join(base, "tests", "defaults.tftest.hcl")))
+            self.assertTrue(os.path.exists(os.path.join(base, "tests", "sample.auto.tfvars.json")))
+
+    def test_override_replaces_main(self):
+        with tempfile.TemporaryDirectory() as td:
+            ov = os.path.join(td, "ov", "zpa_segment_group")
+            os.makedirs(ov)
+            with open(os.path.join(ov, "main.tf"), "w") as f:
+                f.write("# OVERRIDE\n")
+            generate_module("zpa_segment_group", out_root=os.path.join(td, "mod"), overrides_root=os.path.join(td, "ov"), fmt=False)
+            with open(os.path.join(td, "mod", "zpa_segment_group", "main.tf")) as f:
+                self.assertEqual(f.read(), "# OVERRIDE\n")
+
+    def test_resource_list_skips_comments(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = os.path.join(td, "resources.txt")
+            with open(path, "w") as f:
+                f.write("# comment\n\nzpa_segment_group\n")
+            self.assertEqual(read_resource_list(path), ["zpa_segment_group"])
 
 
 if __name__ == "__main__":
