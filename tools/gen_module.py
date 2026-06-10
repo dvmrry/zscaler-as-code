@@ -43,6 +43,44 @@ def _block_input_type(block_type, indent):
     raise ValueError("unsupported nesting_mode %r" % mode)
 
 
+def _render_block_body(block, ref, indent):
+    """Body lines for a resource or dynamic-content block.
+
+    ref: expression prefix for reading values (e.g. "each.value" or
+    "applications.value"). Computed-only attributes are never assigned.
+    """
+    pad = " " * indent
+    cls = classify_attributes(block)
+    lines = []
+    for name in cls["required"] + cls["optional"]:
+        lines.append("%s%s = %s.%s" % (pad, name, ref, name))
+    for name, bt in sorted((block.get("block_types") or {}).items()):
+        source = "%s.%s" % (ref, name)
+        if bt["nesting_mode"] == "single":
+            iterable = "%s == null ? [] : [%s]" % (source, source)
+        else:
+            iterable = "%s == null ? [] : %s" % (source, source)
+        lines.append("")
+        lines.append('%sdynamic "%s" {' % (pad, name))
+        lines.append("%s  for_each = %s" % (pad, iterable))
+        lines.append("%s  content {" % pad)
+        lines.extend(_render_block_body(bt["block"], "%s.value" % name, indent + 4))
+        lines.append("%s  }" % pad)
+        lines.append("%s}" % pad)
+    return lines
+
+
+def render_main(resource_type, resource_schema):
+    body = _render_block_body(resource_schema["block"], "each.value", 2)
+    return (
+        _header(resource_type, _provider_of(resource_type))
+        + 'resource "%s" "this" {\n' % resource_type
+        + "  for_each = var.items\n\n"
+        + "\n".join(body)
+        + "\n}\n"
+    )
+
+
 def render_variables(resource_type, resource_schema):
     block = resource_schema["block"]
     cls = classify_attributes(block)
