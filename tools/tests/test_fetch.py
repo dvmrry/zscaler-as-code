@@ -3,7 +3,7 @@ import io
 import json
 import unittest
 
-from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, build_headers, compose_url, fetch_resource, acquire_token, products_in_manifest
+from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, build_headers, compose_url, fetch_resource, acquire_token, products_in_manifest, auth_mode_from_env, _zslogin_host
 
 
 class ManifestTest(unittest.TestCase):
@@ -198,8 +198,8 @@ class AcquireTokenTest(unittest.TestCase):
             ]
         })
         env = {
-            "ZS_VANITY": "acme", "ZS_CLOUD": "",
-            "ZS_CLIENT_ID": "cid", "ZS_CLIENT_SECRET": "sec",
+            "ZSCALER_VANITY_DOMAIN": "acme", "ZSCALER_CLOUD": "",
+            "ZSCALER_CLIENT_ID": "cid", "ZSCALER_CLIENT_SECRET": "sec",
         }
         token = acquire_token("oneapi", "zia", env, {}, opener)
         self.assertEqual(token, "ONEAPI_TOK")
@@ -213,7 +213,7 @@ class AcquireTokenTest(unittest.TestCase):
                 (200, {"access_token": "ZPA_TOK"})
             ]
         })
-        env = {"ZS_ZPA_CLIENT_ID": "z", "ZS_ZPA_CLIENT_SECRET": "s"}
+        env = {"ZPA_CLIENT_ID": "z", "ZPA_CLIENT_SECRET": "s"}
         self.assertEqual(
             acquire_token("legacy", "zpa", env, {"cloud": "zscalertwo"}, opener),
             "ZPA_TOK",
@@ -229,8 +229,8 @@ class AcquireTokenTest(unittest.TestCase):
             ]
         })
         env = {
-            "ZS_ZIA_API_KEY": "abcdefghijklmnop",
-            "ZS_ZIA_USERNAME": "u", "ZS_ZIA_PASSWORD": "p",
+            "ZIA_API_KEY": "abcdefghijklmnop",
+            "ZIA_USERNAME": "u", "ZIA_PASSWORD": "p",
         }
         token = acquire_token("legacy", "zia", env, {"cloud": "zscalertwo"}, opener)
         self.assertIsNone(token)
@@ -238,6 +238,33 @@ class AcquireTokenTest(unittest.TestCase):
         self.assertEqual(body["username"], "u")
         self.assertIn("apiKey", body)
         self.assertIn("timestamp", body)
+
+
+class AuthModeTest(unittest.TestCase):
+    def test_default_is_oneapi(self):
+        self.assertEqual(auth_mode_from_env({}), "oneapi")
+
+    def test_legacy_toggle(self):
+        self.assertEqual(
+            auth_mode_from_env({"ZSCALER_USE_LEGACY_CLIENT": "true"}), "legacy"
+        )
+        self.assertEqual(
+            auth_mode_from_env({"ZSCALER_USE_LEGACY_CLIENT": "1"}), "legacy"
+        )
+
+    def test_falsey_is_oneapi(self):
+        self.assertEqual(
+            auth_mode_from_env({"ZSCALER_USE_LEGACY_CLIENT": "false"}), "oneapi"
+        )
+
+
+class ZsloginHostTest(unittest.TestCase):
+    def test_production_no_suffix(self):
+        self.assertEqual(_zslogin_host("acme", ""), "https://acme.zslogin.net")
+        self.assertEqual(_zslogin_host("acme", "PRODUCTION"), "https://acme.zslogin.net")
+
+    def test_other_cloud_suffix(self):
+        self.assertEqual(_zslogin_host("acme", "beta"), "https://acme.zsloginbeta.net")
 
 
 if __name__ == "__main__":

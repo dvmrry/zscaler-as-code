@@ -11,29 +11,34 @@ adding a resource under an existing product is a manifest entry, no code.
     make fetch TENANT=<tenant>                 # pulls/<tenant>/*.json
     make transform IN=pulls/<tenant> TENANT=<tenant>
 
-## Auth modes (set ZS_AUTH)
+The `make fetch` command reads credentials from the environment. These are
+the same variables the Zscaler Terraform providers read, so existing
+provider env config works unchanged.
 
-Both modes are wired. The Zscaler-specific URL/auth literals in
-`compose_url` and `acquire_token` are SDK-derived — confirm them against
-the dev tenant on the first run; a wrong literal is a one-line fix.
+## Auth modes
 
-**OneAPI** (`ZS_AUTH=oneapi`) — one OAuth2 bearer for both products:
+The fetcher resolves mode from `ZSCALER_USE_LEGACY_CLIENT`. Set it to a
+truthy value (`1`, `true`, `yes`, `on`) for legacy mode; leave it unset or
+set it to a falsey value for OneAPI mode (the default).
 
-    ZS_VANITY            vanity domain (token host)
-    ZS_CLOUD             cloud suffix (empty for production)
-    ZS_CLIENT_ID
-    ZS_CLIENT_SECRET
-    ZS_ZPA_CUSTOMER_ID   ZPA customer id
+**OneAPI** (default; `ZSCALER_USE_LEGACY_CLIENT` unset or falsey) —
+one OAuth2 bearer for both products:
 
-**Legacy** (`ZS_AUTH=legacy`) — per-product:
+    ZSCALER_CLIENT_ID
+    ZSCALER_CLIENT_SECRET
+    ZSCALER_VANITY_DOMAIN    vanity domain (token host)
+    ZSCALER_CLOUD            cloud suffix (empty for production)
+    ZPA_CUSTOMER_ID          ZPA customer id
 
-    ZS_CLOUD             e.g. zscalertwo (ZIA host + ZPA paths)
-    ZS_ZIA_API_KEY       obfuscated per request; session cookie auth
-    ZS_ZIA_USERNAME
-    ZS_ZIA_PASSWORD
-    ZS_ZPA_CLIENT_ID     /signin client-credentials
-    ZS_ZPA_CLIENT_SECRET
-    ZS_ZPA_CUSTOMER_ID
+**Legacy** (`ZSCALER_USE_LEGACY_CLIENT=true`) — per-product:
+
+    ZIA_API_KEY              obfuscated per request; session cookie auth
+    ZIA_USERNAME
+    ZIA_PASSWORD
+    ZIA_CLOUD                e.g. zscalertwo (ZIA host)
+    ZPA_CLIENT_ID            /signin client-credentials
+    ZPA_CLIENT_SECRET
+    ZPA_CUSTOMER_ID
 
 Credentials are read from the environment at runtime only. They are never
 written to disk, never logged, and never enter `pulls/` output. Real pulls

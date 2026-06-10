@@ -191,6 +191,20 @@ def _require(env, name):
     return value
 
 
+def auth_mode_from_env(env):
+    """oneapi unless ZSCALER_USE_LEGACY_CLIENT is truthy."""
+    flag = (env.get("ZSCALER_USE_LEGACY_CLIENT") or "").strip().lower()
+    return "legacy" if flag in ("1", "true", "yes", "on") else "oneapi"
+
+
+def _zslogin_host(vanity, cloud):
+    """OneAPI token host. Production (empty/PRODUCTION cloud) has no suffix;
+    other clouds lowercase into the host, per the SDK."""
+    norm = (cloud or "").strip().lower()
+    suffix = "" if norm in ("", "production") else norm
+    return "https://%s.zslogin%s.net" % (vanity, suffix)
+
+
 def acquire_token(auth_mode, product, env, ctx, opener, now_ms=None):
     """Acquire auth for one product. Returns a bearer token string, or None
     for legacy-ZIA (cookie-based; the cookie lives in the opener).
@@ -198,14 +212,13 @@ def acquire_token(auth_mode, product, env, ctx, opener, now_ms=None):
     env is a dict (os.environ at the call site) so tests stay hermetic.
     """
     if auth_mode == "oneapi":
-        suffix = env.get("ZS_CLOUD", "")
-        token_url = "https://%s.zslogin%s.net/oauth2/v1/token" % (
-            _require(env, "ZS_VANITY"), suffix
-        )
+        token_url = _zslogin_host(
+            _require(env, "ZSCALER_VANITY_DOMAIN"), env.get("ZSCALER_CLOUD", "")
+        ) + "/oauth2/v1/token"
         body = urlencode({
             "grant_type": "client_credentials",
-            "client_id": _require(env, "ZS_CLIENT_ID"),
-            "client_secret": _require(env, "ZS_CLIENT_SECRET"),
+            "client_id": _require(env, "ZSCALER_CLIENT_ID"),
+            "client_secret": _require(env, "ZSCALER_CLIENT_SECRET"),
             "audience": _ONEAPI_API_BASE,
         }).encode()
         status, raw = opener(
@@ -220,8 +233,8 @@ def acquire_token(auth_mode, product, env, ctx, opener, now_ms=None):
         if product == "zpa":
             url = "%s/signin" % _LEGACY_ZPA_BASE
             body = urlencode({
-                "client_id": _require(env, "ZS_ZPA_CLIENT_ID"),
-                "client_secret": _require(env, "ZS_ZPA_CLIENT_SECRET"),
+                "client_id": _require(env, "ZPA_CLIENT_ID"),
+                "client_secret": _require(env, "ZPA_CLIENT_SECRET"),
             }).encode()
             status, raw = opener(
                 "POST", url,
@@ -234,9 +247,9 @@ def acquire_token(auth_mode, product, env, ctx, opener, now_ms=None):
             ts = str(now_ms if now_ms is not None else int(time.time() * 1000))
             url = "https://zsapi.%s.net/api/v1/authenticatedSession" % ctx["cloud"]
             payload = json.dumps({
-                "apiKey": obfuscate_api_key(_require(env, "ZS_ZIA_API_KEY"), ts),
-                "username": _require(env, "ZS_ZIA_USERNAME"),
-                "password": _require(env, "ZS_ZIA_PASSWORD"),
+                "apiKey": obfuscate_api_key(_require(env, "ZIA_API_KEY"), ts),
+                "username": _require(env, "ZIA_USERNAME"),
+                "password": _require(env, "ZIA_PASSWORD"),
                 "timestamp": ts,
             }).encode()
             status, raw = opener(
@@ -245,7 +258,7 @@ def acquire_token(auth_mode, product, env, ctx, opener, now_ms=None):
             if status != 200:
                 raise SystemExit("ZIA session auth failed: HTTP %d" % status)
             return None
-    raise SystemExit("unknown ZS_AUTH=%r" % auth_mode)
+    raise SystemExit("unknown auth mode %r" % auth_mode)
 
 
 def products_in_manifest():
@@ -259,11 +272,11 @@ def main(argv=None):
         return 2
     tenant = argv[0]
     env = os.environ
-    auth_mode = _require(env, "ZS_AUTH")
+    auth_mode = auth_mode_from_env(env)
     opener = real_opener()
     ctx = {
-        "cloud": env.get("ZS_CLOUD", ""),
-        "customer_id": env.get("ZS_ZPA_CUSTOMER_ID", ""),
+        "cloud": env.get("ZIA_CLOUD", "") or env.get("ZSCALER_CLOUD", ""),
+        "customer_id": _require(env, "ZPA_CUSTOMER_ID"),
     }
     tokens = {}
     for product in products_in_manifest():

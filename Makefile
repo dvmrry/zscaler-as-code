@@ -60,8 +60,8 @@ transform: ## Transform pulled API JSON into tfvars + imports (IN=<dir> TENANT=<
 		fi; \
 	done
 
-fetch: ## Pull API JSON into pulls/<tenant> (TENANT=<name>; needs ZS_* env, real creds — trusted env only)
-	@test -n "$(TENANT)" || { echo "usage: make fetch TENANT=<tenant> (with ZS_* env set)"; exit 2; }
+fetch: ## Pull API JSON into pulls/<tenant> (TENANT=<name>; needs ZSCALER_*/ZIA_*/ZPA_* env, real creds — trusted env only)
+	@test -n "$(TENANT)" || { echo "usage: make fetch TENANT=<tenant> (with ZSCALER_*/ZIA_*/ZPA_* env set)"; exit 2; }
 	$(PYTHON) -m tools.fetch "$(TENANT)"
 
 update-goldens: ## Re-bless generator golden fixtures from current output
