@@ -34,6 +34,7 @@ instead of being clever.
 8. Every behavior change ships with a golden fixture under `tools/tests/`.
    If a behavior cannot be pinned by a fixture, do not ship it.
 9. All entry points are `make` targets. Extend the Makefile rather than
-   inventing new invocation paths; `azure-pipelines.yml` stays a thin shell.
+   inventing new invocation paths; CI pipelines stay thin shells over
+   `make` (see `azure-pipelines.example.yml`).
 
 Prefer boring, explicit code.

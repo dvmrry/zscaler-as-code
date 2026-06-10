@@ -1,0 +1,20 @@
+# Example Azure DevOps pipeline — a starting point, not a working config.
+# Copy or point a pipeline definition at this file and adapt it to your
+# environment: agent pool, terraform availability on the agents, and any
+# proxy/registry mirrors. Keep it a thin shell over make — all logic lives
+# in the Makefile (see AGENTS.md rule 9).
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - script: make env
+    displayName: Toolchain versions
+  - script: make test
+    displayName: Python unit tests
+  - script: make validate
+    displayName: Terraform format check
