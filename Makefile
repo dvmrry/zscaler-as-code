@@ -1,7 +1,7 @@
 PYTHON ?= python3
 TF     ?= terraform
 
-.PHONY: help env test test-floor validate schemas generate transform fetch fetch-diag update-goldens
+.PHONY: help env test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -56,6 +56,10 @@ ifeq ($(CHECK),1)
 		echo "Commit it, or set generate=false in tools/registry.json."; \
 		exit 1; }
 endif
+
+gen-env: ## Generate env roots for a tenant (TENANT=<label>)
+	@test -n "$(TENANT)" || { echo "usage: make gen-env TENANT=<label>"; exit 2; }
+	$(PYTHON) -m tools.gen_env "$(TENANT)"
 
 transform: ## Transform pulled API JSON into tfvars + imports (IN=<dir> TENANT=<name>)
 	@test -n "$(IN)" -a -n "$(TENANT)" || { echo "usage: make transform IN=pulls/<tenant> TENANT=<tenant>"; exit 2; }
