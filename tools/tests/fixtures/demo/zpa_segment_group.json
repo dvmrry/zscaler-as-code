@@ -1,0 +1,1261 @@
+[
+  {
+    "applications": [
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1698164996",
+        "description": "app09.securitygeek.io",
+        "domainName": "app9.securitygeek.io",
+        "domainNames": [
+          "app9.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "DEFAULT",
+        "icmpAccessType": "NONE",
+        "id": "216196257331370170",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771284971",
+        "name": "app09",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1009",
+            "to": "1009"
+          }
+        ],
+        "tcpPortRanges": [
+          "1009",
+          "1009"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1698164996",
+        "description": "app04.securitygeek.io",
+        "domainName": "app4.securitygeek.io",
+        "domainNames": [
+          "app4.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "DEFAULT",
+        "icmpAccessType": "NONE",
+        "id": "216196257331370171",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "INCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771284960",
+        "name": "app04",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1004",
+            "to": "1004"
+          }
+        ],
+        "tcpPortRanges": [
+          "1004",
+          "1004"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1698164996",
+        "description": "app06.securitygeek.io",
+        "domainName": "app6.securitygeek.io",
+        "domainNames": [
+          "app6.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "DEFAULT",
+        "icmpAccessType": "NONE",
+        "id": "216196257331370172",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771284969",
+        "name": "app06",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1006",
+            "to": "1006"
+          }
+        ],
+        "tcpPortRanges": [
+          "1006",
+          "1006"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1698164996",
+        "description": "app11.securitygeek.io",
+        "domainName": "app11.securitygeek.io",
+        "domainNames": [
+          "app11.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "DEFAULT",
+        "icmpAccessType": "NONE",
+        "id": "216196257331370175",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771284980",
+        "name": "app11",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1011",
+            "to": "1011"
+          }
+        ],
+        "tcpPortRanges": [
+          "1011",
+          "1011"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1698164996",
+        "description": "app10.securitygeek.io",
+        "domainName": "app10.securitygeek.io",
+        "domainNames": [
+          "app10.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "DEFAULT",
+        "icmpAccessType": "NONE",
+        "id": "216196257331370177",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771284980",
+        "name": "app10",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1010",
+            "to": "1010"
+          }
+        ],
+        "tcpPortRanges": [
+          "1010",
+          "1010"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1706823661",
+        "description": "app05.securitygeek.io",
+        "domainName": "app5.securitygeek.io",
+        "domainNames": [
+          "app5.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "DEFAULT",
+        "icmpAccessType": "NONE",
+        "id": "216196257331372536",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "INCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771284960",
+        "name": "app05",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1005",
+            "to": "1005"
+          }
+        ],
+        "tcpPortRanges": [
+          "1005",
+          "1005"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1708009860",
+        "description": "app08.securitygeek.io",
+        "domainName": "app8.securitygeek.io",
+        "domainNames": [
+          "app8.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "DEFAULT",
+        "icmpAccessType": "NONE",
+        "id": "216196257331372620",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771284970",
+        "name": "app08",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1008",
+            "to": "1008"
+          }
+        ],
+        "tcpPortRanges": [
+          "1008",
+          "1008"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1708009860",
+        "description": "app07.securitygeek.io",
+        "domainName": "app7.securitygeek.io",
+        "domainNames": [
+          "app7.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "DEFAULT",
+        "icmpAccessType": "NONE",
+        "id": "216196257331372621",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771284970",
+        "name": "app07",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1007",
+            "to": "1007"
+          }
+        ],
+        "tcpPortRanges": [
+          "1007",
+          "1007"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1715296892",
+        "description": "app12.securitygeek.io",
+        "domainName": "app12.securitygeek.io",
+        "domainNames": [
+          "app12.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "DEFAULT",
+        "icmpAccessType": "NONE",
+        "id": "216196257331372693",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771284981",
+        "name": "app12",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1012",
+            "to": "1012"
+          }
+        ],
+        "tcpPortRanges": [
+          "1012",
+          "1012"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1716562584",
+        "description": "app13.securitygeek.io",
+        "domainName": "app13.securitygeek.io",
+        "domainNames": [
+          "app13.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "DEFAULT",
+        "icmpAccessType": "NONE",
+        "id": "216196257331372696",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771284981",
+        "name": "app13",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1013",
+            "to": "1013"
+          }
+        ],
+        "tcpPortRanges": [
+          "1013",
+          "1013"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1717180475",
+        "description": "test",
+        "domainName": "app2.securitygeek.io",
+        "domainNames": [
+          "app2.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "NONE",
+        "icmpAccessType": "NONE",
+        "id": "216196257331372697",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": true,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771284959",
+        "name": "app02",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "22",
+            "to": "22"
+          }
+        ],
+        "tcpPortRanges": [
+          "22",
+          "22"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": true
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": true,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1717180495",
+        "domainName": "app3.securitygeek.io",
+        "domainNames": [
+          "app3.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "DEFAULT",
+        "icmpAccessType": "NONE",
+        "id": "216196257331372698",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": true,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771284959",
+        "name": "app03",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1003",
+            "to": "1003"
+          }
+        ],
+        "tcpPortRanges": [
+          "1003",
+          "1003"
+        ],
+        "useInDrMode": true,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1754344083",
+        "domainName": "app2.securitygeek.io",
+        "domainNames": [
+          "app2.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "NONE",
+        "icmpAccessType": "NONE",
+        "id": "216196257331383796",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771284990",
+        "name": "app14",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1014",
+            "to": "1014"
+          }
+        ],
+        "tcpPortRanges": [
+          "1014",
+          "1014"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1754344107",
+        "domainName": "app2.securitygeek.io",
+        "domainNames": [
+          "app2.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "NONE",
+        "icmpAccessType": "NONE",
+        "id": "216196257331383797",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771284990",
+        "name": "app15",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1015",
+            "to": "1015"
+          }
+        ],
+        "tcpPortRanges": [
+          "1015",
+          "1015"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1754344134",
+        "domainName": "app16.securitygeek.io",
+        "domainNames": [
+          "app16.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "NONE",
+        "icmpAccessType": "NONE",
+        "id": "216196257331383798",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771284991",
+        "name": "app16",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1016",
+            "to": "1016"
+          }
+        ],
+        "tcpPortRanges": [
+          "1016",
+          "1016"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1754344157",
+        "domainName": "app17.securitygeek.io",
+        "domainNames": [
+          "app17.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "NONE",
+        "icmpAccessType": "NONE",
+        "id": "216196257331383799",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771284991",
+        "name": "app17",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1017",
+            "to": "1017"
+          }
+        ],
+        "tcpPortRanges": [
+          "1017",
+          "1017"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1754344179",
+        "domainName": "app18.securitygeek.io",
+        "domainNames": [
+          "app18.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "NONE",
+        "icmpAccessType": "NONE",
+        "id": "216196257331383800",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771285000",
+        "name": "app18",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1018",
+            "to": "1018"
+          }
+        ],
+        "tcpPortRanges": [
+          "1018",
+          "1018"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1754344202",
+        "domainName": "app19.securitygeek.io",
+        "domainNames": [
+          "app19.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "NONE",
+        "icmpAccessType": "NONE",
+        "id": "216196257331383801",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771285001",
+        "name": "app19",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1019",
+            "to": "1019"
+          }
+        ],
+        "tcpPortRanges": [
+          "1019",
+          "1019"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1754344226",
+        "domainName": "app20.securitygeek.io",
+        "domainNames": [
+          "app20.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "NONE",
+        "icmpAccessType": "NONE",
+        "id": "216196257331383802",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771285001",
+        "name": "app20",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1020",
+            "to": "1020"
+          }
+        ],
+        "tcpPortRanges": [
+          "1020",
+          "1020"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1754344249",
+        "domainName": "app21.securitygeek.io",
+        "domainNames": [
+          "app21.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "NONE",
+        "icmpAccessType": "NONE",
+        "id": "216196257331383803",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771285010",
+        "name": "app21",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1021",
+            "to": "1021"
+          }
+        ],
+        "tcpPortRanges": [
+          "1021",
+          "1021"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1754344272",
+        "domainName": "app22.securitygeek.io",
+        "domainNames": [
+          "app22.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "NONE",
+        "icmpAccessType": "NONE",
+        "id": "216196257331383804",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771285011",
+        "name": "app22",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1022",
+            "to": "1022"
+          }
+        ],
+        "tcpPortRanges": [
+          "1022",
+          "1022"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1754344295",
+        "domainName": "app23.securitygeek.io",
+        "domainNames": [
+          "app23.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "NONE",
+        "icmpAccessType": "NONE",
+        "id": "216196257331383805",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771285011",
+        "name": "app23",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1023",
+            "to": "1023"
+          }
+        ],
+        "tcpPortRanges": [
+          "1023",
+          "1023"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1754344320",
+        "domainName": "app24.securitygeek.io",
+        "domainNames": [
+          "app24.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "NONE",
+        "icmpAccessType": "NONE",
+        "id": "216196257331383806",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771285012",
+        "name": "app24",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1024",
+            "to": "1024"
+          }
+        ],
+        "tcpPortRanges": [
+          "1024",
+          "1024"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1754344342",
+        "domainName": "app25.securitygeek.io",
+        "domainNames": [
+          "app25.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "NONE",
+        "icmpAccessType": "NONE",
+        "id": "216196257331383807",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771285021",
+        "name": "app25",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1025",
+            "to": "1025"
+          }
+        ],
+        "tcpPortRanges": [
+          "1025",
+          "1025"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1754344364",
+        "domainName": "app26.securitygeek.io",
+        "domainNames": [
+          "app26.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "NONE",
+        "icmpAccessType": "NONE",
+        "id": "216196257331383808",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771285021",
+        "name": "app26",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1026",
+            "to": "1026"
+          }
+        ],
+        "tcpPortRanges": [
+          "1026",
+          "1026"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1754344383",
+        "domainName": "app27.securitygeek.io",
+        "domainNames": [
+          "app27.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "NONE",
+        "icmpAccessType": "NONE",
+        "id": "216196257331383809",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771285022",
+        "name": "app27",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1027",
+            "to": "1027"
+          }
+        ],
+        "tcpPortRanges": [
+          "1027",
+          "1027"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1754344403",
+        "domainName": "app28.securitygeek.io",
+        "domainNames": [
+          "app28.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "NONE",
+        "icmpAccessType": "NONE",
+        "id": "216196257331383810",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771285022",
+        "name": "app28",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1028",
+            "to": "1028"
+          }
+        ],
+        "tcpPortRanges": [
+          "1028",
+          "1028"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1754344425",
+        "domainName": "app29.securitygeek.io",
+        "domainNames": [
+          "app29.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "NONE",
+        "icmpAccessType": "NONE",
+        "id": "216196257331383811",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771285031",
+        "name": "app29",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1029",
+            "to": "1029"
+          }
+        ],
+        "tcpPortRanges": [
+          "1029",
+          "1029"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      },
+      {
+        "adpEnabled": false,
+        "apiProtectionEnabled": false,
+        "autoAppProtectEnabled": false,
+        "bypassOnReauth": false,
+        "bypassType": "NEVER",
+        "configSpace": "DEFAULT",
+        "creationTime": "1754344447",
+        "domainName": "app30.securitygeek.io",
+        "domainNames": [
+          "app30.securitygeek.io"
+        ],
+        "doubleEncrypt": false,
+        "enabled": true,
+        "extranetEnabled": false,
+        "fqdnDnsCheck": false,
+        "healthCheckType": "NONE",
+        "icmpAccessType": "NONE",
+        "id": "216196257331383812",
+        "inspectTrafficWithZia": false,
+        "ipAnchored": false,
+        "matchStyle": "EXCLUSIVE",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1771285031",
+        "name": "app30",
+        "passiveHealthEnabled": true,
+        "policyStyle": "NONE",
+        "selectConnectorCloseToApp": false,
+        "tcpKeepAlive": "0",
+        "tcpPortRange": [
+          {
+            "from": "1030",
+            "to": "1030"
+          }
+        ],
+        "tcpPortRanges": [
+          "1030",
+          "1030"
+        ],
+        "useInDrMode": false,
+        "weightedLoadBalancing": false
+      }
+    ],
+    "configSpace": "DEFAULT",
+    "description": "Example100 test",
+    "enabled": true,
+    "id": "216196257331370167",
+    "microtenantName": "Default",
+    "modifiedBy": "216196257331281921",
+    "modifiedTime": "1747063244",
+    "name": "Example100",
+    "policyMigrated": true,
+    "readOnly": false,
+    "tcpKeepAliveEnabled": "0",
+    "zscalerManaged": false
+  },
+  {
+    "configSpace": "DEFAULT",
+    "creationTime": "1773370207",
+    "enabled": true,
+    "id": "216196257331404691",
+    "microtenantName": "Default",
+    "modifiedBy": "216196257331372705",
+    "modifiedTime": "1773370208",
+    "name": "tests-sg-vcr0001 Updated",
+    "policyMigrated": true,
+    "readOnly": false,
+    "tcpKeepAliveEnabled": "0",
+    "zscalerManaged": false
+  }
+]

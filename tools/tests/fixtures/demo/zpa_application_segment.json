@@ -1,0 +1,68 @@
+[
+  {
+    "adpEnabled": false,
+    "apiProtectionEnabled": false,
+    "autoAppProtectEnabled": false,
+    "bypassOnReauth": false,
+    "bypassType": "NEVER",
+    "configSpace": "DEFAULT",
+    "creationTime": "1773369874",
+    "description": "Updated vcr0007",
+    "domainNames": [
+      "tests-appsegment-vcr0006.bd-redhat.com"
+    ],
+    "doubleEncrypt": false,
+    "enabled": true,
+    "extranetEnabled": false,
+    "fqdnDnsCheck": false,
+    "healthCheckType": "DEFAULT",
+    "healthReporting": "ON_ACCESS",
+    "icmpAccessType": "NONE",
+    "id": "216196257331404639",
+    "inspectTrafficWithZia": false,
+    "ipAnchored": false,
+    "isCnameEnabled": true,
+    "isIncompleteDRConfig": false,
+    "matchStyle": "EXCLUSIVE",
+    "microtenantName": "Default",
+    "modifiedBy": "216196257331372705",
+    "modifiedTime": "1773369877",
+    "name": "tests-appsegment-vcr0006.bd-redhat.com",
+    "passiveHealthEnabled": true,
+    "policyStyle": "NONE",
+    "readOnly": false,
+    "segmentGroupId": "216196257331404637",
+    "segmentGroupName": "tests-appseg-vcr0003",
+    "selectConnectorCloseToApp": false,
+    "serverGroups": [
+      {
+        "configSpace": "DEFAULT",
+        "creationTime": "1773369874",
+        "description": "tests-appseg-vcr0005",
+        "dynamicDiscovery": true,
+        "enabled": false,
+        "extranetEnabled": false,
+        "id": "216196257331404638",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1773369874",
+        "name": "tests-appseg-vcr0004",
+        "passive": false,
+        "weight": "0"
+      }
+    ],
+    "tcpKeepAlive": "0",
+    "tcpPortRange": [
+      {
+        "from": "9002",
+        "to": "9002"
+      }
+    ],
+    "tcpPortRanges": [
+      "9002",
+      "9002"
+    ],
+    "useInDrMode": false,
+    "weightedLoadBalancing": false,
+    "zscalerManaged": false
+  }
+]

@@ -1,0 +1,231 @@
+[
+  {
+    "appConnectorGroups": [
+      {
+        "cityCountry": "San Jose, US",
+        "connectorGroupType": "APP",
+        "countryCode": "US",
+        "creationTime": "1698330410",
+        "description": "Example100",
+        "dnsQueryType": "IPV4_IPV6",
+        "enabled": true,
+        "id": "216196257331370194",
+        "location": "San Jose, CA, USA",
+        "lssAppConnectorGroup": false,
+        "modifiedBy": "216196257331281921",
+        "modifiedTime": "1745905872",
+        "name": "RHEL9 - Ottawa ZPA PSE - 1",
+        "overrideVersionProfile": true,
+        "praEnabled": false,
+        "tcpQuickAckApp": false,
+        "tcpQuickAckAssistant": false,
+        "tcpQuickAckReadAssistant": false,
+        "useInDrMode": false,
+        "versionProfileId": "2",
+        "wafDisabled": false
+      }
+    ],
+    "applications": [
+      {
+        "enabled": true,
+        "id": "216196257331370170",
+        "name": "app09"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331370171",
+        "name": "app04"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331370172",
+        "name": "app06"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331370175",
+        "name": "app11"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331370177",
+        "name": "app10"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331372536",
+        "name": "app05"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331372620",
+        "name": "app08"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331372621",
+        "name": "app07"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331372693",
+        "name": "app12"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331372696",
+        "name": "app13"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331372697",
+        "name": "app02"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331372698",
+        "name": "app03"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331383796",
+        "name": "app14"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331383797",
+        "name": "app15"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331383798",
+        "name": "app16"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331383799",
+        "name": "app17"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331383800",
+        "name": "app18"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331383801",
+        "name": "app19"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331383802",
+        "name": "app20"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331383803",
+        "name": "app21"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331383804",
+        "name": "app22"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331383805",
+        "name": "app23"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331383806",
+        "name": "app24"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331383807",
+        "name": "app25"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331383808",
+        "name": "app26"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331383809",
+        "name": "app27"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331383810",
+        "name": "app28"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331383811",
+        "name": "app29"
+      },
+      {
+        "enabled": true,
+        "id": "216196257331383812",
+        "name": "app30"
+      }
+    ],
+    "configSpace": "DEFAULT",
+    "creationTime": "1698164996",
+    "description": "Example100 test",
+    "dynamicDiscovery": true,
+    "enabled": true,
+    "extranetEnabled": false,
+    "id": "216196257331370169",
+    "ipAnchored": false,
+    "microtenantName": "Default",
+    "modifiedBy": "216196257331372702",
+    "modifiedTime": "1734772058",
+    "name": "Example100",
+    "readOnly": false,
+    "zscalerManaged": false
+  },
+  {
+    "appConnectorGroups": [
+      {
+        "cityCountry": "San Jose, US",
+        "connectorGroupType": "APP",
+        "countryCode": "US",
+        "creationTime": "1773370874",
+        "description": "tests-srvg-vcr0002",
+        "dnsQueryType": "IPV4_IPV6",
+        "enabled": true,
+        "id": "216196257331404707",
+        "location": "San Jose, CA, USA",
+        "lssAppConnectorGroup": false,
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1773370874",
+        "name": "tests-srvg-vcr0001",
+        "overrideVersionProfile": true,
+        "praEnabled": true,
+        "tcpQuickAckApp": true,
+        "tcpQuickAckAssistant": true,
+        "tcpQuickAckReadAssistant": true,
+        "useInDrMode": false,
+        "versionProfileId": "0",
+        "wafDisabled": false
+      }
+    ],
+    "configSpace": "DEFAULT",
+    "creationTime": "1773370874",
+    "description": "tests-srvg-vcr0002",
+    "dynamicDiscovery": true,
+    "enabled": false,
+    "extranetEnabled": false,
+    "id": "216196257331404708",
+    "ipAnchored": false,
+    "microtenantName": "Default",
+    "modifiedBy": "216196257331372705",
+    "modifiedTime": "1773370874",
+    "name": "tests-srvg-vcr0001 Updated",
+    "readOnly": false,
+    "zscalerManaged": false
+  }
+]

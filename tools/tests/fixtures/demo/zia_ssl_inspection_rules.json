@@ -1,0 +1,124 @@
+[
+  {
+    "accessControl": "READ_WRITE",
+    "action": {
+      "doNotDecryptSubActions": {
+        "blockSslTrafficWithNoSniEnabled": false,
+        "bypassOtherPolicies": true,
+        "ocspCheck": false
+      },
+      "overrideDefaultCertificate": false,
+      "showEUN": false,
+      "showEUNATP": false,
+      "type": "DO_NOT_DECRYPT"
+    },
+    "defaultRule": false,
+    "description": "Zscaler Recommended Exemptions Rule created during the company creation",
+    "endPointApplicationGroups": [],
+    "endPointApplications": [],
+    "id": 184200,
+    "lastModifiedBy": {
+      "id": 117810311,
+      "name": "REDACTED"
+    },
+    "lastModifiedTime": 1773325104,
+    "name": "Zscaler Recommended Exemptions",
+    "order": 1,
+    "predefined": true,
+    "rank": 7,
+    "roadWarriorForKerberos": false,
+    "state": "ENABLED",
+    "urlCategories": [
+      "GLOBAL_INT_GBL_SSL_BYPASS"
+    ]
+  },
+  {
+    "accessControl": "READ_WRITE",
+    "action": {
+      "doNotDecryptSubActions": {
+        "blockSslTrafficWithNoSniEnabled": false,
+        "bypassOtherPolicies": true,
+        "ocspCheck": false
+      },
+      "overrideDefaultCertificate": false,
+      "showEUN": false,
+      "showEUNATP": false,
+      "type": "DO_NOT_DECRYPT"
+    },
+    "defaultRule": false,
+    "endPointApplicationGroups": [],
+    "endPointApplications": [],
+    "id": 184201,
+    "lastModifiedBy": {
+      "id": 117810311,
+      "name": "REDACTED"
+    },
+    "lastModifiedTime": 1773325104,
+    "name": "Office 365 One Click",
+    "order": 2,
+    "predefined": true,
+    "rank": 7,
+    "roadWarriorForKerberos": false,
+    "state": "ENABLED",
+    "urlCategories": [
+      "GLOBAL_INT_OFC_SSL_BYPASS"
+    ]
+  },
+  {
+    "accessControl": "READ_WRITE",
+    "action": {
+      "doNotDecryptSubActions": {
+        "blockSslTrafficWithNoSniEnabled": false,
+        "bypassOtherPolicies": false,
+        "minTLSVersion": "SERVER_TLS_1_0",
+        "ocspCheck": false,
+        "serverCertificates": "ALLOW"
+      },
+      "overrideDefaultCertificate": false,
+      "showEUN": false,
+      "showEUNATP": false,
+      "type": "DO_NOT_DECRYPT"
+    },
+    "defaultRule": true,
+    "description": "Default SSL_TLS Inspection Rule created during the company creation",
+    "endPointApplicationGroups": [],
+    "endPointApplications": [],
+    "id": 184202,
+    "lastModifiedTime": 1619561356,
+    "name": "Default SSL_TLS Inspection Rule",
+    "order": -1,
+    "predefined": false,
+    "rank": 7,
+    "roadWarriorForKerberos": false,
+    "state": "ENABLED"
+  },
+  {
+    "accessControl": "READ_WRITE",
+    "action": {
+      "doNotDecryptSubActions": {
+        "blockSslTrafficWithNoSniEnabled": false,
+        "bypassOtherPolicies": true,
+        "ocspCheck": false
+      },
+      "overrideDefaultCertificate": false,
+      "showEUN": false,
+      "showEUNATP": false,
+      "type": "DO_NOT_DECRYPT"
+    },
+    "defaultRule": false,
+    "endPointApplicationGroups": [],
+    "endPointApplications": [],
+    "id": 449523,
+    "lastModifiedBy": {
+      "id": 117810311,
+      "name": "REDACTED"
+    },
+    "lastModifiedTime": 1773325104,
+    "name": "UCaaS One Click",
+    "order": 3,
+    "predefined": true,
+    "rank": 7,
+    "roadWarriorForKerberos": false,
+    "state": "DISABLED"
+  }
+]

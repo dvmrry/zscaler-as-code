@@ -1,0 +1,144 @@
+[
+  {
+    "accessControl": "READ_WRITE",
+    "actions": [
+      "ALLOW_STREAMING_VIEW_LISTEN",
+      "ALLOW_STREAMING_UPLOAD"
+    ],
+    "browserEunTemplateId": 0,
+    "cascadingEnabled": false,
+    "description": "Integration test rule (updated)",
+    "enforceTimeValidity": false,
+    "eunEnabled": false,
+    "eunTemplateId": 0,
+    "id": 1683688,
+    "lastModifiedBy": {
+      "id": 117810311,
+      "name": "REDACTED"
+    },
+    "lastModifiedTime": 1773269139,
+    "name": "test_web_app_rule_7df61828",
+    "order": 2,
+    "predefined": false,
+    "promptCaptureEnabled": false,
+    "rank": 7,
+    "state": "DISABLED",
+    "type": "STREAMING_MEDIA"
+  },
+  {
+    "accessControl": "READ_WRITE",
+    "actions": [
+      "ALLOW_STREAMING_VIEW_LISTEN",
+      "ALLOW_STREAMING_UPLOAD"
+    ],
+    "applications": [
+      "YOUTUBE",
+      "GOOGLE_STREAMING"
+    ],
+    "browserEunTemplateId": 0,
+    "cascadingEnabled": false,
+    "description": "tests-uubieammna",
+    "enforceTimeValidity": false,
+    "eunEnabled": false,
+    "eunTemplateId": 0,
+    "id": 1683689,
+    "lastModifiedBy": {
+      "id": 117810311,
+      "name": "REDACTED"
+    },
+    "lastModifiedTime": 1773269139,
+    "name": "test_dup_d996501e",
+    "order": 47,
+    "predefined": false,
+    "promptCaptureEnabled": false,
+    "rank": 7,
+    "state": "ENABLED",
+    "type": "STREAMING_MEDIA"
+  },
+  {
+    "accessControl": "READ_WRITE",
+    "actions": [
+      "ALLOW_STREAMING_VIEW_LISTEN",
+      "ALLOW_STREAMING_UPLOAD"
+    ],
+    "applications": [
+      "YOUTUBE",
+      "GOOGLE_STREAMING"
+    ],
+    "browserEunTemplateId": 0,
+    "cascadingEnabled": false,
+    "description": "tests-uubieammna",
+    "enforceTimeValidity": false,
+    "eunEnabled": false,
+    "eunTemplateId": 0,
+    "id": 1685362,
+    "lastModifiedBy": {
+      "id": 117810311,
+      "name": "REDACTED"
+    },
+    "lastModifiedTime": 1773269139,
+    "name": "test_dup_4a89e85c",
+    "order": 48,
+    "predefined": false,
+    "promptCaptureEnabled": false,
+    "rank": 7,
+    "state": "ENABLED",
+    "type": "STREAMING_MEDIA"
+  },
+  {
+    "accessControl": "READ_WRITE",
+    "actions": [
+      "ALLOW_STREAMING_VIEW_LISTEN",
+      "ALLOW_STREAMING_UPLOAD"
+    ],
+    "browserEunTemplateId": 0,
+    "cascadingEnabled": false,
+    "description": "Integration test rule (updated)",
+    "enforceTimeValidity": false,
+    "eunEnabled": false,
+    "eunTemplateId": 0,
+    "id": 1685432,
+    "lastModifiedBy": {
+      "id": 117810311,
+      "name": "REDACTED"
+    },
+    "lastModifiedTime": 1773269139,
+    "name": "test_web_app_rule_d45548b5",
+    "order": 1,
+    "predefined": false,
+    "promptCaptureEnabled": false,
+    "rank": 7,
+    "state": "DISABLED",
+    "type": "STREAMING_MEDIA"
+  },
+  {
+    "accessControl": "READ_WRITE",
+    "actions": [
+      "ALLOW_STREAMING_VIEW_LISTEN",
+      "ALLOW_STREAMING_UPLOAD"
+    ],
+    "applications": [
+      "YOUTUBE",
+      "GOOGLE_STREAMING"
+    ],
+    "browserEunTemplateId": 0,
+    "cascadingEnabled": false,
+    "description": "tests-uubieammna",
+    "enforceTimeValidity": false,
+    "eunEnabled": false,
+    "eunTemplateId": 0,
+    "id": 1685433,
+    "lastModifiedBy": {
+      "id": 117810311,
+      "name": "REDACTED"
+    },
+    "lastModifiedTime": 1773269139,
+    "name": "test_dup_a6ed8778",
+    "order": 49,
+    "predefined": false,
+    "promptCaptureEnabled": false,
+    "rank": 7,
+    "state": "ENABLED",
+    "type": "STREAMING_MEDIA"
+  }
+]

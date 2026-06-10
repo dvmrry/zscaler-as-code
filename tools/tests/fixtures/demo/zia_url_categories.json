@@ -1,0 +1,114 @@
+[
+  {
+    "categoryGroup": "REGULAR",
+    "configuredName": "Test Remove List",
+    "customCategory": true,
+    "customIpRangesCount": 0,
+    "customUrlsCount": 2,
+    "dbCategorizedUrls": [],
+    "editable": true,
+    "id": "CUSTOM_32",
+    "ipRangesRetainingParentCategoryCount": 0,
+    "superCategory": "USER_DEFINED",
+    "type": "URL_CATEGORY",
+    "urlType": "EXACT",
+    "urls": [
+      "remove2.com",
+      "remove1.com"
+    ],
+    "urlsRetainingParentCategoryCount": 0,
+    "val": 159
+  },
+  {
+    "categoryGroup": "REGULAR",
+    "configuredName": "Block Automation Hub Content",
+    "customCategory": true,
+    "customIpRangesCount": 0,
+    "customUrlsCount": 1,
+    "dbCategorizedUrls": [],
+    "editable": true,
+    "id": "CUSTOM_33",
+    "ipRangesRetainingParentCategoryCount": 0,
+    "superCategory": "USER_DEFINED",
+    "type": "URL_CATEGORY",
+    "urlType": "EXACT",
+    "urls": [
+      "automation.preview.zsapidocs.net"
+    ],
+    "urlsRetainingParentCategoryCount": 0,
+    "val": 160
+  },
+  {
+    "categoryGroup": "REGULAR",
+    "configuredName": "Test URL Category Updated 1772842055",
+    "customCategory": true,
+    "customIpRangesCount": 0,
+    "customUrlsCount": 1,
+    "dbCategorizedUrls": [
+      "brahms.com"
+    ],
+    "description": "Updated Description",
+    "editable": true,
+    "id": "CUSTOM_34",
+    "ipRangesRetainingParentCategoryCount": 0,
+    "keywords": [
+      "minecraft"
+    ],
+    "keywordsRetainingParentCategory": [],
+    "superCategory": "USER_DEFINED",
+    "type": "URL_CATEGORY",
+    "urlType": "EXACT",
+    "urls": [
+      "mozart.com"
+    ],
+    "urlsRetainingParentCategoryCount": 1,
+    "val": 161
+  },
+  {
+    "categoryGroup": "REGULAR",
+    "configuredName": "Test URL Category Updated 1773079439",
+    "customCategory": true,
+    "customIpRangesCount": 0,
+    "customUrlsCount": 1,
+    "dbCategorizedUrls": [
+      "brahms.com"
+    ],
+    "description": "Test URL Category 1773079430",
+    "editable": true,
+    "id": "CUSTOM_35",
+    "ipRangesRetainingParentCategoryCount": 0,
+    "keywords": [
+      "minecraft"
+    ],
+    "keywordsRetainingParentCategory": [],
+    "superCategory": "USER_DEFINED",
+    "type": "URL_CATEGORY",
+    "urlType": "EXACT",
+    "urls": [
+      "mozart.com"
+    ],
+    "urlsRetainingParentCategoryCount": 1,
+    "val": 162
+  },
+  {
+    "categoryGroup": "REGULAR",
+    "configuredName": "TestCategory_VCR",
+    "customCategory": true,
+    "customIpRangesCount": 0,
+    "customUrlsCount": 3,
+    "dbCategorizedUrls": [],
+    "description": "Updated test URL category",
+    "editable": true,
+    "id": "CUSTOM_36",
+    "ipRangesRetainingParentCategoryCount": 0,
+    "type": "URL_CATEGORY",
+    "urlType": "EXACT",
+    "urls": [
+      "test-vcr-url1.example.com",
+      "test-vcr-url2.example.com",
+      "test-vcr-url3.example.com"
+    ],
+    "urlsRetainingParentCategoryCount": 0,
+    "val": 163
+  }
+]
