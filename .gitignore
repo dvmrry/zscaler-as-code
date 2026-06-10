@@ -17,4 +17,6 @@ __pycache__/
 docs/superpowers/
 
 # Fetcher output — never commit real pulls
-pulls/*/
+pulls/*
+!pulls/README.md
+!pulls/.gitkeep

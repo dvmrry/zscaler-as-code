@@ -65,8 +65,13 @@ def _get_json(opener, url, headers, query):
     return json.loads(body.decode())
 
 
-def paginate_zia(opener, url, headers, query, page_size=1000):
-    """ZIA: page until a page returns fewer than page_size items."""
+def paginate_zia(opener, url, headers, query, page_size=1000, max_pages=100000):
+    """ZIA: page until a page returns fewer than page_size items.
+
+    max_pages is a runaway guard — a real API that always returns a full
+    page (total an exact multiple of page_size) would otherwise loop
+    forever. The default ceiling is far above any real ZIA result set.
+    """
     items = []
     page = 1
     while True:
@@ -78,6 +83,11 @@ def paginate_zia(opener, url, headers, query, page_size=1000):
         items.extend(batch)
         if len(batch) < page_size:
             return items
+        if page >= max_pages:
+            raise RuntimeError(
+                "ZIA %s exceeded max_pages=%d; aborting runaway pagination"
+                % (url, max_pages)
+            )
         page += 1
 
 

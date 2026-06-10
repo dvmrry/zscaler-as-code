@@ -34,6 +34,13 @@ class ObfuscateTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             obfuscate_api_key("short", "12345")
 
+    def test_varied_timestamp_vector(self):
+        # Hardcoded expected output (not mirror-derived): timestamp with
+        # varied trailing digits exercises 8 distinct key positions.
+        self.assertEqual(
+            obfuscate_api_key("abcdefghijklmnop", "1699987654"), "jihgfeglfkej"
+        )
+
 
 def _expected_obfuscation(api_key, ts):
     # Reference re-implementation, identical to obfuscate_api_key, used to
@@ -82,6 +89,15 @@ class PaginateZiaTest(unittest.TestCase):
     def test_empty_first_page(self):
         opener = FakeOpener({"https://x/u": [(200, [])]})
         self.assertEqual(paginate_zia(opener, "https://x/u", {}, {}, page_size=500), [])
+
+    def test_caps_runaway_pagination(self):
+        # An API that always returns a full page must not loop forever.
+        full = [{"id": str(n)} for n in range(2)]
+        opener = FakeOpener({
+            "https://x/u": [(200, list(full)) for _ in range(20)]
+        })
+        with self.assertRaises(RuntimeError):
+            paginate_zia(opener, "https://x/u", {}, {}, page_size=2, max_pages=5)
 
 
 class PaginateZpaTest(unittest.TestCase):
