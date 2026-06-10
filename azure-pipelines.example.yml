@@ -27,3 +27,14 @@ steps:
   #     terraformVersion: "1.15.4"
   - script: make validate
     displayName: Terraform format check
+  # Drift detection and env-root consistency are adopter concerns: scheduling,
+  # credential injection, and failure routing depend on your ADO setup. Two
+  # commented-out examples for reference:
+  #
+  # - script: make drift TENANT=<label>
+  #   displayName: Drift detection (scheduled pipeline; set ZSCALER_* env via library)
+  #   # exits 3 on drift — set continueOnError or wire a custom failure handler
+  #   # to notify the team; exits 2 if TENANT is unset.
+  #
+  # - script: make check-envs
+  #   displayName: Env-root consistency check (PR gate; fails on uncommitted drift)

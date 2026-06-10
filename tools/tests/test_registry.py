@@ -1,7 +1,7 @@
 """Tests for tools/registry.py."""
 import unittest
 
-from tools.registry import fetch_entry, generated_types, load_registry
+from tools.registry import fetch_entry, generated_types, load_registry, reload_registry
 
 
 class RegistryTest(unittest.TestCase):
@@ -38,3 +38,8 @@ class RegistryTest(unittest.TestCase):
         for rt in generated_types():
             self.assertIn(rt, load_registry())
         self.assertEqual(sorted(fetch.products_in_manifest()), ["zia", "zpa"])
+
+    def test_reload_registry(self):
+        reg = reload_registry()
+        self.assertEqual(reg, load_registry())
+        self.assertIn("zpa_segment_group", reg)

@@ -1,7 +1,7 @@
 PYTHON ?= python3
 TF     ?= terraform
 
-.PHONY: help env test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens test-envs validate-imports
+.PHONY: help env test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens test-envs validate-imports plan drift check-envs validate-config
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -101,6 +101,43 @@ validate-imports: ## Validate fixture import addresses against a tenant's roots 
 			echo "skip $$rt (no fixture imports)"; \
 		fi; \
 	done
+
+plan: ## Terraform plan for a tenant's roots (TENANT=<label> [RESOURCE=<type>]; real creds via env)
+	@test -n "$(TENANT)" || { echo "usage: make plan TENANT=<label> [RESOURCE=<type>]"; exit 2; }
+	@set -e; for d in envs/$(TENANT)/$(or $(RESOURCE),*)/; do \
+		rt=$$(basename $$d); \
+		vf="$(abspath config/$(TENANT))/$$rt.auto.tfvars.json"; \
+		test -f "$$vf" || { echo "skip $$rt (no $$vf)"; continue; }; \
+		echo "== plan $$rt"; \
+		$(TF) -chdir=$$d init -input=false > /dev/null; \
+		$(TF) -chdir=$$d plan -input=false -var-file="$$vf"; \
+	done
+
+drift: ## Fetch + transform + report config diff for a tenant (TENANT=<label>; real creds via env)
+	@test -n "$(TENANT)" || { echo "usage: make drift TENANT=<label>"; exit 2; }
+	$(MAKE) fetch TENANT=$(TENANT)
+	$(MAKE) transform IN=pulls/$(TENANT) TENANT=$(TENANT)
+	@if [ -n "$$(git status --porcelain config/$(TENANT) imports/$(TENANT) 2>/dev/null)" ]; then \
+		echo ""; echo "DRIFT DETECTED (tenant differs from committed config):"; \
+		git status --porcelain config/$(TENANT) imports/$(TENANT); \
+		git --no-pager diff --stat config/$(TENANT) 2>/dev/null; \
+		exit 3; \
+	else \
+		echo "no drift: tenant matches committed config"; \
+	fi
+
+check-envs: ## Regenerate committed tenants' env roots and fail on drift
+	@set -e; for t in $$(ls envs); do $(PYTHON) -m tools.gen_env "$$t" > /dev/null; done
+	@test -z "$$(git status --porcelain -- envs)" || { \
+		echo ""; echo "envs/ drifted from the generator output:"; \
+		git status --porcelain -- envs; \
+		echo "Run make gen-env for each tenant and commit."; exit 1; }
+
+validate-config: ## Validate config/ against generated JSON Schemas (dev-only; needs python jsonschema)
+	@$(PYTHON) -c "import jsonschema" 2>/dev/null || { \
+		echo "WARNING: python 'jsonschema' not installed - skipping config validation"; \
+		echo "(dev-only check; install via your package manager to enable)"; exit 0; }; \
+	$(PYTHON) -m tools.validate_config
 
 update-goldens: ## Re-bless generator golden fixtures from current output
 	$(PYTHON) -m tools.gen_module
