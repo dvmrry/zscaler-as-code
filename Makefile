@@ -23,6 +23,17 @@ test-floor: ## Run unit tests under Python 3.6 in Docker (optional dev check; ne
 validate: ## Terraform formatting checks
 	$(TF) fmt -check -recursive
 
-schemas: ## Re-extract provider schemas into schemas/provider/
+schemas: ## Re-extract provider schemas into schemas/provider/ (CHECK=1 fails on drift)
 	$(TF) -chdir=tools/schema-extract init -input=false
+	@echo "resolved provider versions:"
+	@grep -E '^provider|^  version' tools/schema-extract/.terraform.lock.hcl
 	$(TF) -chdir=tools/schema-extract providers schema -json | $(PYTHON) tools/extract_schemas.py
+ifeq ($(CHECK),1)
+	@git diff --exit-code --stat -- schemas/provider || { \
+		echo ""; \
+		echo "schemas/provider/ drifted from the committed dumps."; \
+		echo "Compare the resolved versions above with the pins in"; \
+		echo "tools/schema-extract/main.tf — version drift is the usual cause."; \
+		echo "Never hand-edit schemas/provider/; fix the pins and regenerate."; \
+		exit 1; }
+endif
