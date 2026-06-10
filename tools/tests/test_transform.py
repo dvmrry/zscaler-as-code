@@ -180,5 +180,28 @@ class PipelineTest(unittest.TestCase):
         )
 
 
+class GoldenTransformTest(unittest.TestCase):
+    def _roundtrip(self, resource_type):
+        base = os.path.join(
+            "tools", "tests", "fixtures", "transform", resource_type
+        )
+        with open(os.path.join(base, "api.json")) as f:
+            raw = json.load(f)
+        override = load_override(resource_type)
+        items, originals, _ = transform_items(raw, resource_type, override)
+        with open(os.path.join(base, "expected.auto.tfvars.json")) as f:
+            self.assertEqual(render_tfvars(items), f.read())
+        with open(os.path.join(base, "expected_imports.tf")) as f:
+            self.assertEqual(
+                render_imports(resource_type, originals, override), f.read()
+            )
+
+    def test_zpa_segment_group_golden(self):
+        self._roundtrip("zpa_segment_group")
+
+    def test_zia_url_categories_golden(self):
+        self._roundtrip("zia_url_categories")
+
+
 if __name__ == "__main__":
     unittest.main()

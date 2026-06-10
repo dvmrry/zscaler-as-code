@@ -1,0 +1,29 @@
+[
+  {
+    "id": "216199618143442001",
+    "name": "Example Group A",
+    "description": "Fictional sample group",
+    "enabled": true,
+    "configSpace": "DEFAULT",
+    "creationTime": "1700000000",
+    "modifiedBy": "216199618143442000",
+    "policyMigrated": true,
+    "tcpKeepAliveEnabled": "1",
+    "microtenantName": "Default",
+    "applications": [
+      {
+        "id": "216199618143442101",
+        "name": "Example App",
+        "domainNames": ["app.example.test"],
+        "enabled": true,
+        "doubleEncrypt": false
+      }
+    ]
+  },
+  {
+    "id": "216199618143442002",
+    "name": "Example Group B",
+    "enabled": false,
+    "applications": []
+  }
+]
