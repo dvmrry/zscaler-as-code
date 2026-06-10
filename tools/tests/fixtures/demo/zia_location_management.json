@@ -1,0 +1,345 @@
+[
+  {
+    "aupBlockInternetUntilAccepted": false,
+    "aupEnabled": false,
+    "aupForceSslInspection": false,
+    "aupTimeoutInDays": 0,
+    "authRequired": false,
+    "bcLocation": false,
+    "cautionEnabled": false,
+    "ccLocation": false,
+    "childCount": 0,
+    "cookiesAndProxy": false,
+    "country": "UNITED_STATES",
+    "defaultExtranetDns": false,
+    "defaultExtranetTsPool": false,
+    "description": "Location_20260227170256",
+    "digestAuthEnabled": false,
+    "dnBandwidth": 0,
+    "dynamiclocationGroups": [
+      {
+        "id": 24326829,
+        "name": "Server Traffic Group"
+      }
+    ],
+    "ecLocation": false,
+    "excludeFromDynamicGroups": false,
+    "excludeFromManualGroups": false,
+    "extranet": {
+      "id": 0
+    },
+    "extranetDns": {
+      "id": 0
+    },
+    "extranetIpPool": {
+      "id": 0
+    },
+    "geoOverride": false,
+    "id": 166873020,
+    "idleTimeInMinutes": 0,
+    "iotDiscoveryEnabled": false,
+    "iotEnforcePolicySet": false,
+    "ipsControl": true,
+    "jwtAuth": false,
+    "kerberosAuth": false,
+    "language": "NONE",
+    "latitude": 0.0,
+    "longitude": 0.0,
+    "matchInChild": false,
+    "name": "Location_20260227170256",
+    "nonEditable": false,
+    "ofwEnabled": true,
+    "otherSubLocation": false,
+    "parentId": 0,
+    "profile": "SERVER",
+    "sslScanEnabled": false,
+    "staticLocationGroups": [],
+    "surrogateIP": false,
+    "surrogateIPEnforcedForKnownBrowsers": false,
+    "surrogateRefreshTimeInMinutes": 0,
+    "tz": "UNITED_STATES_AMERICA_LOS_ANGELES",
+    "upBandwidth": 0,
+    "vpnCredentials": [
+      {
+        "comments": "Integration test UFQDN credential for location",
+        "fqdn": "REDACTED",
+        "id": 166873016,
+        "type": "UFQDN"
+      }
+    ],
+    "xffForwardEnabled": false,
+    "zappSslScanEnabled": false
+  },
+  {
+    "aupBlockInternetUntilAccepted": false,
+    "aupEnabled": false,
+    "aupForceSslInspection": false,
+    "aupTimeoutInDays": 0,
+    "authRequired": false,
+    "bcLocation": false,
+    "cautionEnabled": false,
+    "ccLocation": false,
+    "childCount": 0,
+    "cookiesAndProxy": false,
+    "country": "UNITED_STATES",
+    "defaultExtranetDns": false,
+    "defaultExtranetTsPool": false,
+    "description": "Location_20260302161529_updated",
+    "digestAuthEnabled": false,
+    "dnBandwidth": 0,
+    "dynamiclocationGroups": [
+      {
+        "id": 24326829,
+        "name": "Server Traffic Group"
+      }
+    ],
+    "ecLocation": false,
+    "excludeFromDynamicGroups": false,
+    "excludeFromManualGroups": false,
+    "extranet": {
+      "id": 0
+    },
+    "extranetDns": {
+      "id": 0
+    },
+    "extranetIpPool": {
+      "id": 0
+    },
+    "geoOverride": false,
+    "id": 167080684,
+    "idleTimeInMinutes": 0,
+    "iotDiscoveryEnabled": false,
+    "iotEnforcePolicySet": false,
+    "ipsControl": true,
+    "jwtAuth": false,
+    "kerberosAuth": false,
+    "language": "NONE",
+    "latitude": 0.0,
+    "longitude": 0.0,
+    "matchInChild": false,
+    "name": "Location_20260302161529",
+    "nonEditable": false,
+    "ofwEnabled": true,
+    "otherSubLocation": false,
+    "parentId": 0,
+    "profile": "SERVER",
+    "sslScanEnabled": false,
+    "staticLocationGroups": [],
+    "surrogateIP": false,
+    "surrogateIPEnforcedForKnownBrowsers": false,
+    "surrogateRefreshTimeInMinutes": 0,
+    "tz": "UNITED_STATES_AMERICA_LOS_ANGELES",
+    "upBandwidth": 0,
+    "vpnCredentials": [
+      {
+        "comments": "Integration test UFQDN credential for location",
+        "fqdn": "REDACTED",
+        "id": 167080678,
+        "type": "UFQDN"
+      }
+    ],
+    "xffForwardEnabled": false,
+    "zappSslScanEnabled": false
+  },
+  {
+    "aupBlockInternetUntilAccepted": false,
+    "aupEnabled": false,
+    "aupForceSslInspection": false,
+    "aupTimeoutInDays": 0,
+    "authRequired": false,
+    "bcLocation": false,
+    "cautionEnabled": false,
+    "ccLocation": false,
+    "childCount": 0,
+    "cookiesAndProxy": false,
+    "country": "UNITED_STATES",
+    "defaultExtranetDns": false,
+    "defaultExtranetTsPool": false,
+    "description": "Location_20260309104402",
+    "digestAuthEnabled": false,
+    "dnBandwidth": 0,
+    "dynamiclocationGroups": [
+      {
+        "id": 24326829,
+        "name": "Server Traffic Group"
+      }
+    ],
+    "ecLocation": false,
+    "excludeFromDynamicGroups": false,
+    "excludeFromManualGroups": false,
+    "extranet": {
+      "id": 0
+    },
+    "extranetDns": {
+      "id": 0
+    },
+    "extranetIpPool": {
+      "id": 0
+    },
+    "geoOverride": false,
+    "id": 167698587,
+    "idleTimeInMinutes": 0,
+    "iotDiscoveryEnabled": false,
+    "iotEnforcePolicySet": false,
+    "ipsControl": true,
+    "jwtAuth": false,
+    "kerberosAuth": false,
+    "language": "NONE",
+    "latitude": 0.0,
+    "longitude": 0.0,
+    "matchInChild": false,
+    "name": "Location_20260309104402",
+    "nonEditable": false,
+    "ofwEnabled": true,
+    "otherSubLocation": false,
+    "parentId": 0,
+    "profile": "SERVER",
+    "sslScanEnabled": false,
+    "staticLocationGroups": [],
+    "surrogateIP": false,
+    "surrogateIPEnforcedForKnownBrowsers": false,
+    "surrogateRefreshTimeInMinutes": 0,
+    "tz": "UNITED_STATES_AMERICA_LOS_ANGELES",
+    "upBandwidth": 0,
+    "vpnCredentials": [
+      {
+        "comments": "Integration test UFQDN credential for location",
+        "fqdn": "REDACTED",
+        "id": 167698584,
+        "type": "UFQDN"
+      }
+    ],
+    "xffForwardEnabled": false,
+    "zappSslScanEnabled": false
+  },
+  {
+    "aupBlockInternetUntilAccepted": false,
+    "aupEnabled": false,
+    "aupForceSslInspection": false,
+    "aupTimeoutInDays": 0,
+    "authRequired": false,
+    "bcLocation": false,
+    "cautionEnabled": false,
+    "ccLocation": true,
+    "childCount": 0,
+    "cookiesAndProxy": false,
+    "country": "CANADA",
+    "defaultExtranetDns": false,
+    "defaultExtranetTsPool": false,
+    "description": "163.29.63.139",
+    "digestAuthEnabled": false,
+    "dnBandwidth": 0,
+    "dynamiclocationGroups": [
+      {
+        "id": 59050241,
+        "name": "Workload Traffic Group"
+      }
+    ],
+    "ecLocation": true,
+    "excludeFromDynamicGroups": false,
+    "excludeFromManualGroups": false,
+    "extranet": {
+      "id": 0
+    },
+    "extranetDns": {
+      "id": 0
+    },
+    "extranetIpPool": {
+      "id": 0
+    },
+    "geoOverride": false,
+    "id": 36788941,
+    "idleTimeInMinutes": 0,
+    "iotDiscoveryEnabled": false,
+    "iotEnforcePolicySet": false,
+    "ipsControl": true,
+    "jwtAuth": false,
+    "kerberosAuth": false,
+    "language": "NONE",
+    "latitude": 0.0,
+    "longitude": 0.0,
+    "matchInChild": false,
+    "name": "AWS-CAN-ca-central-1-vpc-096108eb5d9e68d71",
+    "nonEditable": false,
+    "ofwEnabled": true,
+    "otherSubLocation": false,
+    "parentId": 0,
+    "profile": "WORKLOAD",
+    "sslScanEnabled": false,
+    "state": "British Columbia",
+    "staticLocationGroups": [],
+    "subLocScopeEnabled": true,
+    "surrogateIP": false,
+    "surrogateIPEnforcedForKnownBrowsers": false,
+    "surrogateRefreshTimeInMinutes": 0,
+    "tz": "CANADA_AMERICA_VANCOUVER",
+    "upBandwidth": 0,
+    "xffForwardEnabled": true,
+    "zappSslScanEnabled": false
+  },
+  {
+    "aupBlockInternetUntilAccepted": false,
+    "aupEnabled": false,
+    "aupForceSslInspection": false,
+    "aupTimeoutInDays": 0,
+    "authRequired": false,
+    "bcLocation": false,
+    "cautionEnabled": true,
+    "ccLocation": true,
+    "childCount": 0,
+    "cookiesAndProxy": false,
+    "country": "NONE",
+    "defaultExtranetDns": false,
+    "defaultExtranetTsPool": false,
+    "description": "et Ut ullamco",
+    "digestAuthEnabled": false,
+    "displayTimeUnit": "MINUTE",
+    "dnBandwidth": 0,
+    "dynamiclocationGroups": [
+      {
+        "id": 59050241,
+        "name": "Workload Traffic Group"
+      }
+    ],
+    "ecLocation": false,
+    "excludeFromDynamicGroups": true,
+    "excludeFromManualGroups": true,
+    "extranet": {
+      "id": 0
+    },
+    "extranetDns": {
+      "id": 0
+    },
+    "extranetIpPool": {
+      "id": 0
+    },
+    "geoOverride": false,
+    "id": 45772677,
+    "idleTimeInMinutes": 40594054,
+    "iotDiscoveryEnabled": false,
+    "iotEnforcePolicySet": false,
+    "ipsControl": true,
+    "jwtAuth": false,
+    "kerberosAuth": true,
+    "language": "NONE",
+    "latitude": 0.0,
+    "longitude": 0.0,
+    "matchInChild": false,
+    "name": "nostrud qui dolore",
+    "nonEditable": false,
+    "ofwEnabled": true,
+    "otherSubLocation": true,
+    "parentId": 0,
+    "profile": "WORKLOAD",
+    "sslScanEnabled": true,
+    "staticLocationGroups": [],
+    "surrogateIP": true,
+    "surrogateIPEnforcedForKnownBrowsers": true,
+    "surrogateRefreshTimeInMinutes": 79446126,
+    "surrogateRefreshTimeUnit": "HOUR",
+    "tz": "GMT",
+    "upBandwidth": 0,
+    "xffForwardEnabled": true,
+    "zappSslScanEnabled": false
+  }
+]
