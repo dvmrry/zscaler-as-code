@@ -1,0 +1,12 @@
+{
+  "zpa_segment_group": {
+    "product": "zpa",
+    "generate": true,
+    "fetch": {"path": "segmentGroup", "pagination": "zpa"}
+  },
+  "zia_url_categories": {
+    "product": "zia",
+    "generate": true,
+    "fetch": {"path": "urlCategories", "pagination": "zia", "query": {"customOnly": "true"}}
+  }
+}

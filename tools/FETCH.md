@@ -3,8 +3,8 @@
 Pulls detail-shaped Zscaler API JSON into `pulls/<tenant>/<type>.json`, the
 input to `make transform`. Runs with real credentials only in trusted
 environments; in this repo it is exercised against fictional canned
-responses. Per-resource endpoints are data in `tools/fetch_manifest.json`;
-adding a resource under an existing product is a manifest entry, no code.
+responses. Per-resource endpoints are data in `tools/registry.json`;
+adding a resource under an existing product is a registry entry, no code.
 
 ## Pipeline
 

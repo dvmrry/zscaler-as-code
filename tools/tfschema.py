@@ -35,7 +35,7 @@ def load_resource(resource_type):
     """Return the schema entry for one resource type.
 
     Raises KeyError for unknown prefixes or resource types so a typo in
-    tools/resources.txt fails the build instead of generating nothing.
+    tools/registry.json fails the build instead of generating nothing.
     """
     provider = _provider_for(resource_type)
     schemas = load_provider(provider)["resource_schemas"]

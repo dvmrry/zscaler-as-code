@@ -8,6 +8,7 @@ import json
 import os
 import subprocess
 import sys
+from tools.registry import generated_types
 from tools.tfschema import classify_attributes, hcl_type, load_resource
 
 
@@ -208,17 +209,6 @@ def render_test(resource_type, resource_schema):
 
 OVERRIDES_ROOT = os.path.join("tools", "overrides")
 MODULES_ROOT = "modules"
-RESOURCES_FILE = os.path.join("tools", "resources.txt")
-
-
-def read_resource_list(path):
-    out = []
-    with open(path) as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith("#"):
-                out.append(line)
-    return out
 
 
 def _fmt(text):
@@ -262,7 +252,7 @@ def generate_module(resource_type, out_root=MODULES_ROOT, overrides_root=OVERRID
 
 
 def main():
-    for resource_type in read_resource_list(RESOURCES_FILE):
+    for resource_type in generated_types():
         generate_module(resource_type)
 
 

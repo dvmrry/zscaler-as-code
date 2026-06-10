@@ -1,3 +1,0 @@
-# Resource types the generator builds modules for — one per line.
-# Adding a module = adding a line and running: make generate
-zpa_segment_group

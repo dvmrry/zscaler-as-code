@@ -1,6 +1,6 @@
 """Generate JSON Schemas for tfvars config files from provider dumps.
 
-One schema per resource type in tools/resources.txt, written to
+One schema per resource type in tools/registry.json, written to
 schemas/tfvars/<type>.schema.json — used for editor autocomplete and CI
 validation of config/. Authoring-side; output committed. Stdlib-only,
 Python 3.6-floor — see AGENTS.md rule 5.
@@ -9,7 +9,7 @@ import json
 import os
 import sys
 
-from tools.gen_module import read_resource_list, RESOURCES_FILE
+from tools.registry import generated_types
 from tools.tfschema import classify_attributes, json_schema_type, load_resource
 
 OUT_DIR = os.path.join("schemas", "tfvars")
@@ -52,7 +52,7 @@ def build_schema(resource_type, resource_schema):
 
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
-    for resource_type in read_resource_list(RESOURCES_FILE):
+    for resource_type in generated_types():
         schema = build_schema(resource_type, load_resource(resource_type))
         path = os.path.join(OUT_DIR, resource_type + ".schema.json")
         with open(path, "w") as f:

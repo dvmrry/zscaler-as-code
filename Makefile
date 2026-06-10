@@ -52,7 +52,7 @@ endif
 
 transform: ## Transform pulled API JSON into tfvars + imports (IN=<dir> TENANT=<name>)
 	@test -n "$(IN)" -a -n "$(TENANT)" || { echo "usage: make transform IN=pulls/<tenant> TENANT=<tenant>"; exit 2; }
-	@for rt in $$(grep -vE '^\s*(#|$$)' tools/resources.txt); do \
+	@for rt in $$($(PYTHON) -c "from tools.registry import generated_types; print('\n'.join(generated_types()))"); do \
 		if [ -f "$(IN)/$$rt.json" ]; then \
 			$(PYTHON) -m tools.transform "$$rt" "$(IN)/$$rt.json" "$(TENANT)" || exit 1; \
 		else \

@@ -4,7 +4,7 @@ import shutil
 import tempfile
 import unittest
 
-from tools.gen_module import render_main, render_variables, render_outputs, render_readme, render_test, render_sample, render_versions, generate_module, read_resource_list
+from tools.gen_module import render_main, render_variables, render_outputs, render_readme, render_test, render_sample, render_versions, generate_module
 from tools.tfschema import load_resource
 
 EXPECTED_SEGMENT_GROUP_VARIABLES = '''\
@@ -166,14 +166,6 @@ class GenerateModuleTest(unittest.TestCase):
             generate_module("zpa_segment_group", out_root=os.path.join(td, "mod"), overrides_root=os.path.join(td, "ov"), fmt=False)
             with open(os.path.join(td, "mod", "zpa_segment_group", "main.tf")) as f:
                 self.assertEqual(f.read(), "# OVERRIDE\n")
-
-    def test_resource_list_skips_comments(self):
-        with tempfile.TemporaryDirectory() as td:
-            path = os.path.join(td, "resources.txt")
-            with open(path, "w") as f:
-                f.write("# comment\n\nzpa_segment_group\n")
-            self.assertEqual(read_resource_list(path), ["zpa_segment_group"])
-
 
 class GoldenTest(unittest.TestCase):
     GOLDENS = [
