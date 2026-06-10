@@ -1,0 +1,35 @@
+[
+  {
+    "id": "216199618143550001",
+    "name": "Fictional Server Group Alpha",
+    "description": "Fictional sample server group for testing",
+    "enabled": true,
+    "dynamicDiscovery": false,
+    "configSpace": "DEFAULT",
+    "creationTime": "1700100000",
+    "modifiedBy": "216199618143440000",
+    "modifiedTime": "1700200000",
+    "appConnectorGroups": [
+      {
+        "id": "216199618143660001",
+        "name": "Fictional Connector Group 1",
+        "enabled": true,
+        "location": "fictional-dc-east"
+      }
+    ],
+    "servers": [
+      {
+        "id": "216199618143770001",
+        "name": "fictional-server-01.example.test",
+        "address": "10.0.1.10",
+        "enabled": true
+      },
+      {
+        "id": "216199618143770002",
+        "name": "fictional-server-02.example.test",
+        "address": "10.0.1.11",
+        "enabled": true
+      }
+    ]
+  }
+]
