@@ -61,6 +61,21 @@ def render_env_readme(resource_type, tenant):
     )
 
 
+def render_env_test(resource_type, tenant):
+    provider = _provider_of(resource_type)
+    return (
+        "# GENERATED smoke test — the root composes and plans against a\n"
+        "# mocked provider; no credentials. Regenerate: make gen-env TENANT=%s\n"
+        'mock_provider "%s" {}\n\n'
+        'run "empty_plan" {\n'
+        "  command = plan\n\n"
+        "  variables {\n"
+        "    items = {}\n"
+        "  }\n"
+        "}\n" % (tenant, provider)
+    )
+
+
 def _fmt(text):
     proc = subprocess.run(
         ["terraform", "fmt", "-"], input=text.encode(), stdout=subprocess.PIPE, check=True
@@ -77,9 +92,17 @@ def generate_env(tenant, out_root=ENVS_ROOT, fmt=True):
             main_text = _fmt(main_text)
         with open(os.path.join(base, "main.tf"), "w") as f:
             f.write(main_text)
+        sys.stderr.write("wrote %s\n" % os.path.join(base, "main.tf"))
         with open(os.path.join(base, "README.md"), "w") as f:
             f.write(render_env_readme(resource_type, tenant))
-        sys.stderr.write("wrote %s\n" % os.path.join(base, "main.tf"))
+        tests_dir = os.path.join(base, "tests")
+        os.makedirs(tests_dir, exist_ok=True)
+        test_text = render_env_test(resource_type, tenant)
+        if fmt:
+            test_text = _fmt(test_text)
+        with open(os.path.join(tests_dir, "smoke.tftest.hcl"), "w") as f:
+            f.write(test_text)
+        sys.stderr.write("wrote %s\n" % os.path.join(tests_dir, "smoke.tftest.hcl"))
 
 
 def main(argv=None):

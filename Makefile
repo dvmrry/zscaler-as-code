@@ -1,7 +1,7 @@
 PYTHON ?= python3
 TF     ?= terraform
 
-.PHONY: help env test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens
+.PHONY: help env test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens test-envs validate-imports
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -77,6 +77,30 @@ fetch: ## Pull API JSON into pulls/<tenant> (TENANT=<name>; needs ZSCALER_*/ZIA_
 
 fetch-diag: ## Probe TLS to the fetcher's hosts under system trust and +bundle
 	$(PYTHON) -m tools.fetch --diag
+
+test-envs: ## Run mock-provider smoke tests across a tenant's env roots (TENANT=<label>)
+	@test -n "$(TENANT)" || { echo "usage: make test-envs TENANT=<label>"; exit 2; }
+	@set -e; for d in envs/$(TENANT)/*/; do \
+		echo "== $$d"; \
+		$(TF) -chdir=$$d init -backend=false -input=false > /dev/null; \
+		$(TF) -chdir=$$d test; \
+	done
+
+validate-imports: ## Validate fixture import addresses against a tenant's roots (TENANT=<label>)
+	@test -n "$(TENANT)" || { echo "usage: make validate-imports TENANT=<label>"; exit 2; }
+	@set -e; for d in envs/$(TENANT)/*/; do \
+		rt=$$(basename $$d); \
+		fix="tools/tests/fixtures/transform/$$rt/expected_imports.tf"; \
+		if [ -f "$$fix" ]; then \
+			cp "$$fix" "$$d/imports_check.tf"; \
+			$(TF) -chdir=$$d init -backend=false -input=false > /dev/null; \
+			$(TF) -chdir=$$d validate || { rm -f "$$d/imports_check.tf"; exit 1; }; \
+			rm -f "$$d/imports_check.tf"; \
+			echo "imports ok: $$rt"; \
+		else \
+			echo "skip $$rt (no fixture imports)"; \
+		fi; \
+	done
 
 update-goldens: ## Re-bless generator golden fixtures from current output
 	$(PYTHON) -m tools.gen_module

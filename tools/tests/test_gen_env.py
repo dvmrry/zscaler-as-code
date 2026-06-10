@@ -3,7 +3,7 @@ import os
 import tempfile
 import unittest
 
-from tools.gen_env import render_env_main
+from tools.gen_env import render_env_main, render_env_test
 
 
 class RenderEnvMainTest(unittest.TestCase):
@@ -36,6 +36,28 @@ class GenerateEnvTest(unittest.TestCase):
             base = os.path.join(td, "zs2", "zpa_segment_group")
             self.assertTrue(os.path.exists(os.path.join(base, "main.tf")))
             self.assertTrue(os.path.exists(os.path.join(base, "README.md")))
+
+
+class RenderEnvTestTest(unittest.TestCase):
+    def test_mock_provider_matches_product(self):
+        out = render_env_test("zpa_segment_group", "zs2")
+        self.assertIn('mock_provider "zpa" {}', out)
+        self.assertIn("command = plan", out)
+        self.assertIn("items = {}", out)
+
+    def test_zia_mock(self):
+        out = render_env_test("zia_url_categories", "zs2")
+        self.assertIn('mock_provider "zia" {}', out)
+
+
+class GenerateEnvWritesTest(unittest.TestCase):
+    def test_writes_smoke_test(self):
+        from tools.gen_env import generate_env
+        with tempfile.TemporaryDirectory() as td:
+            generate_env("zs2", out_root=td, fmt=False)
+            self.assertTrue(os.path.exists(os.path.join(
+                td, "zs2", "zpa_segment_group", "tests", "smoke.tftest.hcl"
+            )))
 
 
 if __name__ == "__main__":
