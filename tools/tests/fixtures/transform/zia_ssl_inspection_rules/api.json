@@ -1,0 +1,35 @@
+[
+  {
+    "id": 2001,
+    "name": "Decrypt Finance Traffic",
+    "order": 1,
+    "state": "ENABLED",
+    "rank": 7,
+    "description": "Fictional SSL inspection rule for finance apps",
+    "ruleId": 9800,
+    "action": {
+      "type": "DECRYPT",
+      "overrideDefaultCertificate": false,
+      "showEun": true,
+      "decryptSubActions": [
+        {
+          "ocspCheck": true,
+          "serverCertificates": "BLOCK",
+          "minClientTlsVersion": "TLS_1_2",
+          "minServerTlsVersion": "TLS_1_2",
+          "http2Enabled": false,
+          "blockUndecrypt": false,
+          "blockSslTrafficWithNoSniEnabled": true
+        }
+      ]
+    }
+  },
+  {
+    "id": 2002,
+    "name": "Bypass Internal Apps",
+    "order": 2,
+    "state": "ENABLED",
+    "rank": 5,
+    "ruleId": 9801
+  }
+]

@@ -281,6 +281,15 @@ class GoldenTransformTest(unittest.TestCase):
     def test_zpa_application_segment_golden(self):
         self._roundtrip("zpa_application_segment")
 
+    def test_zia_location_management_golden(self):
+        self._roundtrip("zia_location_management")
+
+    def test_zia_ssl_inspection_rules_golden(self):
+        self._roundtrip("zia_ssl_inspection_rules")
+
+    def test_zia_cloud_app_control_rule_golden(self):
+        self._roundtrip("zia_cloud_app_control_rule")
+
 
 if __name__ == "__main__":
     unittest.main()

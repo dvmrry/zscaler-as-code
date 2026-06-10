@@ -1,0 +1,28 @@
+[
+  {
+    "id": 1001,
+    "name": "HQ Office",
+    "description": "Fictional headquarters location",
+    "country": "UNITED_STATES",
+    "tz": "US_MOUNTAIN_TIME",
+    "ipAddresses": ["203.0.113.10", "203.0.113.11"],
+    "upBandwidth": 5000,
+    "dnBandwidth": 20000,
+    "state": "ACTIVE",
+    "comments": "created by provisioning script",
+    "locationId": 9900
+  },
+  {
+    "id": 1002,
+    "name": "Branch East",
+    "description": "Fictional east coast branch",
+    "country": "UNITED_STATES",
+    "tz": "US_EASTERN_TIME",
+    "ipAddresses": ["198.51.100.20"],
+    "upBandwidth": 1000,
+    "dnBandwidth": 5000,
+    "state": "ACTIVE",
+    "comments": "auto-provisioned",
+    "locationId": 9901
+  }
+]
