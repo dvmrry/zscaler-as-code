@@ -1,7 +1,7 @@
 """Tests for tools/transform.py. All fixture data is fictional."""
 import unittest
 
-from tools.transform import coerce_item, filter_item, slugify, snake, snake_keys
+from tools.transform import apply_overrides, coerce_item, derive_key, filter_item, load_override, slugify, snake, snake_keys
 from tools.tfschema import load_resource
 
 
@@ -107,6 +107,33 @@ class CoerceTest(unittest.TestCase):
         item = {"applications": [{"id": 123}]}
         out = coerce_item(item, rs["block"])
         self.assertEqual(out["applications"], [{"id": "123"}])
+
+
+class OverrideTest(unittest.TestCase):
+    def test_missing_override_is_empty(self):
+        self.assertEqual(load_override("zpa_segment_group"), {})
+
+    def test_renames_and_drop_if_default(self):
+        ov = {"renames": {"old_name": "new_name"}, "drop_if_default": {"flag": False}}
+        item = {"old_name": "v", "flag": False, "keep": 1}
+        self.assertEqual(apply_overrides(item, ov), {"new_name": "v", "keep": 1})
+
+    def test_forced_reference(self):
+        ov = {"references": {"server_groups": True}}
+        item = {"server_groups": [{"id": "9", "name": "g"}]}
+        self.assertEqual(apply_overrides(item, ov), {"server_groups": ["9"]})
+
+
+class DeriveKeyTest(unittest.TestCase):
+    def test_default_name_slug(self):
+        self.assertEqual(derive_key({"name": "Example Group A"}, {}), "example_group_a")
+
+    def test_override_key_field(self):
+        self.assertEqual(derive_key({"vanity_domain": "X-1"}, {"key_field": "vanity_domain"}), "x_1")
+
+    def test_missing_key_field_raises(self):
+        with self.assertRaises(KeyError):
+            derive_key({"description": "no name"}, {})
 
 
 if __name__ == "__main__":

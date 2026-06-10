@@ -134,3 +134,43 @@ def coerce_item(item, block):
         else:
             out[key] = value
     return out
+
+
+OVERRIDES_DIR = os.path.join("tools", "overrides")
+
+
+def load_override(resource_type):
+    path = os.path.join(OVERRIDES_DIR, resource_type + ".json")
+    if not os.path.exists(path):
+        return {}
+    with open(path) as f:
+        return json.load(f)
+
+
+def apply_overrides(item, override):
+    """Renames, forced reference unwrapping, drop-if-default. Post-snake,
+    pre-filter, so renamed fields are filtered under their schema names."""
+    out = dict(item)
+    for old, new in sorted((override.get("renames") or {}).items()):
+        if old in out:
+            out[new] = out.pop(old)
+    for field in sorted(override.get("references") or {}):
+        if field in out:
+            value = out[field]
+            if isinstance(value, list):
+                out[field] = [_unwrap_ref(v) for v in value]
+            else:
+                out[field] = _unwrap_ref(value)
+    for field, default in sorted((override.get("drop_if_default") or {}).items()):
+        if field in out and out[field] == default:
+            del out[field]
+    return out
+
+
+def derive_key(item, override):
+    field = override.get("key_field", "name")
+    if field not in item:
+        raise KeyError(
+            "key field %r missing from item; set key_field in the override map" % field
+        )
+    return slugify(str(item[field]))
