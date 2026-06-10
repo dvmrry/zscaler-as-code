@@ -4,6 +4,7 @@ Authoring-side tool: runs here via `make generate`, output is committed.
 Consuming environments never run it. Stdlib-only, Python 3.6-floor syntax
 — see AGENTS.md rules 5-7.
 """
+import json
 from tools.tfschema import classify_attributes, hcl_type, load_resource
 
 
@@ -99,4 +100,59 @@ def render_variables(resource_type, resource_schema):
         + '  description = "%s instances, keyed by a stable identifier."\n'
         % resource_type
         + "  type = map(object({\n%s\n  }))\n}\n" % "\n".join(lines)
+    )
+
+
+_SAMPLE_VALUES = {"string": "example", "bool": True, "number": 1}
+
+
+def render_outputs(resource_type, resource_schema):
+    attrs = resource_schema["block"].get("attributes") or {}
+    out = (
+        _header(resource_type, _provider_of(resource_type))
+        + 'output "items" {\n'
+        + '  description = "All managed %s resources, keyed as in var.items."\n'
+        % resource_type
+        + "  value = %s.this\n}\n" % resource_type
+    )
+    if "name" in attrs and "id" in attrs:
+        out += (
+            '\noutput "name_to_id" {\n'
+            + '  description = "Map of resource name to provider-assigned id."\n'
+            + "  value = { for k, v in %s.this : v.name => v.id }\n}\n" % resource_type
+        )
+    return out
+
+
+def render_readme(resource_type, resource_schema):
+    return (
+        "# %s (generated module)\n\n"
+        "Manages `%s` via a typed `items` map. GENERATED — do not edit by\n"
+        "hand (AGENTS.md rule 6). Regenerate: `make generate`. Test:\n"
+        "`terraform -chdir=modules/%s test`.\n"
+        % (resource_type, resource_type, resource_type)
+    )
+
+
+def render_sample(resource_type, resource_schema):
+    cls = classify_attributes(resource_schema["block"])
+    item = {}
+    for name in cls["required"]:
+        enc = resource_schema["block"]["attributes"][name]["type"]
+        item[name] = _SAMPLE_VALUES.get(enc, "example") if isinstance(enc, str) else []
+    return json.dumps({"items": {"example": item}}, indent=2, sort_keys=True) + "\n"
+
+
+def render_test(resource_type, resource_schema):
+    provider = _provider_of(resource_type)
+    return (
+        "# GENERATED smoke test — plan against a mocked provider; no credentials.\n"
+        'mock_provider "%s" {}\n\n'
+        "run \"defaults_plan\" {\n"
+        "  command = plan\n\n"
+        "  assert {\n"
+        "    condition     = length(var.items) == 1\n"
+        '    error_message = "sample fixture must contain exactly one item"\n'
+        "  }\n"
+        "}\n" % provider
     )

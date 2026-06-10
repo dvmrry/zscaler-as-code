@@ -1,7 +1,7 @@
 """Tests for tools/gen_module.py renderers, pinned to the committed dumps."""
 import unittest
 
-from tools.gen_module import render_main, render_variables
+from tools.gen_module import render_main, render_variables, render_outputs, render_readme, render_test, render_sample
 from tools.tfschema import load_resource
 
 EXPECTED_SEGMENT_GROUP_VARIABLES = '''\
@@ -96,6 +96,41 @@ class RenderMainTest(unittest.TestCase):
         self.assertIn(
             "for_each = each.value.settings == null ? [] : [each.value.settings]", out
         )
+
+
+class RenderRestTest(unittest.TestCase):
+    def test_outputs_exact(self):
+        rs = load_resource("zpa_segment_group")
+        out = render_outputs("zpa_segment_group", rs)
+        self.assertIn('output "items" {', out)
+        self.assertIn("value = zpa_segment_group.this", out)
+        self.assertIn('output "name_to_id" {', out)
+        self.assertIn(
+            "value = { for k, v in zpa_segment_group.this : v.name => v.id }", out
+        )
+
+    def test_outputs_omits_name_map_without_name(self):
+        fake = {"block": {"attributes": {"id": {"type": "string", "computed": True}}}}
+        out = render_outputs("zia_fake", fake)
+        self.assertNotIn("name_to_id", out)
+
+    def test_readme_mentions_regeneration(self):
+        rs = load_resource("zpa_segment_group")
+        out = render_readme("zpa_segment_group", rs)
+        self.assertIn("make generate", out)
+        self.assertIn("zpa_segment_group", out)
+
+    def test_sample_has_required_attrs_only(self):
+        rs = load_resource("zpa_segment_group")
+        sample = render_sample("zpa_segment_group", rs)
+        self.assertEqual(sample, '{\n  "items": {\n    "example": {\n      "name": "example"\n    }\n  }\n}\n')
+
+    def test_test_skeleton_uses_mock_provider(self):
+        rs = load_resource("zpa_segment_group")
+        out = render_test("zpa_segment_group", rs)
+        self.assertIn('mock_provider "zpa" {}', out)
+        self.assertIn("command = plan", out)
+        self.assertIn("length(var.items) == 1", out)
 
 
 if __name__ == "__main__":
