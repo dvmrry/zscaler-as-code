@@ -9,3 +9,11 @@ run "empty_plan" {
     items = {}
   }
 }
+
+run "config_plan" {
+  command = plan
+
+  variables {
+    items = jsondecode(file("../../../config/zs2/zpa_segment_group.auto.tfvars.json")).items
+  }
+}

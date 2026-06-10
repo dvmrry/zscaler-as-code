@@ -17,5 +17,10 @@ perma-diff suppression), `import_id` (format template over the item's
 snake_cased original fields, default `"{id}"`), `acknowledged_drops`
 (list of dotted drop paths that are expected/known-unmanageable — suppressed
 from the drop report so only new provider-coverage surprises surface; the
-fields are still removed from the generated tfvars). Exceptions are data,
-not code: prefer an entry here over editing the transform.
+fields are still removed from the generated tfvars), `skip_if` (list of
+matchers; each matcher is a dict of field→value; an item is excluded
+entirely when any matcher's pairs all match the snake_cased raw item —
+use this for system/predefined objects the provider refuses to manage, e.g.
+`"skip_if": [{"default_rule": true}]` drops any item where `default_rule`
+is `true`). Exceptions are data, not code: prefer an entry here over
+editing the transform.

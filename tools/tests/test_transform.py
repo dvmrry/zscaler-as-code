@@ -291,5 +291,36 @@ class GoldenTransformTest(unittest.TestCase):
         self._roundtrip("zia_cloud_app_control_rule")
 
 
+class SkipIfTest(unittest.TestCase):
+    def test_matching_item_skipped_and_reported(self):
+        raw = [
+            {"id": "1", "name": "Default Rule", "defaultRule": True},
+            {"id": "2", "name": "Custom Rule", "defaultRule": False},
+        ]
+        override = {"skip_if": [{"default_rule": True}]}
+        old = sys.stderr
+        sys.stderr = io.StringIO()
+        try:
+            items, originals, _ = transform_items(raw, "zpa_segment_group", override)
+            err = sys.stderr.getvalue()
+        finally:
+            sys.stderr = old
+        self.assertEqual(sorted(items), ["custom_rule"])
+        self.assertNotIn("default_rule", items)
+        self.assertIn("skipped", err)
+        self.assertIn("Default Rule", err)
+
+    def test_matcher_requires_all_pairs(self):
+        raw = [{"id": "1", "name": "A", "predefined": True, "order": 5}]
+        override = {"skip_if": [{"predefined": True, "order": -1}]}
+        items, _, _ = transform_items(raw, "zpa_segment_group", override)
+        self.assertIn("a", items)  # order!=-1 so the AND-matcher misses
+
+    def test_no_skip_if_is_noop(self):
+        raw = [{"id": "1", "name": "A"}]
+        items, _, _ = transform_items(raw, "zpa_segment_group", {})
+        self.assertIn("a", items)
+
+
 if __name__ == "__main__":
     unittest.main()

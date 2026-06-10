@@ -1,5 +1,5 @@
 # GENERATED smoke test — the root composes and plans against a
-# mocked provider; no credentials. Regenerate: make gen-env TENANT=zs2
+# mocked provider; no credentials. Regenerate: make gen-env TENANT=demo
 mock_provider "zia" {}
 
 run "empty_plan" {
@@ -14,6 +14,6 @@ run "config_plan" {
   command = plan
 
   variables {
-    items = jsondecode(file("../../../config/zs2/zia_url_categories.auto.tfvars.json")).items
+    items = jsondecode(file("../../../config/demo/zia_cloud_app_control_rule.auto.tfvars.json")).items
   }
 }

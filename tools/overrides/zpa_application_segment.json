@@ -1,3 +1,4 @@
 {
-  "import_id": "{id}"
+  "import_id": "{id}",
+  "drop_if_default": {"policy_style": "NONE"}
 }

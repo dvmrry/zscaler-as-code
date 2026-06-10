@@ -1,7 +1,7 @@
 PYTHON ?= python3
 TF     ?= terraform
 
-.PHONY: help env test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens test-modules test-envs validate-imports plan drift check-envs validate-config
+.PHONY: help env test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens test-modules test-envs validate-imports plan drift check-envs validate-config demo check-demo
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -143,6 +143,20 @@ check-envs: ## Regenerate committed tenants' env roots and fail on drift
 		echo ""; echo "envs/ drifted from the generator output:"; \
 		git status --porcelain -- envs; \
 		echo "Run make gen-env for each tenant and commit."; exit 1; }
+
+demo: ## Materialize the demo tenant from the public demo dataset (config/demo + imports/demo)
+	@set -e; for rt in $$($(PYTHON) -c "from tools.registry import generated_types; print('\n'.join(generated_types()))"); do \
+		f="tools/tests/fixtures/demo/$$rt.json"; \
+		test -f "$$f" || { echo "missing $$f"; exit 1; }; \
+		$(PYTHON) -m tools.transform "$$rt" "$$f" demo; \
+	done
+
+check-demo: ## Fail if the committed demo tenant drifts from the pipeline output
+	$(MAKE) demo > /dev/null 2>&1
+	@test -z "$$(git status --porcelain -- config/demo imports/demo)" || { \
+		echo ""; echo "demo tenant drifted from pipeline output over the demo dataset:"; \
+		git status --porcelain -- config/demo imports/demo; \
+		echo "Run 'make demo' and commit (or fix the regression it reveals)."; exit 1; }
 
 validate-config: ## Validate config/ against generated JSON Schemas (dev-only; jsonschema via python or uv)
 	@if $(PYTHON) -c "import jsonschema" 2>/dev/null; then \

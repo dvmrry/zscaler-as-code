@@ -172,6 +172,16 @@ def apply_overrides(item, override):
     return out
 
 
+def _skip_item(snake_raw, override):
+    """True when any skip_if matcher fully matches the snake_cased raw
+    item. skip_if is the item-level exclusion for unmanageable system
+    objects (e.g. predefined default rules the provider refuses)."""
+    for matcher in override.get("skip_if") or []:
+        if all(snake_raw.get(f) == v for f, v in matcher.items()):
+            return True
+    return False
+
+
 def derive_key(item, override):
     field = override.get("key_field", "name")
     if field not in item:
@@ -193,7 +203,14 @@ def transform_items(raw_items, resource_type, override):
     originals = {}
     drops = []
     for raw in raw_items:
-        normalized = apply_overrides(snake_keys(raw), override)
+        snake_raw = snake_keys(raw)
+        if _skip_item(snake_raw, override):
+            sys.stderr.write(
+                "skipped %s item %r (skip_if matched)\n"
+                % (resource_type, snake_raw.get("name") or snake_raw.get("id"))
+            )
+            continue
+        normalized = apply_overrides(snake_raw, override)
         key = derive_key(normalized, override)
         if key in items:
             raise ValueError(

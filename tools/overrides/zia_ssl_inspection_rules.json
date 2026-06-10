@@ -1,3 +1,4 @@
 {
-  "import_id": "{id}"
+  "import_id": "{id}",
+  "skip_if": [{"default_rule": true}]
 }

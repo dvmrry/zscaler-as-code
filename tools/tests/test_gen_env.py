@@ -40,14 +40,43 @@ class GenerateEnvTest(unittest.TestCase):
 
 class RenderEnvTestTest(unittest.TestCase):
     def test_mock_provider_matches_product(self):
-        out = render_env_test("zpa_segment_group", "zs2")
+        out = render_env_test("zpa_segment_group", "zs2", has_config=False)
         self.assertIn('mock_provider "zpa" {}', out)
         self.assertIn("command = plan", out)
         self.assertIn("items = {}", out)
 
     def test_zia_mock(self):
-        out = render_env_test("zia_url_categories", "zs2")
+        out = render_env_test("zia_url_categories", "zs2", has_config=False)
         self.assertIn('mock_provider "zia" {}', out)
+
+    def test_no_config_plan_when_has_config_false(self):
+        out = render_env_test("zpa_segment_group", "zs2", has_config=False)
+        self.assertNotIn("config_plan", out)
+
+    def test_config_plan_present_when_has_config_true(self):
+        out = render_env_test("zpa_segment_group", "zs2", has_config=True)
+        self.assertIn('run "config_plan"', out)
+        self.assertIn("command = plan", out)
+
+    def test_config_plan_file_path_correct(self):
+        # path uses tenant + resource_type
+        out = render_env_test("zpa_segment_group", "zs2", has_config=True)
+        self.assertIn(
+            'file("../../../config/zs2/zpa_segment_group.auto.tfvars.json")',
+            out,
+        )
+
+    def test_config_plan_file_path_demo_tenant(self):
+        out = render_env_test("zia_url_categories", "demo", has_config=True)
+        self.assertIn(
+            'file("../../../config/demo/zia_url_categories.auto.tfvars.json")',
+            out,
+        )
+
+    def test_empty_plan_still_present_when_has_config_true(self):
+        out = render_env_test("zpa_segment_group", "zs2", has_config=True)
+        self.assertIn('run "empty_plan"', out)
+        self.assertIn("items = {}", out)
 
 
 class GenerateEnvWritesTest(unittest.TestCase):

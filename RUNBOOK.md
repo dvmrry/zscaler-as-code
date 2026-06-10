@@ -37,6 +37,26 @@ chain or the exact failure. Fix any error here before proceeding.
 
 ---
 
+## Rehearsal (no credentials required)
+
+Clone the repo on any machine with Terraform >= 1.5, GNU make, and Python 3.6+.
+No Zscaler credentials or network access are needed for this path.
+
+```
+git clone https://github.com/dvmrry/zscaler-as-code
+cd zscaler-as-code
+make test            # 145 Python unit tests
+make test-modules    # mock-provider module tests
+make test-envs TENANT=demo   # smoke tests against the committed demo dataset
+```
+
+After `make test-envs TENANT=demo` succeeds, inspect `config/demo/` to see what
+typed Terraform config looks like for a real tenant, and `imports/demo/` for the
+matching import blocks. This is a faithful walkthrough of the full pipeline using
+public-shaped data — no secrets required.
+
+---
+
 ## Bootstrap — Adopting an Existing Tenant
 
 Choose a short, opaque label (e.g. `prod`, `staging`). It becomes a directory
@@ -208,3 +228,4 @@ modes are supported; the fetcher resolves mode from
 | Plan shows phantom diffs after adoption | Add field to `drop_if_default` in `tools/overrides/<type>.json`; re-transform |
 | CHECK gate failure in CI | Run `make generate` and commit; never hand-edit `modules/` or `schemas/tfvars/` |
 | `import blocks error: resource already managed` | Delete `_imports.tf` from the env root after first apply |
+| Plan rejects a predefined/system object (e.g. order -1) | Add a `skip_if` matcher to `tools/overrides/<type>.json` (e.g. `"skip_if": [{"default_rule": true}]`); run `make transform` — the item is excluded from config and imports with a stderr note |
