@@ -14,9 +14,10 @@ instead of being clever.
    responses.
 3. `config/` holds fictional sample data exercising schema branches. Real
    tenant values belong in a private deployment repo, never here.
-4. Structural feedback from real tenants enters only as values-stripped
-   shape reports (`tools/shape_report.py` output) — key paths and JSON
-   types, never values.
+4. Fixtures derive from public sources only (provider schemas, public SDK
+   structs, API docs). Real-world mismatches arrive as written symptom
+   descriptions and are fixed here against fictional fixtures — real data
+   never enters this repo in any form.
 
 ## Code rules
 
