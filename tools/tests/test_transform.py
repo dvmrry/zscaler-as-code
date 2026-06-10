@@ -1,7 +1,9 @@
 """Tests for tools/transform.py. All fixture data is fictional."""
+import json
+import os
 import unittest
 
-from tools.transform import apply_overrides, coerce_item, derive_key, filter_item, load_override, slugify, snake, snake_keys
+from tools.transform import apply_overrides, coerce_item, derive_key, filter_item, load_override, render_imports, render_tfvars, slugify, snake, snake_keys, transform_items
 from tools.tfschema import load_resource
 
 
@@ -134,6 +136,48 @@ class DeriveKeyTest(unittest.TestCase):
     def test_missing_key_field_raises(self):
         with self.assertRaises(KeyError):
             derive_key({"description": "no name"}, {})
+
+
+class PipelineTest(unittest.TestCase):
+    RAW = [
+        {"id": "2", "name": "B Group", "enabled": False, "applications": []},
+        {
+            "id": "1",
+            "name": "A Group",
+            "enabled": True,
+            "creationTime": "1700000000",
+            "applications": [{"id": 9, "name": "App"}],
+        },
+    ]
+
+    def test_transform_items(self):
+        items, originals, drops = transform_items(
+            self.RAW, "zpa_segment_group", {}
+        )
+        self.assertEqual(sorted(items), ["a_group", "b_group"])
+        self.assertEqual(items["a_group"]["applications"], [{"id": "9"}])
+        self.assertNotIn("creation_time", items["a_group"])
+        self.assertIn("creation_time", drops)
+        self.assertEqual(originals["a_group"]["id"], "1")
+
+    def test_duplicate_keys_raise(self):
+        with self.assertRaises(ValueError):
+            transform_items(
+                [{"id": "1", "name": "Same"}, {"id": "2", "name": "same"}],
+                "zpa_segment_group",
+                {},
+            )
+
+    def test_render_imports_sorted_and_templated(self):
+        originals = {"b": {"id": "20"}, "a": {"id": "10"}}
+        text = render_imports("zpa_segment_group", originals, {})
+        first = text.index('this["a"]')
+        second = text.index('this["b"]')
+        self.assertLess(first, second)
+        self.assertIn('id = "10"', text)
+        self.assertIn(
+            'to = module.zpa_segment_group.zpa_segment_group.this["a"]', text
+        )
 
 
 if __name__ == "__main__":

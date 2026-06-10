@@ -1,7 +1,7 @@
 PYTHON ?= python3
 TF     ?= terraform
 
-.PHONY: help env test test-floor validate schemas generate update-goldens
+.PHONY: help env test test-floor validate schemas generate transform update-goldens
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -49,6 +49,16 @@ ifeq ($(CHECK),1)
 		echo "run 'make generate', and commit the result."; \
 		exit 1; }
 endif
+
+transform: ## Transform pulled API JSON into tfvars + imports (IN=<dir> TENANT=<name>)
+	@test -n "$(IN)" -a -n "$(TENANT)" || { echo "usage: make transform IN=pulls/<tenant> TENANT=<tenant>"; exit 2; }
+	@for rt in $$(grep -vE '^\s*(#|$$)' tools/resources.txt); do \
+		if [ -f "$(IN)/$$rt.json" ]; then \
+			$(PYTHON) -m tools.transform "$$rt" "$(IN)/$$rt.json" "$(TENANT)" || exit 1; \
+		else \
+			echo "skip $$rt (no $(IN)/$$rt.json)"; \
+		fi; \
+	done
 
 update-goldens: ## Re-bless generator golden fixtures from current output
 	$(PYTHON) -m tools.gen_module
