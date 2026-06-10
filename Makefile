@@ -133,11 +133,15 @@ check-envs: ## Regenerate committed tenants' env roots and fail on drift
 		git status --porcelain -- envs; \
 		echo "Run make gen-env for each tenant and commit."; exit 1; }
 
-validate-config: ## Validate config/ against generated JSON Schemas (dev-only; needs python jsonschema)
-	@$(PYTHON) -c "import jsonschema" 2>/dev/null || { \
-		echo "WARNING: python 'jsonschema' not installed - skipping config validation"; \
-		echo "(dev-only check; install via your package manager to enable)"; exit 0; }; \
-	$(PYTHON) -m tools.validate_config
+validate-config: ## Validate config/ against generated JSON Schemas (dev-only; jsonschema via python or uv)
+	@if $(PYTHON) -c "import jsonschema" 2>/dev/null; then \
+		$(PYTHON) -m tools.validate_config; \
+	elif command -v uv >/dev/null 2>&1; then \
+		uv run --quiet --with jsonschema python -m tools.validate_config; \
+	else \
+		echo "WARNING: no python 'jsonschema' and no uv - skipping config validation"; \
+		echo "(dev-only check; never required in restricted environments)"; \
+	fi
 
 update-goldens: ## Re-bless generator golden fixtures from current output
 	$(PYTHON) -m tools.gen_module
