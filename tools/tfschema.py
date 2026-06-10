@@ -111,10 +111,13 @@ def json_schema_type(encoding):
             return {"type": "object", "additionalProperties": json_schema_type(inner)}
         if kind in ("list", "set"):
             if isinstance(inner, str):
-                return {"type": "array", "items": json_schema_type(inner)}
+                frag = {"type": "array", "items": json_schema_type(inner)}
+                if kind == "set":
+                    frag["uniqueItems"] = True
+                return frag
             if isinstance(inner, list) and inner[0] == "object":
                 members = inner[1]
-                return {
+                frag = {
                     "type": "array",
                     "items": {
                         "type": "object",
@@ -125,4 +128,7 @@ def json_schema_type(encoding):
                         },
                     },
                 }
+                if kind == "set":
+                    frag["uniqueItems"] = True
+                return frag
     raise ValueError("unsupported type encoding: %r" % (encoding,))

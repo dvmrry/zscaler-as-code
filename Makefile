@@ -40,6 +40,7 @@ endif
 
 generate: ## Generate modules + tfvars schemas from provider dumps (CHECK=1 fails on drift)
 	$(PYTHON) -m tools.gen_module
+	$(PYTHON) -m tools.gen_jsonschema
 ifeq ($(CHECK),1)
 	@git diff --exit-code --stat -- modules schemas/tfvars || { \
 		echo ""; \

@@ -71,6 +71,10 @@ class JsonSchemaTypeTest(unittest.TestCase):
     def test_collection(self):
         self.assertEqual(
             json_schema_type(["set", "string"]),
+            {"type": "array", "items": {"type": "string"}, "uniqueItems": True},
+        )
+        self.assertEqual(
+            json_schema_type(["list", "string"]),
             {"type": "array", "items": {"type": "string"}},
         )
 
@@ -86,6 +90,7 @@ class JsonSchemaTypeTest(unittest.TestCase):
             json_schema_type(t),
             {
                 "type": "array",
+                "uniqueItems": True,
                 "items": {
                     "type": "object",
                     "additionalProperties": False,
