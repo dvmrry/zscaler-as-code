@@ -22,7 +22,10 @@ truthy value (`1`, `true`, `yes`, `on`) for legacy mode; leave it unset or
 set it to a falsey value for OneAPI mode (the default).
 
 **OneAPI** (default; `ZSCALER_USE_LEGACY_CLIENT` unset or falsey) —
-one OAuth2 bearer for both products:
+one OAuth2 bearer for both products. Note the gateway actually dialed is
+`api.zsapi.net` (`api.<cloud>.zsapi.net` off production); the similar
+`api.zscaler.com` is only the OAuth audience string and serves no valid
+certificate — attempts to call it fail TLS verification on any network.
 
     ZSCALER_CLIENT_ID
     ZSCALER_CLIENT_SECRET

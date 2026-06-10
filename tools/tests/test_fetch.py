@@ -3,7 +3,7 @@ import io
 import json
 import unittest
 
-from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, build_headers, compose_url, fetch_resource, acquire_token, products_in_manifest, auth_mode_from_env, _zslogin_host, ca_bundle_path, connection_hint
+from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, build_headers, compose_url, fetch_resource, acquire_token, products_in_manifest, auth_mode_from_env, _zslogin_host, ca_bundle_path, connection_hint, diag_hosts
 
 
 class ManifestTest(unittest.TestCase):
@@ -122,13 +122,19 @@ class ComposeUrlTest(unittest.TestCase):
     def test_oneapi_zia(self):
         self.assertEqual(
             compose_url("oneapi", "zia", "urlCategories", {"customer_id": "C"}),
-            "https://api.zscaler.com/zia/api/v1/urlCategories",
+            "https://api.zsapi.net/zia/api/v1/urlCategories",
         )
 
     def test_oneapi_zpa_uses_customer(self):
         self.assertEqual(
             compose_url("oneapi", "zpa", "segmentGroup", {"customer_id": "C9"}),
-            "https://api.zscaler.com/zpa/mgmtconfig/v1/admin/customers/C9/segmentGroup",
+            "https://api.zsapi.net/zpa/mgmtconfig/v1/admin/customers/C9/segmentGroup",
+        )
+
+    def test_oneapi_cloud_variant_gateway(self):
+        self.assertEqual(
+            compose_url("oneapi", "zia", "x", {"cloud": "beta"}),
+            "https://api.beta.zsapi.net/zia/api/v1/x",
         )
 
     def test_legacy_zia(self):
@@ -163,7 +169,7 @@ class BuildHeadersTest(unittest.TestCase):
 class FetchResourceTest(unittest.TestCase):
     def test_zpa_resource_via_fake(self):
         opener = FakeOpener({
-            "https://api.zscaler.com/zpa/mgmtconfig/v1/admin/customers/C/segmentGroup": [
+            "https://api.zsapi.net/zpa/mgmtconfig/v1/admin/customers/C/segmentGroup": [
                 (200, {"list": [{"id": "1", "name": "G"}], "totalPages": "1"})
             ]
         })
@@ -292,6 +298,24 @@ class ConnectionHintTest(unittest.TestCase):
 
     def test_unknown_points_at_docs(self):
         self.assertIn("FETCH.md", connection_hint("weird failure"))
+
+
+class DiagHostsTest(unittest.TestCase):
+    def test_oneapi_hosts(self):
+        env = {"ZSCALER_VANITY_DOMAIN": "acme", "ZSCALER_CLOUD": ""}
+        self.assertEqual(
+            diag_hosts(env), ["acme.zslogin.net", "api.zsapi.net"]
+        )
+
+    def test_legacy_hosts(self):
+        env = {"ZSCALER_USE_LEGACY_CLIENT": "true", "ZIA_CLOUD": "zscalertwo"}
+        self.assertEqual(
+            diag_hosts(env),
+            ["config.private.zscaler.com", "zsapi.zscalertwo.net"],
+        )
+
+    def test_placeholder_when_unset(self):
+        self.assertEqual(diag_hosts({}), ["<vanity>.zslogin.net", "api.zsapi.net"])
 
 
 if __name__ == "__main__":

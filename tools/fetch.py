@@ -106,8 +106,18 @@ def paginate_zpa(opener, url, headers, query, page_size=500):
         page += 1
 
 
-_ONEAPI_API_BASE = "https://api.zscaler.com"
+# The OAuth audience is NOT a dialable host — api.zscaler.com serves no
+# valid cert and exists only as the token-request audience value. The real
+# OneAPI gateway is api.zsapi.net (api.<cloud>.zsapi.net off production).
+_ONEAPI_AUDIENCE = "https://api.zscaler.com"
 _LEGACY_ZPA_BASE = "https://config.private.zscaler.com"
+
+
+def _oneapi_gateway(cloud):
+    norm = (cloud or "").strip().lower()
+    if norm in ("", "production"):
+        return "https://api.zsapi.net"
+    return "https://api.%s.zsapi.net" % norm
 
 
 def compose_url(auth_mode, product, path, ctx):
@@ -119,10 +129,10 @@ def compose_url(auth_mode, product, path, ctx):
     """
     if auth_mode == "oneapi":
         if product == "zia":
-            return "%s/zia/api/v1/%s" % (_ONEAPI_API_BASE, path)
+            return "%s/zia/api/v1/%s" % (_oneapi_gateway(ctx.get("cloud", "")), path)
         if product == "zpa":
             return "%s/zpa/mgmtconfig/v1/admin/customers/%s/%s" % (
-                _ONEAPI_API_BASE, ctx["customer_id"], path
+                _oneapi_gateway(ctx.get("cloud", "")), ctx["customer_id"], path
             )
     elif auth_mode == "legacy":
         if product == "zia":
@@ -274,7 +284,7 @@ def acquire_token(auth_mode, product, env, ctx, opener, now_ms=None):
             "grant_type": "client_credentials",
             "client_id": _require(env, "ZSCALER_CLIENT_ID"),
             "client_secret": _require(env, "ZSCALER_CLIENT_SECRET"),
-            "audience": _ONEAPI_API_BASE,
+            "audience": _ONEAPI_AUDIENCE,
         }).encode()
         status, raw = opener(
             "POST", token_url,
@@ -320,10 +330,71 @@ def products_in_manifest():
     return sorted({e["product"] for e in load_manifest().values()})
 
 
+def diag_hosts(env):
+    """Unique HTTPS hosts the fetcher will contact in the configured mode."""
+    if auth_mode_from_env(env) == "oneapi":
+        vanity = env.get("ZSCALER_VANITY_DOMAIN") or "<vanity>"
+        cloud = env.get("ZSCALER_CLOUD", "")
+        login = _zslogin_host(vanity, cloud)
+        gateway = _oneapi_gateway(cloud)
+        return sorted({login.split("//", 1)[1], gateway.split("//", 1)[1]})
+    cloud = env.get("ZIA_CLOUD", "") or env.get("ZSCALER_CLOUD", "") or "<cloud>"
+    return sorted({"zsapi.%s.net" % cloud, "config.private.zscaler.com"})
+
+
+def _try_tls(host, context):
+    """(ok, detail) for a TLS handshake to host:443 under context."""
+    import socket
+    import ssl as _ssl
+    try:
+        with socket.create_connection((host, 443), timeout=10) as sock:
+            with context.wrap_socket(sock, server_hostname=host) as tls:
+                cert = tls.getpeercert() or {}
+                issuer = dict(
+                    item for pair in cert.get("issuer", ()) for item in pair
+                )
+                return True, issuer.get("organizationName", "verified")
+    except _ssl.SSLError as e:
+        return False, str(e.reason or e)
+    except OSError as e:
+        return False, str(e)
+
+
+def run_diag(env):
+    """Per host, try system trust then system+bundle; print which leg works.
+
+    Output is infrastructure-only (host, verify result, issuer org) —
+    designed so the result can be acted on, or relayed, without exposing
+    anything tenant-specific.
+    """
+    import ssl
+    bundle = ca_bundle_path(env)
+    system_ctx = ssl.create_default_context()
+    bundle_ctx = None
+    if bundle:
+        bundle_ctx = ssl.create_default_context()
+        bundle_ctx.load_verify_locations(cafile=bundle)
+    for host in diag_hosts(env):
+        if "<" in host:
+            sys.stderr.write("%s: skipped (env vars not set)\n" % host)
+            continue
+        ok, detail = _try_tls(host, system_ctx)
+        line = "%s: system-trust %s (%s)" % (host, "OK" if ok else "FAIL", detail)
+        if bundle_ctx is not None:
+            ok2, detail2 = _try_tls(host, bundle_ctx)
+            line += "; +bundle %s (%s)" % ("OK" if ok2 else "FAIL", detail2)
+        else:
+            line += "; no CA bundle configured (set REQUESTS_CA_BUNDLE)"
+        sys.stderr.write(line + "\n")
+    return 0
+
+
 def main(argv=None):
     argv = argv if argv is not None else sys.argv[1:]
+    if argv == ["--diag"]:
+        return run_diag(os.environ)
     if len(argv) != 1:
-        sys.stderr.write("usage: python -m tools.fetch <tenant>\n")
+        sys.stderr.write("usage: python -m tools.fetch <tenant> | --diag\n")
         return 2
     tenant = argv[0]
     env = os.environ
