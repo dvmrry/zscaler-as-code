@@ -48,6 +48,13 @@ ifeq ($(CHECK),1)
 		echo "Never hand-edit modules/ — fix the generator or an override,"; \
 		echo "run 'make generate', and commit the result."; \
 		exit 1; }
+	@test -z "$$(git status --porcelain -- modules schemas/tfvars)" || { \
+		echo ""; \
+		echo "Generated but UNCOMMITTED output (a generate=true registry"; \
+		echo "entry whose module was never committed):"; \
+		git status --porcelain -- modules schemas/tfvars; \
+		echo "Commit it, or set generate=false in tools/registry.json."; \
+		exit 1; }
 endif
 
 transform: ## Transform pulled API JSON into tfvars + imports (IN=<dir> TENANT=<name>)
