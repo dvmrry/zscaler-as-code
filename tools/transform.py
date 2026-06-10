@@ -36,3 +36,37 @@ def slugify(text):
     """Stable map key from a display name: lowercase, runs of other
     characters become single underscores, edges stripped."""
     return _SLUG_BAD.sub("_", text.lower()).strip("_")
+
+
+def filter_item(item, block, path, drops):
+    """Keep only schema-input attrs and blocks, recursively.
+
+    Computed-only and unknown keys are dropped and their paths recorded in
+    drops (the provider-coverage-gap report). Block values may be a list
+    of dicts (list/set nesting) or a single dict (single nesting).
+    """
+    cls = classify_attributes(block)
+    keep_attrs = set(cls["required"] + cls["optional"])
+    block_types = block.get("block_types") or {}
+    out = {}
+    for key in sorted(item):
+        child_path = path + key if not path else path + "." + key
+        value = item[key]
+        if key in keep_attrs:
+            out[key] = value
+        elif key in block_types:
+            inner_block = block_types[key]["block"]
+            inner_path = child_path + "[]"
+            if isinstance(value, list):
+                out[key] = [
+                    filter_item(v, inner_block, inner_path, drops)
+                    for v in value
+                    if isinstance(v, dict)
+                ]
+            elif isinstance(value, dict):
+                out[key] = [filter_item(value, inner_block, inner_path, drops)]
+            else:
+                drops.append(child_path)
+        else:
+            drops.append(child_path)
+    return out

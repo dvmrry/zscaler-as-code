@@ -1,7 +1,8 @@
 """Tests for tools/transform.py. All fixture data is fictional."""
 import unittest
 
-from tools.transform import slugify, snake, snake_keys
+from tools.transform import filter_item, slugify, snake, snake_keys
+from tools.tfschema import load_resource
 
 
 class SnakeTest(unittest.TestCase):
@@ -35,6 +36,43 @@ class SlugifyTest(unittest.TestCase):
 
     def test_strips_edges(self):
         self.assertEqual(slugify("  spaced  "), "spaced")
+
+
+class FilterTest(unittest.TestCase):
+    def test_segment_group_filtering(self):
+        rs = load_resource("zpa_segment_group")
+        item = {
+            "id": "1",
+            "name": "A",
+            "config_space": "DEFAULT",
+            "policy_migrated": True,
+            "applications": [
+                {"id": "9", "name": "App", "domain_names": ["x"]}
+            ],
+        }
+        drops = []
+        out = filter_item(item, rs["block"], "", drops)
+        self.assertEqual(
+            out, {"name": "A", "applications": [{"id": "9"}]}
+        )
+        self.assertEqual(
+            sorted(drops),
+            [
+                "applications[].domain_names",
+                "applications[].name",
+                "config_space",
+                "id",
+                "policy_migrated",
+            ],
+        )
+
+    def test_single_block_dict_passthrough(self):
+        rs = load_resource("zia_url_categories")
+        item = {"url_keyword_counts": [{"total_url_count": 5}]}
+        drops = []
+        out = filter_item(item, rs["block"], "", drops)
+        self.assertEqual(out, {"url_keyword_counts": [{"total_url_count": 5}]})
+        self.assertEqual(drops, [])
 
 
 if __name__ == "__main__":
