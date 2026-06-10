@@ -1,7 +1,7 @@
 PYTHON ?= python3
 TF     ?= terraform
 
-.PHONY: help env test test-floor validate schemas generate transform update-goldens
+.PHONY: help env test test-floor validate schemas generate transform fetch fetch-diag update-goldens
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -59,6 +59,13 @@ transform: ## Transform pulled API JSON into tfvars + imports (IN=<dir> TENANT=<
 			echo "skip $$rt (no $(IN)/$$rt.json)"; \
 		fi; \
 	done
+
+fetch: ## Pull API JSON into pulls/<tenant> (TENANT=<name>; needs ZSCALER_*/ZIA_*/ZPA_* env, real creds — trusted env only)
+	@test -n "$(TENANT)" || { echo "usage: make fetch TENANT=<tenant> (with ZSCALER_*/ZIA_*/ZPA_* env set)"; exit 2; }
+	$(PYTHON) -m tools.fetch "$(TENANT)"
+
+fetch-diag: ## Probe TLS to the fetcher's hosts under system trust and +bundle
+	$(PYTHON) -m tools.fetch --diag
 
 update-goldens: ## Re-bless generator golden fixtures from current output
 	$(PYTHON) -m tools.gen_module
