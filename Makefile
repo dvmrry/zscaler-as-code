@@ -1,7 +1,7 @@
 PYTHON ?= python3
 TF     ?= terraform
 
-.PHONY: help env test test-floor validate schemas
+.PHONY: help env test test-floor validate schemas generate update-goldens
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -37,3 +37,25 @@ ifeq ($(CHECK),1)
 		echo "Never hand-edit schemas/provider/; fix the pins and regenerate."; \
 		exit 1; }
 endif
+
+generate: ## Generate modules + tfvars schemas from provider dumps (CHECK=1 fails on drift)
+	$(PYTHON) -m tools.gen_module
+	$(PYTHON) -m tools.gen_jsonschema
+ifeq ($(CHECK),1)
+	@git diff --exit-code --stat -- modules schemas/tfvars || { \
+		echo ""; \
+		echo "Generated output drifted from what is committed."; \
+		echo "Never hand-edit modules/ — fix the generator or an override,"; \
+		echo "run 'make generate', and commit the result."; \
+		exit 1; }
+endif
+
+update-goldens: ## Re-bless generator golden fixtures from current output
+	$(PYTHON) -m tools.gen_module
+	rm -rf tools/tests/fixtures/gen
+	mkdir -p tools/tests/fixtures/gen/zpa_segment_group
+	cp modules/zpa_segment_group/variables.tf modules/zpa_segment_group/main.tf \
+		modules/zpa_segment_group/outputs.tf modules/zpa_segment_group/versions.tf \
+		tools/tests/fixtures/gen/zpa_segment_group/
+	mkdir -p tools/tests/fixtures/gen/zia_url_categories
+	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zia_url_categories'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zia_url_categories/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"
