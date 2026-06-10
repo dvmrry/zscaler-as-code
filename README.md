@@ -50,10 +50,9 @@ To bump a provider: edit the `version` pin in `tools/schema-extract/main.tf`,
 run `terraform -chdir=tools/schema-extract init -upgrade`, then
 `make schemas` and review the resulting git diff.
 
-Everywhere else the committed dumps are read-only inputs — never hand-edit
-`schemas/provider/`. `make schemas CHECK=1` regenerates and fails if the
-output differs from what is committed; if it fires, compare the resolved
-versions it prints against the pins before anything else. The same pinned
-version yields byte-identical dumps on every platform (the lock file's
-hashes verify the artifact), so a difference means a different provider
-version was resolved.
+Schema extraction is an authoring step. Everywhere else — consuming
+environments and CI included — the committed dumps are read-only inputs:
+do not regenerate or hand-edit `schemas/provider/` there. `make schemas
+CHECK=1` is the authoring-side pre-commit guard for pin bumps; extraction
+output can legitimately vary with the local terraform and provider
+versions, which is exactly why it happens in one place.
