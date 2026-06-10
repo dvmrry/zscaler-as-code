@@ -67,3 +67,62 @@ def classify_attributes(block):
         else:
             out["computed_only"].append(name)
     return out
+
+
+_PRIMITIVES_HCL = {"string": "string", "bool": "bool", "number": "number"}
+_PRIMITIVES_JSON = {"string": "string", "bool": "boolean", "number": "number"}
+
+
+def hcl_type(encoding, indent=4):
+    """Terraform JSON type encoding -> HCL type expression.
+
+    Object members render one per line, sorted, each wrapped optional()
+    (SDKv2 object-typed attributes carry no per-member requiredness).
+    indent: spaces of the surrounding context, for stable nesting.
+    """
+    if isinstance(encoding, str):
+        if encoding in _PRIMITIVES_HCL:
+            return _PRIMITIVES_HCL[encoding]
+        raise ValueError("unsupported primitive type encoding: %r" % encoding)
+    if isinstance(encoding, list) and len(encoding) == 2:
+        kind, inner = encoding
+        if kind in ("list", "set", "map") and isinstance(inner, str):
+            return "%s(%s)" % (kind, hcl_type(inner))
+        if kind in ("list", "set") and isinstance(inner, list) and inner[0] == "object":
+            members = inner[1]
+            pad = " " * (indent + 2)
+            lines = [
+                "%s%s = optional(%s)" % (pad, name, hcl_type(members[name], indent + 2))
+                for name in sorted(members)
+            ]
+            return "%s(object({\n%s\n%s}))" % (kind, "\n".join(lines), " " * indent)
+    raise ValueError("unsupported type encoding: %r" % (encoding,))
+
+
+def json_schema_type(encoding):
+    """Terraform JSON type encoding -> JSON Schema fragment (dict)."""
+    if isinstance(encoding, str):
+        if encoding in _PRIMITIVES_JSON:
+            return {"type": _PRIMITIVES_JSON[encoding]}
+        raise ValueError("unsupported primitive type encoding: %r" % encoding)
+    if isinstance(encoding, list) and len(encoding) == 2:
+        kind, inner = encoding
+        if kind == "map" and isinstance(inner, str):
+            return {"type": "object", "additionalProperties": json_schema_type(inner)}
+        if kind in ("list", "set"):
+            if isinstance(inner, str):
+                return {"type": "array", "items": json_schema_type(inner)}
+            if isinstance(inner, list) and inner[0] == "object":
+                members = inner[1]
+                return {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "properties": {
+                            name: json_schema_type(members[name])
+                            for name in sorted(members)
+                        },
+                    },
+                }
+    raise ValueError("unsupported type encoding: %r" % (encoding,))
