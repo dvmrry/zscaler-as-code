@@ -1,7 +1,7 @@
 PYTHON ?= python3
 TF     ?= terraform
 
-.PHONY: help env test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens
+.PHONY: help env test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens test-envs validate-imports plan drift check-envs validate-config
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -78,6 +78,74 @@ fetch: ## Pull API JSON into pulls/<tenant> (TENANT=<name>; needs ZSCALER_*/ZIA_
 fetch-diag: ## Probe TLS to the fetcher's hosts under system trust and +bundle
 	$(PYTHON) -m tools.fetch --diag
 
+test-envs: ## Run mock-provider smoke tests across a tenant's env roots (TENANT=<label>)
+	@test -n "$(TENANT)" || { echo "usage: make test-envs TENANT=<label>"; exit 2; }
+	@set -e; for d in envs/$(TENANT)/*/; do \
+		echo "== $$d"; \
+		$(TF) -chdir=$$d init -backend=false -input=false > /dev/null; \
+		$(TF) -chdir=$$d test; \
+	done
+
+validate-imports: ## Validate fixture import addresses against a tenant's roots (TENANT=<label>)
+	@test -n "$(TENANT)" || { echo "usage: make validate-imports TENANT=<label>"; exit 2; }
+	@set -e; for d in envs/$(TENANT)/*/; do \
+		rt=$$(basename $$d); \
+		fix="tools/tests/fixtures/transform/$$rt/expected_imports.tf"; \
+		if [ -f "$$fix" ]; then \
+			cp "$$fix" "$$d/imports_check.tf"; \
+			$(TF) -chdir=$$d init -backend=false -input=false > /dev/null; \
+			$(TF) -chdir=$$d validate || { rm -f "$$d/imports_check.tf"; exit 1; }; \
+			rm -f "$$d/imports_check.tf"; \
+			echo "imports ok: $$rt"; \
+		else \
+			echo "skip $$rt (no fixture imports)"; \
+		fi; \
+	done
+
+plan: ## Terraform plan for a tenant's roots (TENANT=<label> [RESOURCE=<type>]; real creds via env)
+	@test -n "$(TENANT)" || { echo "usage: make plan TENANT=<label> [RESOURCE=<type>]"; exit 2; }
+	@set -e; planned=0; for d in envs/$(TENANT)/$(or $(RESOURCE),*)/; do \
+		test -d "$$d" || continue; \
+		rt=$$(basename $$d); \
+		vf="$(abspath config/$(TENANT))/$$rt.auto.tfvars.json"; \
+		test -f "$$vf" || { echo "skip $$rt (no $$vf)"; continue; }; \
+		echo "== plan $$rt"; \
+		$(TF) -chdir=$$d init -input=false > /dev/null; \
+		$(TF) -chdir=$$d plan -input=false -var-file="$$vf"; \
+		planned=$$((planned+1)); \
+	done; \
+	test $$planned -gt 0 || { echo "error: no roots planned for TENANT=$(TENANT) (typo? missing config/?)"; exit 1; }
+
+drift: ## Fetch + transform + report config diff for a tenant (TENANT=<label>; real creds via env)
+	@test -n "$(TENANT)" || { echo "usage: make drift TENANT=<label>"; exit 2; }
+	$(MAKE) fetch TENANT=$(TENANT)
+	$(MAKE) transform IN=pulls/$(TENANT) TENANT=$(TENANT)
+	@if [ -n "$$(git status --porcelain config/$(TENANT) imports/$(TENANT) 2>/dev/null)" ]; then \
+		echo ""; echo "DRIFT DETECTED (tenant differs from committed config):"; \
+		git status --porcelain config/$(TENANT) imports/$(TENANT); \
+		git --no-pager diff --stat config/$(TENANT) 2>/dev/null; \
+		exit 3; \
+	else \
+		echo "no drift: tenant matches committed config"; \
+	fi
+
+check-envs: ## Regenerate committed tenants' env roots and fail on drift
+	@set -e; for t in $$(ls envs); do $(PYTHON) -m tools.gen_env "$$t" > /dev/null; done
+	@test -z "$$(git status --porcelain -- envs)" || { \
+		echo ""; echo "envs/ drifted from the generator output:"; \
+		git status --porcelain -- envs; \
+		echo "Run make gen-env for each tenant and commit."; exit 1; }
+
+validate-config: ## Validate config/ against generated JSON Schemas (dev-only; jsonschema via python or uv)
+	@if $(PYTHON) -c "import jsonschema" 2>/dev/null; then \
+		$(PYTHON) -m tools.validate_config; \
+	elif command -v uv >/dev/null 2>&1; then \
+		uv run --quiet --with jsonschema python -m tools.validate_config; \
+	else \
+		echo "WARNING: no python 'jsonschema' and no uv - skipping config validation"; \
+		echo "(dev-only check; never required in restricted environments)"; \
+	fi
+
 update-goldens: ## Re-bless generator golden fixtures from current output
 	$(PYTHON) -m tools.gen_module
 	rm -rf tools/tests/fixtures/gen
@@ -91,3 +159,9 @@ update-goldens: ## Re-bless generator golden fixtures from current output
 	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zpa_server_group'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zpa_server_group/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"
 	mkdir -p tools/tests/fixtures/gen/zpa_application_segment
 	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zpa_application_segment'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zpa_application_segment/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"
+	mkdir -p tools/tests/fixtures/gen/zia_location_management
+	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zia_location_management'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zia_location_management/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"
+	mkdir -p tools/tests/fixtures/gen/zia_ssl_inspection_rules
+	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zia_ssl_inspection_rules'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zia_ssl_inspection_rules/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"
+	mkdir -p tools/tests/fixtures/gen/zia_cloud_app_control_rule
+	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zia_cloud_app_control_rule'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zia_cloud_app_control_rule/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"

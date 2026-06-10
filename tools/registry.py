@@ -26,6 +26,12 @@ def generated_types():
     return sorted(rt for rt, e in reg.items() if e.get("generate"))
 
 
+def reload_registry():
+    """Clear the cache (test isolation helper)."""
+    _cache.clear()
+    return load_registry()
+
+
 def fetch_entry(resource_type):
     """Flattened fetch config {product, path, pagination, query?} for a
     resource, or KeyError if it has no fetch wiring."""

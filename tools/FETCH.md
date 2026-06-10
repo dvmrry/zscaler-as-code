@@ -15,6 +15,10 @@ The `make fetch` command reads credentials from the environment. These are
 the same variables the Zscaler Terraform providers read, so existing
 provider env config works unchanged.
 
+Cloud-app-control rules fetch per rule type via the registry's `expand`
+list — trim or extend the types to what your tenant uses; unused types
+return empty lists.
+
 ## Auth modes
 
 The fetcher resolves mode from `ZSCALER_USE_LEGACY_CLIENT`. Set it to a

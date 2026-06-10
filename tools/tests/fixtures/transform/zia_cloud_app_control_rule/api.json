@@ -1,0 +1,14 @@
+[
+  {
+    "id": 3001,
+    "name": "Block Streaming Media",
+    "order": 1,
+    "type": "STREAMING_MEDIA",
+    "state": "ENABLED",
+    "rank": 7,
+    "applications": ["YOUTUBE", "TWITCH", "DAILYMOTION"],
+    "actions": ["ALLOW_STREAMING_MEDIA_APPS", "BLOCK_STREAMING_MEDIA_UPLOAD"],
+    "description": "Fictional cloud app control rule for streaming",
+    "ruleId": 9700
+  }
+]

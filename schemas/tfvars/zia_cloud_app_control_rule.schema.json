@@ -1,0 +1,336 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "applications": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "browser_eun_template_id": {
+            "type": "number"
+          },
+          "cascading_enabled": {
+            "type": "boolean"
+          },
+          "cbi_profile": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "cloud_app_instances": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "cloud_app_risk_profile": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "departments": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "description": {
+            "type": "string"
+          },
+          "device_groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "device_trust_levels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "devices": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "enforce_time_validity": {
+            "type": "boolean"
+          },
+          "eun_enabled": {
+            "type": "boolean"
+          },
+          "eun_template_id": {
+            "type": "number"
+          },
+          "groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "labels": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "location_groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "locations": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "order": {
+            "type": "number"
+          },
+          "rank": {
+            "type": "number"
+          },
+          "size_quota": {
+            "type": "number"
+          },
+          "state": {
+            "type": "string"
+          },
+          "tenancy_profile_ids": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "time_quota": {
+            "type": "number"
+          },
+          "time_windows": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "timeouts": {
+            "additionalProperties": false,
+            "properties": {
+              "create": {
+                "type": "string"
+              },
+              "update": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "type": {
+            "type": "string"
+          },
+          "user_agent_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "user_risk_score_levels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "users": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "validity_end_time": {
+            "type": "string"
+          },
+          "validity_start_time": {
+            "type": "string"
+          },
+          "validity_time_zone_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "order"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zia_cloud_app_control_rule tfvars",
+  "type": "object"
+}

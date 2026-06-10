@@ -1,0 +1,210 @@
+# Runbook — Adoption and Drift Detection
+
+Step-by-step procedures for bringing an existing Zscaler tenant under
+management and keeping it there. Follow each step in order; commands are
+exact and can be run verbatim.
+
+---
+
+## Prerequisites
+
+**Credentials.** The fetcher and the Terraform providers share the same
+environment variables. See `tools/FETCH.md` for the full contract and both
+auth modes (OneAPI and legacy). Credentials are read from the environment
+at runtime only. Never commit them or paste them into any tracked file.
+
+**Corporate TLS inspection.** Enterprise networks that terminate HTTPS present
+a corporate root CA that Python does not trust by default. Export the root
+certificate and set:
+
+```
+export REQUESTS_CA_BUNDLE=/path/to/corp-root-ca.pem
+```
+
+Verify connectivity before fetching:
+
+```
+make fetch-diag
+```
+
+The diagnostic probes the fetcher's target hosts and prints the certificate
+chain or the exact failure. Fix any error here before proceeding.
+
+**Toolchain.** Terraform >= 1.5 and GNU make must be on `$PATH`. Verify with
+`make env`. Python 3.6+ stdlib only — no pip install needed.
+
+**Real pulls are gitignored.** `pulls/` must never be committed.
+
+---
+
+## Bootstrap — Adopting an Existing Tenant
+
+Choose a short, opaque label (e.g. `prod`, `staging`). It becomes a directory
+key used throughout.
+
+### 1. Fetch live configuration
+
+```
+make fetch TENANT=<label>
+```
+
+Writes API JSON to `pulls/<label>/`. Requires credentials in the environment.
+
+### 2. Transform to typed config
+
+```
+make transform IN=pulls/<label> TENANT=<label>
+```
+
+Produces:
+- `config/<label>/<type>.auto.tfvars.json` — the tenant as typed config
+- `imports/<label>/<type>_imports.tf` — ready-made import blocks
+
+A drop report is printed listing fields the provider cannot manage. Review
+it before continuing.
+
+### 3. Acknowledge drops (one-time, per field)
+
+For each reported field, add it to `acknowledged_drops` in
+`tools/overrides/<type>.json`:
+
+```json
+{
+  "acknowledged_drops": ["field_name_here"]
+}
+```
+
+Create the file if it does not exist. Once acknowledged, the report stays
+quiet for that field; only new drops surface on future runs. Re-run
+`make transform` to confirm the report is clean.
+
+### 4. Review the generated config
+
+```
+git diff config/<label>/
+```
+
+This is the tenant as typed config. If anything looks wrong, fix the
+transform or an override map. Never hand-edit `config/<label>/` directly —
+it is overwritten on the next `make transform`.
+
+### 5. Generate env roots
+
+```
+make gen-env TENANT=<label>
+```
+
+Creates `envs/<label>/<type>/` root modules. Safe to re-run.
+
+### 6. Plan each resource type (expect N imports, 0 changes)
+
+For each resource type in `imports/<label>/`:
+
+```
+cp imports/<label>/<type>_imports.tf envs/<label>/<type>/
+make plan TENANT=<label> RESOURCE=<type>
+```
+
+Expected result: **N imports, 0 changes.** Terraform will import the
+existing objects and apply no modifications.
+
+If the plan shows changes, the transform and the live tenant disagree. Do
+not apply until you understand the difference. Common fixes: add a
+`drop_if_default` override or a `key_field` override in
+`tools/overrides/<type>.json`, then re-run `make transform` and re-check.
+Never hand-edit `config/<label>/` to force the plan clean.
+
+### 7. Apply and remove import blocks
+
+Apply using your Terraform invocation or CI pipeline. After state is
+populated, remove the import blocks file:
+
+```
+rm envs/<label>/<type>/<type>_imports.tf
+```
+
+Import blocks error once resources are already managed. Removal is required.
+
+### 8. Commit config
+
+```
+git add config/<label>/ imports/<label>/
+git commit -m "Adopt <label> tenant"
+```
+
+Push to your private repo. Do not push to this template repo.
+
+---
+
+## Drift Detection — Steady State
+
+```
+make drift TENANT=<label>
+```
+
+Runs fetch + transform and compares the result against committed config.
+
+- **Exit 0**: no drift.
+- **Exit 3**: drift detected — the git diff is the report.
+
+Reading the diff:
+
+- **Value changes**: click-ops edits made outside Terraform. Revert in the
+  console or update config and apply.
+- **New keys / new objects**: unmanaged resources. Fresh import blocks are
+  already in `imports/<label>/`; cherry-pick the relevant type file and
+  follow steps 6–7 to adopt them.
+
+After addressing drift, run `make plan TENANT=<label>` for the state-side
+check. Suggested cadence: scheduled daily (see the commented examples in
+`azure-pipelines.example.yml`).
+
+---
+
+## Adding a Resource Type
+
+1. Add one entry to `tools/registry.json` (plus `tools/overrides/<type>.json`
+   if the resource has quirky fields).
+2. Regenerate and test:
+
+```
+make generate
+make gen-env TENANT=<label>
+make test
+```
+
+3. Commit. All module code, JSON Schemas, and env roots are generated.
+
+---
+
+## Provider Bumps
+
+1. Edit the version pin in `tools/schema-extract/main.tf`.
+2. `terraform -chdir=tools/schema-extract init -upgrade`
+3. `make schemas && make generate`
+4. Review the git diff — drop-report changes mean coverage changed; update
+   `acknowledged_drops` entries as needed.
+5. `make test`
+6. Commit the lock file, `schemas/provider/`, generated modules, and any
+   override changes together.
+
+---
+
+## Validation Order
+
+Always validate against a development tenant before production. Both auth
+modes are supported; the fetcher resolves mode from
+`ZSCALER_USE_LEGACY_CLIENT`. See `tools/FETCH.md`.
+
+---
+
+## Troubleshooting
+
+| Symptom | Action |
+|---|---|
+| TLS / certificate errors | `make fetch-diag`; set `REQUESTS_CA_BUNDLE` |
+| `"key field missing"` transform error | Set `key_field` in `tools/overrides/<type>.json` |
+| Duplicate derived keys | Set `key_field` to a field unique across objects |
+| Plan shows phantom diffs after adoption | Add field to `drop_if_default` in `tools/overrides/<type>.json`; re-transform |
+| CHECK gate failure in CI | Run `make generate` and commit; never hand-edit `modules/` or `schemas/tfvars/` |
+| `import blocks error: resource already managed` | Delete `_imports.tf` from the env root after first apply |

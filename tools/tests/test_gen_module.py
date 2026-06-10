@@ -117,6 +117,21 @@ class RenderRestTest(unittest.TestCase):
         out = render_outputs("zia_fake", fake)
         self.assertNotIn("name_to_id", out)
 
+    def test_outputs_omits_name_map_for_optional_name(self):
+        # An optional name can be null at plan time; a null for-expression
+        # key fails the plan, so name_to_id requires a REQUIRED name.
+        # Real case: zia_cloud_app_control_rule.
+        fake = {
+            "block": {
+                "attributes": {
+                    "id": {"type": "string", "computed": True},
+                    "name": {"type": "string", "optional": True},
+                }
+            }
+        }
+        out = render_outputs("zia_fake", fake)
+        self.assertNotIn("name_to_id", out)
+
     def test_readme_mentions_regeneration(self):
         rs = load_resource("zpa_segment_group")
         out = render_readme("zpa_segment_group", rs)
@@ -181,6 +196,12 @@ class GoldenTest(unittest.TestCase):
         ("zpa_server_group", "main.tf", "render_main"),
         ("zpa_application_segment", "variables.tf", "render_variables"),
         ("zpa_application_segment", "main.tf", "render_main"),
+        ("zia_location_management", "variables.tf", "render_variables"),
+        ("zia_location_management", "main.tf", "render_main"),
+        ("zia_ssl_inspection_rules", "variables.tf", "render_variables"),
+        ("zia_ssl_inspection_rules", "main.tf", "render_main"),
+        ("zia_cloud_app_control_rule", "variables.tf", "render_variables"),
+        ("zia_cloud_app_control_rule", "main.tf", "render_main"),
     ]
 
     def test_rendered_output_matches_blessed_goldens(self):

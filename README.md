@@ -20,11 +20,25 @@ repo. See `AGENTS.md` for the repo invariants.
 
 ## Entry points
 
-All workflows are `make` targets — run `make help` to list them. Do not
-invent other invocation paths.
+All workflows are `make` targets — run `make help` to list them (stays
+authoritative). Do not invent other invocation paths. For step-by-step
+adoption and drift-detection procedures, see `RUNBOOK.md`.
+
+Common ops targets:
+
+| Target | Purpose |
+|---|---|
+| `make gen-env TENANT=<label>` | Generate Terraform root modules for a tenant |
+| `make plan TENANT=<label>` | Terraform plan all roots for a tenant (real creds via env) |
+| `make drift TENANT=<label>` | Fetch live config, transform, and report drift vs committed state (exits 3 on drift) |
+| `make check-envs` | Regenerate all tenant env roots and fail if any differ from committed |
+| `make test-envs TENANT=<label>` | Mock-provider smoke tests across a tenant's env roots |
+| `make validate-imports TENANT=<label>` | Validate fixture import addresses against a tenant's roots |
+| `make validate-config` | Validate config/ tfvars against generated JSON Schemas (dev-only; skips gracefully if jsonschema is not installed) |
 
 ## Layout
 
+    RUNBOOK.md                 adoption and drift-detection procedures
     modules/<resource-type>/   GENERATED Terraform modules — never hand-edit
     schemas/provider/          pinned provider schema dumps (make schemas)
     schemas/tfvars/            generated JSON Schemas for config files
