@@ -177,6 +177,10 @@ class GoldenTest(unittest.TestCase):
         ("zia_url_categories", "main.tf", "render_main"),
         ("zia_url_categories", "outputs.tf", "render_outputs"),
         ("zia_url_categories", "versions.tf", "render_versions"),
+        ("zpa_server_group", "variables.tf", "render_variables"),
+        ("zpa_server_group", "main.tf", "render_main"),
+        ("zpa_application_segment", "variables.tf", "render_variables"),
+        ("zpa_application_segment", "main.tf", "render_main"),
     ]
 
     def test_rendered_output_matches_blessed_goldens(self):

@@ -1,8 +1,18 @@
 {
+  "zpa_application_segment": {
+    "product": "zpa",
+    "generate": true,
+    "fetch": {"path": "application", "pagination": "zpa"}
+  },
   "zpa_segment_group": {
     "product": "zpa",
     "generate": true,
     "fetch": {"path": "segmentGroup", "pagination": "zpa"}
+  },
+  "zpa_server_group": {
+    "product": "zpa",
+    "generate": true,
+    "fetch": {"path": "serverGroup", "pagination": "zpa"}
   },
   "zia_url_categories": {
     "product": "zia",

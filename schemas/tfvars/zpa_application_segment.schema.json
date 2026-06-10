@@ -1,0 +1,196 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "api_protection_enabled": {
+            "type": "boolean"
+          },
+          "bypass_on_reauth": {
+            "type": "boolean"
+          },
+          "bypass_type": {
+            "type": "string"
+          },
+          "config_space": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "domain_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "double_encrypt": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "fqdn_dns_check": {
+            "type": "boolean"
+          },
+          "health_check_type": {
+            "type": "string"
+          },
+          "health_reporting": {
+            "type": "string"
+          },
+          "icmp_access_type": {
+            "type": "string"
+          },
+          "inspect_traffic_with_zia": {
+            "type": "boolean"
+          },
+          "ip_anchored": {
+            "type": "boolean"
+          },
+          "is_cname_enabled": {
+            "type": "boolean"
+          },
+          "is_incomplete_dr_config": {
+            "type": "boolean"
+          },
+          "match_style": {
+            "type": "string"
+          },
+          "microtenant_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "passive_health_enabled": {
+            "type": "boolean"
+          },
+          "policy_style": {
+            "type": "boolean"
+          },
+          "segment_group_id": {
+            "type": "string"
+          },
+          "segment_group_name": {
+            "type": "string"
+          },
+          "select_connector_close_to_app": {
+            "type": "boolean"
+          },
+          "server_groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "share_to_microtenants": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "tcp_keep_alive": {
+            "type": "string"
+          },
+          "tcp_port_range": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "from": {
+                  "type": "string"
+                },
+                "to": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "tcp_port_ranges": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "udp_port_range": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "from": {
+                  "type": "string"
+                },
+                "to": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "udp_port_ranges": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "use_in_dr_mode": {
+            "type": "boolean"
+          },
+          "weighted_load_balancing": {
+            "type": "boolean"
+          },
+          "zpn_er_id": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "domain_names",
+          "name"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zpa_application_segment tfvars",
+  "type": "object"
+}
