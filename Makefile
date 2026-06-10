@@ -1,10 +1,17 @@
 PYTHON ?= python3
 TF     ?= terraform
 
-.PHONY: help test test-floor validate schemas
+.PHONY: help env test test-floor validate schemas
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
+
+env: ## Print toolchain versions (diagnostic)
+	@uname -sm
+	@$(PYTHON) --version 2>&1 || echo "python3: not found"
+	@$(MAKE) --version 2>/dev/null | head -1
+	@$(TF) version 2>/dev/null | head -1 || echo "terraform: not found"
+	@docker --version 2>/dev/null || echo "docker: not found"
 
 test: ## Run Python unit tests with the local interpreter
 	$(PYTHON) -m unittest discover -s tools/tests -t . -v

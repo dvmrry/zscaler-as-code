@@ -8,6 +8,8 @@ pool:
   vmImage: ubuntu-latest
 
 steps:
+  - script: make env
+    displayName: Toolchain versions
   - script: make test
     displayName: Python unit tests
   # Requires terraform on PATH — hosted ubuntu images ship it; self-hosted
