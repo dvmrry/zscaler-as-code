@@ -1,0 +1,27 @@
+[
+  {
+    "id": "CUSTOM_01",
+    "configuredName": "Example Custom Category",
+    "customCategory": true,
+    "editable": true,
+    "description": "Fictional category",
+    "type": "URL_CATEGORY",
+    "superCategory": "USER_DEFINED",
+    "urls": ["one.example.test", "two.example.test"],
+    "dbCategorizedUrls": ["three.example.test"],
+    "keywords": ["fictional"],
+    "val": 128,
+    "customUrlsCount": 2,
+    "urlsRetainingParentCategoryCount": 0,
+    "scopes": [
+      {
+        "Type": "ORGANIZATION",
+        "ScopeEntities": [{"id": 10, "name": "Org"}]
+      }
+    ],
+    "urlKeywordCounts": {
+      "totalUrlCount": 3,
+      "retainParentUrlCount": 0
+    }
+  }
+]
