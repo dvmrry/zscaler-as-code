@@ -3,7 +3,7 @@ import io
 import json
 import unittest
 
-from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, build_headers, compose_url, fetch_resource
+from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, build_headers, compose_url, fetch_resource, acquire_token
 
 
 class ManifestTest(unittest.TestCase):
@@ -167,6 +167,56 @@ class FetchResourceTest(unittest.TestCase):
         )
         self.assertEqual(out, [{"id": "CUSTOM_1"}])
         self.assertIn("customOnly=true", opener.calls[0])
+
+
+class AcquireTokenTest(unittest.TestCase):
+    def test_oneapi_posts_client_credentials(self):
+        opener = FakeOpener({
+            "https://acme.zslogin.net/oauth2/v1/token": [
+                (200, {"access_token": "ONEAPI_TOK", "expires_in": "3600"})
+            ]
+        })
+        env = {
+            "ZS_VANITY": "acme", "ZS_CLOUD": "",
+            "ZS_CLIENT_ID": "cid", "ZS_CLIENT_SECRET": "sec",
+        }
+        token = acquire_token("oneapi", "zia", env, {}, opener)
+        self.assertEqual(token, "ONEAPI_TOK")
+        body_seen = opener.bodies[0].decode()
+        self.assertIn("grant_type=client_credentials", body_seen)
+        self.assertIn("client_id=cid", body_seen)
+
+    def test_legacy_zpa_signin_returns_bearer(self):
+        opener = FakeOpener({
+            "https://config.private.zscaler.com/signin": [
+                (200, {"access_token": "ZPA_TOK"})
+            ]
+        })
+        env = {"ZS_ZPA_CLIENT_ID": "z", "ZS_ZPA_CLIENT_SECRET": "s"}
+        self.assertEqual(
+            acquire_token("legacy", "zpa", env, {"cloud": "zscalertwo"}, opener),
+            "ZPA_TOK",
+        )
+
+    def test_legacy_zia_session_returns_none_token(self):
+        # ZIA legacy yields a session cookie (held by the opener), not a
+        # bearer — acquire_token returns None and the POST carries the
+        # obfuscated key.
+        opener = FakeOpener({
+            "https://zsapi.zscalertwo.net/api/v1/authenticatedSession": [
+                (200, {"authType": "ADMIN_LOGIN"})
+            ]
+        })
+        env = {
+            "ZS_ZIA_API_KEY": "abcdefghijklmnop",
+            "ZS_ZIA_USERNAME": "u", "ZS_ZIA_PASSWORD": "p",
+        }
+        token = acquire_token("legacy", "zia", env, {"cloud": "zscalertwo"}, opener)
+        self.assertIsNone(token)
+        body = json.loads(opener.bodies[0].decode())
+        self.assertEqual(body["username"], "u")
+        self.assertIn("apiKey", body)
+        self.assertIn("timestamp", body)
 
 
 if __name__ == "__main__":

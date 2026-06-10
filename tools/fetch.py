@@ -9,6 +9,7 @@ See AGENTS.md rules 1-5.
 import json
 import os
 import sys
+import time
 
 MANIFEST_PATH = os.path.join("tools", "fetch_manifest.json")
 
@@ -171,3 +172,67 @@ def fetch_resource(resource_type, auth_mode, ctx, token, opener):
     query = entry.get("query") or {}
     paginate = _PAGINATORS[entry.get("pagination", product)]
     return paginate(opener, url, headers, query)
+
+
+def _require(env, name):
+    value = env.get(name)
+    if not value:
+        raise SystemExit("missing required env var %s" % name)
+    return value
+
+
+def acquire_token(auth_mode, product, env, ctx, opener, now_ms=None):
+    """Acquire auth for one product. Returns a bearer token string, or None
+    for legacy-ZIA (cookie-based; the cookie lives in the opener).
+
+    env is a dict (os.environ at the call site) so tests stay hermetic.
+    """
+    if auth_mode == "oneapi":
+        suffix = env.get("ZS_CLOUD", "")
+        token_url = "https://%s.zslogin%s.net/oauth2/v1/token" % (
+            _require(env, "ZS_VANITY"), suffix
+        )
+        body = urlencode({
+            "grant_type": "client_credentials",
+            "client_id": _require(env, "ZS_CLIENT_ID"),
+            "client_secret": _require(env, "ZS_CLIENT_SECRET"),
+            "audience": _ONEAPI_API_BASE,
+        }).encode()
+        status, raw = opener(
+            "POST", token_url,
+            {"Content-Type": "application/x-www-form-urlencoded"}, body,
+        )
+        if status != 200:
+            raise SystemExit("OneAPI token request failed: HTTP %d" % status)
+        return json.loads(raw.decode())["access_token"]
+
+    if auth_mode == "legacy":
+        if product == "zpa":
+            url = "%s/signin" % _LEGACY_ZPA_BASE
+            body = urlencode({
+                "client_id": _require(env, "ZS_ZPA_CLIENT_ID"),
+                "client_secret": _require(env, "ZS_ZPA_CLIENT_SECRET"),
+            }).encode()
+            status, raw = opener(
+                "POST", url,
+                {"Content-Type": "application/x-www-form-urlencoded"}, body,
+            )
+            if status != 200:
+                raise SystemExit("ZPA signin failed: HTTP %d" % status)
+            return json.loads(raw.decode())["access_token"]
+        if product == "zia":
+            ts = str(now_ms if now_ms is not None else int(time.time() * 1000))
+            url = "https://zsapi.%s.net/api/v1/authenticatedSession" % ctx["cloud"]
+            payload = json.dumps({
+                "apiKey": obfuscate_api_key(_require(env, "ZS_ZIA_API_KEY"), ts),
+                "username": _require(env, "ZS_ZIA_USERNAME"),
+                "password": _require(env, "ZS_ZIA_PASSWORD"),
+                "timestamp": ts,
+            }).encode()
+            status, raw = opener(
+                "POST", url, {"Content-Type": "application/json"}, payload
+            )
+            if status != 200:
+                raise SystemExit("ZIA session auth failed: HTTP %d" % status)
+            return None
+    raise SystemExit("unknown ZS_AUTH=%r" % auth_mode)
