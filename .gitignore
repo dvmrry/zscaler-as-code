@@ -15,3 +15,6 @@ __pycache__/
 
 # Local working docs
 docs/superpowers/
+
+# Fetcher output — never commit real pulls
+pulls/*/
