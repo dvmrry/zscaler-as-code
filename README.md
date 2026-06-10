@@ -21,7 +21,8 @@ repo. See `AGENTS.md` for the repo invariants.
 ## Entry points
 
 All workflows are `make` targets — run `make help` to list them (stays
-authoritative). Do not invent other invocation paths.
+authoritative). Do not invent other invocation paths. For step-by-step
+adoption and drift-detection procedures, see `RUNBOOK.md`.
 
 Common ops targets:
 
@@ -37,6 +38,7 @@ Common ops targets:
 
 ## Layout
 
+    RUNBOOK.md                 adoption and drift-detection procedures
     modules/<resource-type>/   GENERATED Terraform modules — never hand-edit
     schemas/provider/          pinned provider schema dumps (make schemas)
     schemas/tfvars/            generated JSON Schemas for config files
