@@ -82,4 +82,4 @@ where the error happens.
 
 ## Validation order
 
-Validate against the dev tenant (OneAPI) first, then production (legacy).
+Validate with a non-production tenant first; both auth modes work with any tenant.

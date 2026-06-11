@@ -10,6 +10,7 @@ from tools.tfschema import classify_attributes, load_resource
 from tools.transform import load_override, render_imports, render_tfvars, transform_items
 
 DEMO_DIR = os.path.join("tools", "tests", "fixtures", "demo")
+DEMO_EXPECTED_DIR = os.path.join("tools", "tests", "fixtures", "demo-expected")
 
 
 def _demo_types():
@@ -57,6 +58,31 @@ class DemoPipelineTest(unittest.TestCase):
             # imports render with the resource's template
             text = render_imports(rt, originals, override)
             self.assertIn('module.%s.%s.this[' % (rt, rt), text)
+
+    def test_demo_output_matches_blessed_goldens(self):
+        for rt in _demo_types():
+            with open(os.path.join(DEMO_DIR, rt + ".json")) as f:
+                raw = json.load(f)
+            override = load_override(rt)
+            items, originals, _ = transform_items(raw, rt, override)
+
+            tfvars_path = os.path.join(DEMO_EXPECTED_DIR, rt + ".tfvars.json")
+            imports_path = os.path.join(DEMO_EXPECTED_DIR, rt + "_imports.tf")
+            with open(tfvars_path) as f:
+                expected_tfvars = f.read()
+            with open(imports_path) as f:
+                expected_imports = f.read()
+
+            self.assertEqual(
+                render_tfvars(items),
+                expected_tfvars,
+                "%s tfvars golden drifted — rebless via make update-demo-goldens after intentional changes" % rt,
+            )
+            self.assertEqual(
+                render_imports(rt, originals, override),
+                expected_imports,
+                "%s imports golden drifted — rebless via make update-demo-goldens after intentional changes" % rt,
+            )
 
 
 if __name__ == "__main__":

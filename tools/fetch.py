@@ -45,10 +45,7 @@ def obfuscate_api_key(api_key, timestamp):
     return obfuscated
 
 
-try:
-    from urllib.parse import quote as _quote, urlencode
-except ImportError:  # pragma: no cover - py2 guard, never hit on 3.6+
-    from urllib import quote as _quote, urlencode
+from urllib.parse import quote as _quote, urlencode
 
 
 def _get_json(opener, url, headers, query):
@@ -346,7 +343,6 @@ def acquire_token(auth_mode, product, env, ctx, opener, now_ms=None):
 
 def products_in_manifest():
     return sorted({e["product"] for e in load_manifest().values()})
-
 
 
 def diag_hosts(env):

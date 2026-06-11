@@ -30,6 +30,7 @@ IDs, names, and cross-references are consistent within the cassettes (e.g.
 | `zia_rule_labels.json` | `zia/cassettes/TestRuleLabels.yaml` | `/ruleLabels` |
 | `zpa_app_connector_group.json` | `zpa/cassettes/TestAppConnectorGroup.yaml` | `/appConnectorGroup` |
 | `zpa_application_server.json` | `zpa/cassettes/TestApplicationServer.yaml` | `/server` |
+| `zpa_policy_access_rule.json` | `zpa/cassettes/TestAccessPolicyRule.yaml` + `TestAccessPolicyRuleV2.yaml` | `policySet/rules/policyType/ACCESS_POLICY` |
 
 ## Regeneration
 
