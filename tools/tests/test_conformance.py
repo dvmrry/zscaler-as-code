@@ -235,6 +235,32 @@ class SynthesisIsAdversarialTest(unittest.TestCase):
             if it.get("departments") is not None:
                 self.assertIsInstance(it["departments"], dict)
 
+    def test_null_stub_emitted_and_dropped(self):
+        # quirk 15: zia_location_management's extranet blocks must appear
+        # as id-zero stubs at some seed, and NO null-object may survive
+        # the transform — the provider's flattener treats them as absent.
+        from tools.transform import (
+            _is_null_object, load_override, transform_items,
+        )
+
+        raws = [synthesize_item("zia_location_management", s) for s in range(8)]
+        flat = json.dumps(raws)
+        self.assertIn('"id": 0', flat, "no id-zero stub emitted by synthesis")
+        ov = load_override("zia_location_management")
+        items, _, _ = transform_items(raws, "zia_location_management", ov)
+
+        def walk(v):
+            if isinstance(v, dict):
+                self.assertFalse(_is_null_object(v), "stub survived: %r" % v)
+                for x in v.values():
+                    walk(x)
+            elif isinstance(v, list):
+                for x in v:
+                    walk(x)
+
+        for it in items.values():
+            walk(it)
+
     def test_list_block_emitted_as_bare_dict_at_some_seed(self):
         # The single-dict-for-list-block wrap (quirk 13) must be exercised:
         # across seeds, forwardingProfileActions appears at least once as a

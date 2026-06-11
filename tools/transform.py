@@ -82,6 +82,10 @@ def filter_item(item, block, path, drops):
                             elems, inner_block, child_path, drops
                         )
                 if isinstance(single, dict):
+                    if _is_null_object(single):
+                        # provider-mirror: the "not configured" stub is
+                        # absence of data, omitted silently.
+                        continue
                     out[key] = filter_item(single, inner_block, child_path, drops)
                 else:
                     drops.append(child_path)
@@ -91,15 +95,52 @@ def filter_item(item, block, path, drops):
                     out[key] = [
                         filter_item(v, inner_block, inner_path, drops)
                         for v in value
-                        if isinstance(v, dict)
+                        if isinstance(v, dict) and not _is_null_object(v)
                     ]
                 elif isinstance(value, dict):
-                    out[key] = [filter_item(value, inner_block, inner_path, drops)]
+                    if _is_null_object(value):
+                        out[key] = []
+                    else:
+                        out[key] = [
+                            filter_item(value, inner_block, inner_path, drops)
+                        ]
                 else:
                     drops.append(child_path)
         else:
             drops.append(child_path)
     return out
+
+
+_NULL_STUB_VALUES = (0, "0", "", None)
+
+
+def _is_null_object(obj):
+    """True for the ZIA/ZPA "not configured" block stub.
+
+    The APIs emit id-bearing stubs for unset block fields — extranet
+    {"id": 0}, cbi_profile {"id": "0", "name": "", ...}, ID-collection
+    elements {"id": 0} — and the providers' OWN flatteners treat them as
+    absent (flattenCustomIDSet: `if customID == nil || customID.ID == 0
+    { return nil }`, v4.7.24). Config must mirror that or every adoption
+    plan shows perpetual phantom diffs on these blocks.
+
+    Conservative shape: an id-ish key ('id', or every key ending in
+    'id') whose value is 0/"0"/""/None/[], and every other member also
+    zero-ish. Any boolean member (even False) marks the block as real
+    settings, never a stub.
+    """
+    if not isinstance(obj, dict) or not obj:
+        return False
+    keys = list(obj)
+    if "id" not in obj and not all(k.endswith("id") for k in keys):
+        return False
+    for value in obj.values():
+        if isinstance(value, bool):
+            return False
+        if value in _NULL_STUB_VALUES or value == []:
+            continue
+        return False
+    return True
 
 
 def _merge_block_elements(elems, block, path, drops):
