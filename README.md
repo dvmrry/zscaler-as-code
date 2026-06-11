@@ -70,3 +70,7 @@ do not regenerate or hand-edit `schemas/provider/` there. `make schemas
 CHECK=1` is the authoring-side pre-commit guard for pin bumps; extraction
 output can legitimately vary with the local terraform and provider
 versions, which is exactly why it happens in one place.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
