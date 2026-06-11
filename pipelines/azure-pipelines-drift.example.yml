@@ -66,21 +66,20 @@ steps:
         commit -m "Backfill drift: $(TENANT)"
       git push -u origin "$branch"
       # Requires: az devops CLI on the agent + build service granted
-      # "Contribute to pull requests". Auto-complete merges once policies
-      # (the validation build + the drift-PR plan gate) pass.
+      # "Contribute to pull requests". A HUMAN merges — the PR carries
+      # the diff summary + audit attribution, and the plan build policy
+      # shows merge-readiness; review is read-and-click, not investigate.
       az repos pr create --source-branch "$branch" --target-branch main \
-        --title "Drift backfill: $(TENANT)" --description "$(cat /tmp/pr-body.md)" \
-        --auto-complete true
+        --title "Drift backfill: $(TENANT)" --description "$(cat /tmp/pr-body.md)"
     displayName: Open backfill PR
     condition: eq(variables.DRIFTED, 'true')
     env:
       AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
 
-# The auto-merge safety gate lives in the PR build policy: a pipeline that
-# runs on drift/* PR branches with REAL creds and asserts the plan is pure
-# no-op/imports before auto-complete can fire:
+# Merge-readiness build policy for drift/* PR branches (REAL creds):
 #   - script: make plan-changed BASE=origin/main SAVE=1 BACKEND_CONFIG=backend.conf
 #   - script: make assert-clean
-# Backfill means config now MATCHES the tenant — any non-import change
-# means the tenant moved again (or a transform gap): the policy fails,
-# auto-complete holds, a human reviews.
+# Green = the backfill is a faithful snapshot (plan is pure no-op;
+# imports of new objects allowed) — the reviewer reads the PR body and
+# clicks merge. Red = the tenant moved again between fetch and plan, or
+# a transform gap: look closer before merging.

@@ -253,13 +253,15 @@ drift pipeline can open the backfill PR itself (full reference flows in
    fields) plus `tools/audit` — the ZIA audit trail for the window,
    answering WHO made the change. Attribution is strictly advisory: any
    audit failure degrades to a one-line note, never blocks the PR.
-3. **Auto-merge gate**: the PR's plan job runs
+3. **Merge-readiness check — a human merges.** The PR's plan job runs
    `make plan-changed SAVE=1 ... && make assert-clean`. Backfill means
    config now MATCHES the tenant, so every saved plan must be pure
-   no-op (imports of new objects allowed). Clean → auto-merge. Anything
-   else means the tenant moved again or transform disagrees → the gate
-   fails and a human reviews. Merging never touches the tenant; new
-   objects enter state via the delivery pipeline's import apply.
+   no-op (imports of new objects allowed). Green = faithful snapshot;
+   the reviewer reads the body (what changed, who changed it) and
+   clicks merge — staying aware of every change without doing any of
+   the legwork. Red = the tenant moved again or transform disagrees —
+   look closer first. Merging never touches the tenant; new objects
+   enter state via the delivery pipeline's import apply.
 
 ---
 
