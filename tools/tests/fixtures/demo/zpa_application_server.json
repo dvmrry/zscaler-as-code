@@ -1,0 +1,35 @@
+[
+  {
+    "address": "192.168.1.1",
+    "configSpace": "DEFAULT",
+    "creationTime": "1762497160",
+    "description": "ExampleServer01",
+    "enabled": true,
+    "id": "216196257331388877",
+    "modifiedBy": "216196257331372705",
+    "modifiedTime": "1762497160",
+    "name": "ExampleServer01"
+  },
+  {
+    "address": "192.168.1.1",
+    "configSpace": "DEFAULT",
+    "creationTime": "1763017548",
+    "description": "ExampleServer02",
+    "enabled": true,
+    "id": "216196257331389970",
+    "modifiedBy": "216196257331372705",
+    "modifiedTime": "1763017548",
+    "name": "ExampleServer02"
+  },
+  {
+    "address": "192.168.200.1",
+    "configSpace": "DEFAULT",
+    "creationTime": "1773369886",
+    "description": "tests-srv-vcr0002",
+    "enabled": true,
+    "id": "216196257331404642",
+    "modifiedBy": "216196257331372705",
+    "modifiedTime": "1773369886",
+    "name": "tests-srv-vcr0001"
+  }
+]

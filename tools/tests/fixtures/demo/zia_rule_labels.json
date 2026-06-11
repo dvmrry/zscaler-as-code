@@ -1,0 +1,17 @@
+[
+  {
+    "createdBy": {
+      "id": 117810311,
+      "name": "REDACTED"
+    },
+    "description": "Test Description for VCR",
+    "id": 4338882,
+    "lastModifiedBy": {
+      "id": 117810311,
+      "name": "REDACTED"
+    },
+    "lastModifiedTime": 1773372096,
+    "name": "TestLabel_VCR_Integration",
+    "referencedRuleCount": 0
+  }
+]

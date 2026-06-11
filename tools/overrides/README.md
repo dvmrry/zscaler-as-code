@@ -24,3 +24,9 @@ use this for system/predefined objects the provider refuses to manage, e.g.
 `"skip_if": [{"default_rule": true}]` drops any item where `default_rule`
 is `true`). Exceptions are data, not code: prefer an entry here over
 editing the transform.
+
+The same JSON file may also carry one GENERATOR key: `sample` (a dict
+merged over the generated module test fixture's example item) — for
+required attributes with provider-validated enums where the default
+`"example"` value cannot pass a mock plan, e.g.
+`"sample": {"protocols": ["ANY_RULE"]}`.

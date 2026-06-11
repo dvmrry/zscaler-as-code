@@ -1,0 +1,65 @@
+[
+  {
+    "accessControl": "READ_WRITE",
+    "action": "BLOCK",
+    "blockOverride": false,
+    "browserEunTemplateId": 0,
+    "capturePCAP": false,
+    "cbiProfileId": 0,
+    "description": "tests-vcr0002",
+    "deviceTrustLevels": [
+      "UNKNOWN_DEVICETRUSTLEVEL",
+      "LOW_TRUST",
+      "MEDIUM_TRUST",
+      "HIGH_TRUST"
+    ],
+    "enforceTimeValidity": false,
+    "excludeSrcCountries": false,
+    "groupsAndDepartmentsSet": false,
+    "httpHeaderActionProfiles": [],
+    "httpHeaderProfiles": [],
+    "id": 1690944,
+    "lastModifiedBy": {
+      "id": 117810311,
+      "name": "REDACTED"
+    },
+    "lastModifiedTime": 1773372484,
+    "name": "tests-vcr0001",
+    "order": 1,
+    "predefined": false,
+    "protocols": [
+      "ANY_RULE"
+    ],
+    "rank": 7,
+    "requestMethods": [
+      "OPTIONS",
+      "GET",
+      "HEAD",
+      "POST",
+      "PUT",
+      "DELETE",
+      "TRACE",
+      "CONNECT",
+      "OTHER"
+    ],
+    "sourceIpGroups": [],
+    "state": "ENABLED",
+    "userAgentTypes": [
+      "OPERA",
+      "FIREFOX",
+      "MSIE",
+      "MSEDGE",
+      "CHROME",
+      "SAFARI",
+      "OTHER",
+      "MSCHREDGE"
+    ],
+    "userRiskScoreLevels": [
+      "LOW",
+      "MEDIUM",
+      "HIGH",
+      "CRITICAL"
+    ],
+    "usersAndGroupsSet": false
+  }
+]

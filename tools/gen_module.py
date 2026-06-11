@@ -183,12 +183,28 @@ def render_versions(resource_type, resource_schema):
     )
 
 
-def render_sample(resource_type, resource_schema):
+def _sample_value(enc):
+    """Return a minimal sample value for a required attribute type encoding."""
+    if isinstance(enc, str):
+        return _SAMPLE_VALUES.get(enc, "example")
+    # complex type: ["set"/"list"/"map", inner]
+    if isinstance(enc, list) and len(enc) == 2:
+        kind, inner = enc
+        if kind in ("set", "list"):
+            return [_sample_value(inner)]
+        if kind == "map":
+            return {"example": _sample_value(inner)}
+    return []
+
+
+def render_sample(resource_type, resource_schema, sample_override=None):
     cls = classify_attributes(resource_schema["block"])
     item = {}
     for name in cls["required"]:
         enc = resource_schema["block"]["attributes"][name]["type"]
-        item[name] = _SAMPLE_VALUES.get(enc, "example") if isinstance(enc, str) else []
+        item[name] = _sample_value(enc)
+    if sample_override:
+        item.update(sample_override)
     return json.dumps({"items": {"example": item}}, indent=2, sort_keys=True) + "\n"
 
 
@@ -224,10 +240,20 @@ def _fmt(text):
     return proc.stdout.decode()
 
 
+def _load_json_override(resource_type, overrides_root):
+    """Load tools/overrides/<resource_type>.json if it exists, else {}."""
+    path = os.path.join(overrides_root, resource_type + ".json")
+    if not os.path.exists(path):
+        return {}
+    with open(path) as f:
+        return json.load(f)
+
+
 def generate_module(resource_type, out_root=MODULES_ROOT, overrides_root=OVERRIDES_ROOT, fmt=True):
     rs = load_resource(resource_type)
     base = os.path.join(out_root, resource_type)
     os.makedirs(os.path.join(base, "tests"), exist_ok=True)
+    json_override = _load_json_override(resource_type, overrides_root)
     override_main = os.path.join(overrides_root, resource_type, "main.tf")
     if os.path.exists(override_main):
         with open(override_main) as f:
@@ -241,7 +267,9 @@ def generate_module(resource_type, out_root=MODULES_ROOT, overrides_root=OVERRID
         "outputs.tf": render_outputs(resource_type, rs),
         "README.md": render_readme(resource_type, rs),
         os.path.join("tests", "defaults.tftest.hcl"): render_test(resource_type, rs),
-        os.path.join("tests", "sample.auto.tfvars.json"): render_sample(resource_type, rs),
+        os.path.join("tests", "sample.auto.tfvars.json"): render_sample(
+            resource_type, rs, sample_override=json_override.get("sample")
+        ),
     }
     for rel, text in sorted(files.items()):
         if fmt and (rel.endswith(".tf") or rel.endswith(".tftest.hcl")):

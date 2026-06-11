@@ -1,0 +1,4 @@
+{
+  "import_id": "{id}",
+  "sample": {"protocols": ["ANY_RULE"]}
+}

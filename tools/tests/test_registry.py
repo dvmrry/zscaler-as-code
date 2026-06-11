@@ -11,9 +11,13 @@ class RegistryTest(unittest.TestCase):
             [
                 "zia_cloud_app_control_rule",
                 "zia_location_management",
+                "zia_rule_labels",
                 "zia_ssl_inspection_rules",
                 "zia_url_categories",
+                "zia_url_filtering_rules",
+                "zpa_app_connector_group",
                 "zpa_application_segment",
+                "zpa_application_server",
                 "zpa_segment_group",
                 "zpa_server_group",
             ],

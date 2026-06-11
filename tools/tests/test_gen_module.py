@@ -143,6 +143,27 @@ class RenderRestTest(unittest.TestCase):
         sample = render_sample("zpa_segment_group", rs)
         self.assertEqual(sample, '{\n  "items": {\n    "example": {\n      "name": "example"\n    }\n  }\n}\n')
 
+    def test_sample_collections_get_example_members(self):
+        # required set(string) must sample as ["example"], not [] — an empty
+        # collection can hide provider plan-time validation in module tests.
+        rs = load_resource("zpa_application_segment")
+        sample = render_sample("zpa_application_segment", rs)
+        import json as _json
+        item = _json.loads(sample)["items"]["example"]
+        self.assertEqual(item["domain_names"], ["example"])
+
+    def test_sample_override_wins(self):
+        # enum-constrained required attrs need real values (e.g. protocols);
+        # the override map's "sample" key supplies them.
+        rs = load_resource("zia_url_filtering_rules")
+        sample = render_sample(
+            "zia_url_filtering_rules", rs, sample_override={"protocols": ["ANY_RULE"]}
+        )
+        import json as _json
+        item = _json.loads(sample)["items"]["example"]
+        self.assertEqual(item["protocols"], ["ANY_RULE"])
+        self.assertEqual(item["name"], "example")
+
     def test_test_skeleton_uses_mock_provider(self):
         rs = load_resource("zpa_segment_group")
         out = render_test("zpa_segment_group", rs)
@@ -202,6 +223,14 @@ class GoldenTest(unittest.TestCase):
         ("zia_ssl_inspection_rules", "main.tf", "render_main"),
         ("zia_cloud_app_control_rule", "variables.tf", "render_variables"),
         ("zia_cloud_app_control_rule", "main.tf", "render_main"),
+        ("zia_url_filtering_rules", "variables.tf", "render_variables"),
+        ("zia_url_filtering_rules", "main.tf", "render_main"),
+        ("zia_rule_labels", "variables.tf", "render_variables"),
+        ("zia_rule_labels", "main.tf", "render_main"),
+        ("zpa_app_connector_group", "variables.tf", "render_variables"),
+        ("zpa_app_connector_group", "main.tf", "render_main"),
+        ("zpa_application_server", "variables.tf", "render_variables"),
+        ("zpa_application_server", "main.tf", "render_main"),
     ]
 
     def test_rendered_output_matches_blessed_goldens(self):
