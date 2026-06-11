@@ -203,7 +203,16 @@ If a root was already applied with LOCAL state, migrate once with
 
 ### 8. Apply and remove import blocks
 
-Apply the saved plan with:
+**If workstations cannot reach the state storage** (blob access locked
+to pipeline agents), run the bootstrap pipeline instead of applying
+locally: `pipelines/azure-pipelines-bootstrap.example.yml` stages the
+imports, plans, PROVES the plan is imports-only (`assert-clean` before
+the approval gate), and applies after approval — per tenant, optionally
+per resource/product wave. Steps 7–8 collapse into one supervised run;
+the staged import copies live only in the agent workspace, so there is
+nothing to remove afterwards.
+
+Otherwise, apply the saved plan with:
 
 ```
 make apply TENANT=<label> RESOURCE=<type> [BACKEND_CONFIG=backend.conf]
@@ -217,7 +226,7 @@ destroys, do not proceed until you understand the cause — pass
 After apply succeeds, remove the import blocks file:
 
 ```
-rm envs/<label>/<type>/<type>_imports.tf
+make unstage-imports TENANT=<label>
 ```
 
 Import blocks error once resources are already managed. Removal is required.

@@ -1,7 +1,7 @@
 PYTHON ?= python3
 TF     ?= terraform
 
-.PHONY: help env install-tf bump-check plan-report lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck conformance
+.PHONY: help env install-tf bump-check plan-report stage-imports unstage-imports lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck conformance
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
@@ -179,6 +179,27 @@ drift-report: ## Render the drift summary + audit attribution to reports/<tenant
 	@$(PYTHON) -m tools.drift_summary "$(TENANT)" > reports/$(TENANT)/drift.md
 	@$(PYTHON) -m tools.audit "$(TENANT)" $(or $(AUDIT_HOURS),24) >> reports/$(TENANT)/drift.md
 	@echo "wrote reports/$(TENANT)/drift.md"
+
+stage-imports: ## Copy import (and moved) blocks into env roots for adoption plans (TENANT=<label> [RESOURCE=<type>])
+	@test -n "$(TENANT)" || { echo "usage: make stage-imports TENANT=<label> [RESOURCE=<type>]"; exit 2; }
+	@set -e; staged=0; for f in imports/$(TENANT)/$(or $(RESOURCE),*)_imports.tf imports/$(TENANT)/$(or $(RESOURCE),*)_moves.tf; do \
+		test -f "$$f" || continue; \
+		base=$$(basename "$$f"); \
+		rt=$$(echo "$$base" | sed 's/_imports\.tf$$//; s/_moves\.tf$$//'); \
+		test -d "envs/$(TENANT)/$$rt" || { echo "skip $$base (no env root envs/$(TENANT)/$$rt — run make gen-env)"; continue; }; \
+		cp "$$f" "envs/$(TENANT)/$$rt/$$base"; \
+		echo "staged envs/$(TENANT)/$$rt/$$base"; \
+		staged=$$((staged+1)); \
+	done; \
+	test $$staged -gt 0 || { echo "error: nothing to stage for TENANT=$(TENANT) (no imports/$(TENANT)/*_imports.tf — run make transform first)"; exit 1; }
+
+unstage-imports: ## Remove staged import/moved blocks from env roots after apply (TENANT=<label> [RESOURCE=<type>])
+	@test -n "$(TENANT)" || { echo "usage: make unstage-imports TENANT=<label> [RESOURCE=<type>]"; exit 2; }
+	@removed=0; for f in envs/$(TENANT)/$(or $(RESOURCE),*)/*_imports.tf envs/$(TENANT)/$(or $(RESOURCE),*)/*_moves.tf; do \
+		test -f "$$f" || continue; \
+		rm -f "$$f"; echo "removed $$f"; removed=$$((removed+1)); \
+	done; \
+	echo "$$removed file(s) removed"
 
 plan-report: ## Render saved plans to reports/plan.md (markdown, for PR comments) ([TENANT=<label>] [RESOURCE=<type>])
 	@set -e; mkdir -p reports; out="reports/plan.md"; found=0; \

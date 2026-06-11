@@ -13,6 +13,7 @@ The landscape is three pipelines:
 |---|---|---|---|---|
 | **Validation** (PR gate) | every PR | none | never touched (`-backend=false` everywhere) | `test`, `validate`, `typecheck`, `lint`, `test-envs`, `validate-imports` |
 | **Plan → Apply** (delivery) | merge / manual | real API creds + state auth | locked during plan/apply | `plan-changed SAVE=1` → approval → `apply` |
+| **Bootstrap** (manual, per tenant/wave) | run-pipeline button | real API creds + state auth | locked; writes the FIRST state (imports only — never mutates the tenant) | `stage-imports` → `plan SAVE=1` → `assert-clean` (imports-only proof, BEFORE approval) → approval → `apply` |
 | **Bump check** (scheduled) | weekly cron | none (public registries) | not used | `bump-check` → orange run (`SucceededWithIssues`) + deduplicated ADO work item on a board (no webhooks/email needed); red = the check itself failed |
 | **Drift** (scheduled) | cron (hourly scoped + weekly broad) | read-only API creds | not used | `drift [RESOURCE=…]` → non-zero + changed worktree (make flattens the tool's exit 3) → backfill PR (`drift-report` output: drift summary + audit body); `assert-clean` shows merge-readiness, a human merges |
 
