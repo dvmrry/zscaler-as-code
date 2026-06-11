@@ -8,7 +8,8 @@ terraform {
       source = "zscaler/zpa"
     }
   }
-  # backend configured per environment (Plan 5 / operator)
+  # local state — opt into remote state with
+  # make gen-env TENANT=demo BACKEND=azurerm
 }
 
 provider "zpa" {

@@ -150,6 +150,34 @@ not apply until you understand the difference. Common fixes: add a
 `tools/overrides/<type>.json`, then re-run `make transform` and re-check.
 Never hand-edit `config/<label>/` to force the plan clean.
 
+### 7a. Remote state (Azure Blob Storage) — before first apply
+
+Plans are stateless, but the first apply writes tfstate. To use Azure
+Blob Storage (one blob per resource root, key `<tenant>/<type>.tfstate`):
+
+1. Copy `backend.conf.example` to `backend.conf` and fill the three
+   values (storage account must already exist; the pipeline/CLI identity
+   needs **Storage Blob Data Contributor** on the container).
+2. Add the backend block to the tenant's roots (recorded in
+   `envs/<label>/.backend`, so later regenerations keep it):
+
+```
+make gen-env TENANT=<label> BACKEND=azurerm
+```
+
+3. From here on, pass the config to every plan/apply init:
+
+```
+make plan TENANT=<label> BACKEND_CONFIG=backend.conf
+```
+
+Authentication is environment-only (pipeline service connection,
+`az login`, or `ARM_*` vars) — never written into `backend.conf`.
+Mock-provider tests are unaffected (they init with `-backend=false`).
+If a root was already applied with LOCAL state, migrate once with
+`terraform -chdir=envs/<label>/<type> init -migrate-state
+-backend-config=<file> -backend-config="key=<label>/<type>.tfstate"`.
+
 ### 8. Apply and remove import blocks
 
 Apply using your Terraform invocation or CI pipeline. After state is

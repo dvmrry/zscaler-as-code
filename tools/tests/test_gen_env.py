@@ -27,6 +27,20 @@ class RenderEnvMainTest(unittest.TestCase):
             out = render_env_main("zpa_segment_group", label)
             self.assertIn(label, out)
 
+    def test_no_backend_block_by_default(self):
+        out = render_env_main("zpa_segment_group", "zs2")
+        self.assertNotIn('backend "', out)
+
+    def test_backend_block_is_partial_with_derived_key_hint(self):
+        # backend=azurerm emits an EMPTY (partial) backend block — values
+        # come from -backend-config at init; the per-root state key is
+        # documented inline so the operator can see the blob layout.
+        out = render_env_main("zpa_segment_group", "zs2", backend="azurerm")
+        self.assertIn('backend "azurerm" {', out)
+        self.assertIn("zs2/zpa_segment_group.tfstate", out)
+        # partial: no storage values baked into the public template
+        self.assertNotIn("storage_account_name", out)
+
 
 class GenerateEnvTest(unittest.TestCase):
     def test_writes_root_files(self):
@@ -77,6 +91,34 @@ class RenderEnvTestTest(unittest.TestCase):
         out = render_env_test("zpa_segment_group", "zs2", has_config=True)
         self.assertIn('run "empty_plan"', out)
         self.assertIn("items = {}", out)
+
+
+class BackendMarkerTest(unittest.TestCase):
+    def test_backend_choice_survives_regeneration(self):
+        # The backend choice is data (envs/<t>/.backend): a later regen
+        # WITHOUT the backend argument — exactly what check-envs does —
+        # must reproduce the same roots, not revert them to local state.
+        from tools.gen_env import generate_env
+        with tempfile.TemporaryDirectory() as td:
+            generate_env("zs2", out_root=td, fmt=False, backend="azurerm")
+            main_path = os.path.join(td, "zs2", "zpa_segment_group", "main.tf")
+            with open(main_path) as f:
+                first = f.read()
+            self.assertIn('backend "azurerm"', first)
+            generate_env("zs2", out_root=td, fmt=False)  # no backend arg
+            with open(main_path) as f:
+                second = f.read()
+            self.assertEqual(first, second)
+
+    def test_no_marker_no_backend(self):
+        from tools.gen_env import generate_env
+        with tempfile.TemporaryDirectory() as td:
+            generate_env("zs2", out_root=td, fmt=False)
+            self.assertFalse(
+                os.path.exists(os.path.join(td, "zs2", ".backend"))
+            )
+            with open(os.path.join(td, "zs2", "zpa_segment_group", "main.tf")) as f:
+                self.assertNotIn('backend "', f.read())
 
 
 class GenerateEnvWritesTest(unittest.TestCase):

@@ -7,6 +7,9 @@ envs/**/.terraform.lock.hcl
 crash.log
 crash.*.log
 
+# Remote-state settings — work-specific values, never committed here
+backend.conf
+
 # Python
 __pycache__/
 *.py[cod]
