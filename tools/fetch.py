@@ -56,12 +56,16 @@ def _get_json(opener, url, headers, query):
     return json.loads(body.decode())
 
 
-def paginate_zia(opener, url, headers, query, page_size=1000, max_pages=100000):
-    """ZIA: page until a page returns fewer than page_size items.
+def paginate_zia(opener, url, headers, query, page_size=1000, max_pages=100000,
+                 envelope=None):
+    """ZIA-style: page until a page returns fewer than page_size items.
 
     max_pages is a runaway guard — a real API that always returns a full
     page (total an exact multiple of page_size) would otherwise loop
     forever. The default ceiling is far above any real ZIA result set.
+    envelope: some endpoints wrap the page in an object (e.g. ZCC v1
+    trusted networks: {"totalCount": N, "trustedNetworkContracts": [...]})
+    — name the wrapping key in the registry entry to unwrap it.
     """
     items = []
     page = 1
@@ -69,6 +73,8 @@ def paginate_zia(opener, url, headers, query, page_size=1000, max_pages=100000):
         q = dict(query)
         q.update({"page": page, "pageSize": page_size})
         batch = _get_json(opener, url, headers, q)
+        if envelope is not None and isinstance(batch, dict):
+            batch = batch.get(envelope) or []
         if not isinstance(batch, list):
             raise RuntimeError("ZIA %s did not return a list page" % url)
         items.extend(batch)
@@ -329,10 +335,13 @@ def _fetch_paths(entry, auth_mode, ctx, token, opener):
     headers = build_headers(token, auth_token_header=use_auth_token_header)
     query = entry.get("query") or {}
     paginate = _PAGINATORS[entry.get("pagination", product)]
+    kwargs = {}
+    if entry.get("envelope") and paginate is paginate_zia:
+        kwargs["envelope"] = entry["envelope"]
     items = []
     for path in expand_paths(entry):
         url = compose_url(auth_mode, product, path, ctx)
-        items.extend(paginate(opener, url, headers, query))
+        items.extend(paginate(opener, url, headers, query, **kwargs))
     return items
 
 
