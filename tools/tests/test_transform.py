@@ -139,6 +139,32 @@ class OverrideTest(unittest.TestCase):
         item = {"server_groups": [{"id": "9", "name": "g"}]}
         self.assertEqual(apply_overrides(item, ov), {"server_groups": ["9"]})
 
+    def test_split_csv_makes_real_lists(self):
+        # ZCC returns list-typed settings as comma-joined strings.
+        ov = {"split_csv": ["dns_server_ips"]}
+        item = {"dns_server_ips": "10.0.0.53, 10.0.1.53"}
+        self.assertEqual(
+            apply_overrides(item, ov), {"dns_server_ips": ["10.0.0.53", "10.0.1.53"]}
+        )
+
+    def test_split_csv_empty_string_is_empty_list(self):
+        ov = {"split_csv": ["ssids"]}
+        self.assertEqual(apply_overrides({"ssids": ""}, ov), {"ssids": []})
+
+    def test_split_csv_ignores_non_strings(self):
+        ov = {"split_csv": ["already_list"]}
+        self.assertEqual(
+            apply_overrides({"already_list": ["a"]}, ov), {"already_list": ["a"]}
+        )
+
+    def test_split_csv_runs_after_renames(self):
+        ov = {"renames": {"dns_servers": "dns_server_ips"},
+              "split_csv": ["dns_server_ips"]}
+        item = {"dns_servers": "1.1.1.1,2.2.2.2"}
+        self.assertEqual(
+            apply_overrides(item, ov), {"dns_server_ips": ["1.1.1.1", "2.2.2.2"]}
+        )
+
     def test_unconditional_drops(self):
         ov = {"drops": ["noise_field"]}
         item = {"noise_field": "anything", "keep": 1}
