@@ -111,10 +111,19 @@ def check_item(item, block):
         if key in block_types:
             if value is None:
                 continue
+            inner_block = block_types[key]["block"]
+            if block_types[key]["nesting_mode"] == "single":
+                # single-mode block: value is a bare object (the generator
+                # wraps [x] at plan time). A list is the broken shape.
+                if not isinstance(value, dict):
+                    issues.append(("", key, "object (single block)", type(value).__name__))
+                    continue
+                for _, sub_path, exp2, got2 in check_item(value, inner_block):
+                    issues.append(("", "%s.%s" % (key, sub_path), exp2, got2))
+                continue
             if not isinstance(value, list):
                 issues.append(("", key, "list of blocks", type(value).__name__))
                 continue
-            inner_block = block_types[key]["block"]
             for i, elem in enumerate(value):
                 if not isinstance(elem, dict):
                     issues.append(("", "%s[%d]" % (key, i), "object", type(elem).__name__))
@@ -185,6 +194,9 @@ def suggest(expected, got_repr, field_path):
         if got_repr == "str":
             return "re-run make transform"
         return "relay this line"
+
+    if "single block" in str(expected):
+        return "re-run make transform (single-block fix) — single-mode blocks are objects, not lists"
 
     if "not an input" in str(expected):
         return "regenerate config (make transform) — stale file or missing schema filter"
