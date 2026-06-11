@@ -17,6 +17,7 @@
   },
   "zcc_trusted_network": {
     "fetch": {
+      "envelope": "trustedNetworkContracts",
       "pagination": "zia",
       "path": "zcc/papi/public/v1/webTrustedNetwork/listByCompany"
     },

@@ -92,6 +92,35 @@ class PaginateZiaTest(unittest.TestCase):
         opener = FakeOpener({"https://x/u": [(200, [])]})
         self.assertEqual(paginate_zia(opener, "https://x/u", {}, {}, page_size=500), [])
 
+    def test_envelope_unwraps_wrapped_pages(self):
+        # ZCC v1 trusted networks wrap the page:
+        # {"totalCount": N, "trustedNetworkContracts": [...]}
+        opener = FakeOpener({
+            "https://x/webTrustedNetwork/listByCompany": [
+                (200, {"totalCount": 2, "trustedNetworkContracts": [
+                    {"id": "1"}, {"id": "2"}
+                ]})
+            ]
+        })
+        out = paginate_zia(
+            opener, "https://x/webTrustedNetwork/listByCompany", {}, {},
+            page_size=500, envelope="trustedNetworkContracts",
+        )
+        self.assertEqual([i["id"] for i in out], ["1", "2"])
+
+    def test_envelope_missing_key_is_empty(self):
+        opener = FakeOpener({"https://x/u": [(200, {"totalCount": 0})]})
+        self.assertEqual(
+            paginate_zia(opener, "https://x/u", {}, {}, page_size=500,
+                         envelope="trustedNetworkContracts"),
+            [],
+        )
+
+    def test_unwrapped_dict_without_envelope_still_raises(self):
+        opener = FakeOpener({"https://x/u": [(200, {"not": "a list"})]})
+        with self.assertRaises(RuntimeError):
+            paginate_zia(opener, "https://x/u", {}, {}, page_size=500)
+
     def test_caps_runaway_pagination(self):
         # An API that always returns a full page must not loop forever.
         full = [{"id": str(n)} for n in range(2)]
