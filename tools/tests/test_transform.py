@@ -621,6 +621,52 @@ class PipelineTest(unittest.TestCase):
         self.assertIn('id = "CUSTOM:10"', text)
 
 
+class NullObjectStubTest(unittest.TestCase):
+    """The ZIA/ZPA "not configured" stubs: blocks the API emits with id=0
+    that the providers' own flatteners treat as absent (field-hit on
+    location extranets, cbi_profile, server_groups). Config must drop
+    them or adoption plans show perpetual phantom diffs."""
+
+    def test_extranet_stubs_dropped_from_location(self):
+        rs = load_resource("zia_location_management")
+        item = {
+            "name": "HQ",
+            "extranet": {"id": 0},
+            "extranet_dns": [{"id": 0}],
+            "extranet_ip_pool": {"id": 0},
+        }
+        drops = []
+        out = filter_item(item, rs["block"], "", drops)
+        self.assertEqual(out.get("extranet"), [])
+        self.assertEqual(out.get("extranet_dns"), [])
+        self.assertEqual(out.get("extranet_ip_pool"), [])
+        self.assertEqual(drops, [])
+
+    def test_real_extranet_kept(self):
+        rs = load_resource("zia_location_management")
+        item = {"extranet": [{"id": 42}]}
+        out = filter_item(item, rs["block"], "", [])
+        self.assertEqual(out["extranet"], [{"id": 42}])
+
+    def test_cbi_profile_stub_element_dropped(self):
+        rs = load_resource("zia_url_filtering_rules")
+        item = {"cbi_profile": [
+            {"id": "0", "name": "", "url": "", "profile_seq": 0}
+        ]}
+        out = filter_item(item, rs["block"], "", [])
+        self.assertEqual(out["cbi_profile"], [])
+
+    def test_server_groups_stub_dropped_real_kept(self):
+        rs = load_resource("zpa_application_segment")
+        item = {"server_groups": [{"id": 0}, {"id": "216199"}]}
+        out = filter_item(item, rs["block"], "", [])
+        self.assertEqual(out["server_groups"], [{"id": "216199"}])
+
+    def test_bool_member_marks_block_real(self):
+        from tools.transform import _is_null_object
+        self.assertFalse(_is_null_object({"id": 0, "enabled": False}))
+
+
 class MovedBlocksTest(unittest.TestCase):
     OLD = (
         'import {\n'

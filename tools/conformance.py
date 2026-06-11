@@ -234,27 +234,49 @@ def _syn_block_object(block, seed, ctr, csv_fields, rename_targets):
             out[camel(bname)] = child if v == 0 else [child]
         elif block_is_single(bt):
             # max_items=1 list/set block: a bare dict, a one-element list,
-            # OR the multi-element API shape (quirk 14 — the ZIA ID-group
+            # the multi-element API shape (quirk 14 — the ZIA ID-group
             # pattern: N {id, ...} elements the transform must merge into
-            # ONE object with unioned list members).
-            v = _variant(seed, ctr.next(), bname, 3)
+            # ONE object with unioned list members), OR the "not
+            # configured" id-zero stub the transform must DROP (quirk 15;
+            # mirrors the provider's flattenCustomIDSet ID==0 -> nil).
+            stub = _null_stub(inner)
+            v = _variant(seed, ctr.next(), bname, 4 if stub else 3)
             if v == 0:
                 out[camel(bname)] = child
             elif v == 1:
                 out[camel(bname)] = [child]
-            else:
+            elif v == 2:
                 child2 = _syn_block_object(inner, seed + 1, ctr, set(), {})
                 out[camel(bname)] = [child, child2]
+            else:
+                out[camel(bname)] = stub
         else:
-            v = _variant(seed, ctr.next(), bname, 2)
-            # list/set block: a list of dicts, OR a single bare dict to
-            # exercise the single-dict-for-list wrap (quirk 13).
+            stub = _null_stub(inner)
+            v = _variant(seed, ctr.next(), bname, 3 if stub else 2)
+            # list/set block: a list of dicts, a single bare dict
+            # (single-dict-for-list wrap, quirk 13), or a list carrying a
+            # "not configured" stub element to drop (quirk 15).
             if v == 0:
                 child2 = _syn_block_object(inner, seed + 1, ctr, set(), {})
                 out[camel(bname)] = [child, child2]
-            else:
+            elif v == 1:
                 out[camel(bname)] = child  # bare dict -> wrapped to [dict]
+            else:
+                out[camel(bname)] = [child, stub]
     return out
+
+
+def _null_stub(block):
+    """The id-zero "not configured" stub for a block, or None when the
+    block has no id-ish member to stub (quirk 15 only exists for
+    id-bearing blocks)."""
+    attrs = block.get("attributes") or {}
+    if "id" in attrs:
+        return {camel("id"): 0}
+    for name in sorted(attrs):
+        if name.endswith("id"):
+            return {camel(name): 0}
+    return None
 
 
 def _rename_targets(override):
