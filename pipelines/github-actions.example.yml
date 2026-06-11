@@ -124,7 +124,12 @@ jobs:
           gh pr create --title "Drift backfill: FILL-tenant-label" \
             --body-file /tmp/pr-body.md
 
-  # ---- 3b. Drift-PR gate: the real plan must be no-op, then auto-merge ----
+  # ---- 3b. Drift-PR merge-readiness check (a HUMAN merges) ----
+  # Green here means: the backfill is a faithful snapshot — the real plan
+  # is pure no-op (imports of new objects allowed). The reviewer reads
+  # the PR body (what changed + audit attribution), sees this check, and
+  # clicks merge. Red means the tenant moved again between fetch and
+  # plan, or transform disagrees — look closer before merging.
   drift-pr-plan:
     if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'drift/')
     runs-on: ubuntu-latest
@@ -133,7 +138,6 @@ jobs:
       ZSCALER_CLIENT_SECRET: ${{ secrets.ZSCALER_CLIENT_SECRET }}
       ZSCALER_VANITY_DOMAIN: ${{ secrets.ZSCALER_VANITY_DOMAIN }}
       ZSCALER_CLOUD: ${{ secrets.ZSCALER_CLOUD }}
-      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -142,8 +146,4 @@ jobs:
         with:
           terraform_version: "1.15.4"
       - run: make plan-changed BASE=origin/main SAVE=1 BACKEND_CONFIG=backend.conf
-      # Backfill means config now MATCHES the tenant: every saved plan
-      # must be no-op (imports allowed). Anything else means the tenant
-      # moved again or transform disagrees -> human review, no auto-merge.
       - run: make assert-clean
-      - run: gh pr merge --auto --merge "$GITHUB_HEAD_REF"
