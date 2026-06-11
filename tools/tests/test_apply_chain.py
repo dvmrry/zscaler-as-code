@@ -33,10 +33,12 @@ class ApplyChainTest(unittest.TestCase):
     def setUp(self):
         self.root = os.path.join("envs", TENANT, "fake_rt")
         self.config_dir = os.path.join("config", TENANT)
-        os.makedirs(self.root, exist_ok=True)
-        os.makedirs(self.config_dir, exist_ok=True)
+        # Register cleanup BEFORE creating anything, so a raise in the
+        # second makedirs still tears down what the first one created.
         self.addCleanup(shutil.rmtree, os.path.join("envs", TENANT), True)
         self.addCleanup(shutil.rmtree, self.config_dir, True)
+        os.makedirs(self.root, exist_ok=True)
+        os.makedirs(self.config_dir, exist_ok=True)
         with open(os.path.join(self.root, "main.tf"), "w") as f:
             f.write("# fake root for chain test\n")
         with open(
@@ -93,6 +95,20 @@ class ApplyChainTest(unittest.TestCase):
         self.assertNotEqual(rc, 0)
         self.assertIn("no saved plans", out)
 
+    def test_apply_refuses_remote_backend_without_backend_config(self):
+        # Parity with `make plan`: a saved plan whose root declares a remote
+        # backend must refuse without BACKEND_CONFIG and emit the repo's
+        # remediation, not a bare terraform backend error. The artifact must
+        # survive so a human can re-run with BACKEND_CONFIG.
+        self._plan_save()
+        with open(os.path.join(self.root, "main.tf"), "w") as f:
+            f.write('terraform {\n  backend "azurerm" {}\n}\n')
+        rc, out = _run(
+            ["make", "apply", "TENANT=" + TENANT, "TF=" + FAKE_TF])
+        self.assertNotEqual(rc, 0, "apply ran a remote-backend root with no BACKEND_CONFIG")
+        self.assertIn("BACKEND_CONFIG", out)
+        self.assertTrue(os.path.exists(self.tfplan))
+
     def test_assert_clean_passes_on_noop_and_import_only_plans(self):
         self._plan_save()
         rc, out = _run(
@@ -115,6 +131,29 @@ class ApplyChainTest(unittest.TestCase):
             ["make", "assert-clean", "TENANT=" + TENANT, "TF=" + FAKE_TF])
         self.assertNotEqual(rc, 0)
         self.assertIn("no saved plans", out)
+
+    def test_apply_aborts_when_show_lacks_resource_changes(self):
+        # The destroy-guard must not read parseable-but-wrong show JSON (no
+        # resource_changes) as "0 destroys" and proceed. The helper exits 1
+        # on a missing resource_changes, and set -e aborts before apply.
+        self._plan_save()
+        rc, out = _run(
+            ["make", "apply", "TENANT=" + TENANT, "TF=" + FAKE_TF],
+            {"FAKE_TF_NORC": "1"},
+        )
+        self.assertNotEqual(rc, 0, "apply proceeded on show output with no resource_changes")
+        # the saved plan must survive — apply never reached the apply step
+        self.assertTrue(os.path.exists(self.tfplan))
+
+    def test_assert_clean_aborts_when_show_lacks_resource_changes(self):
+        # The merge-readiness gate must not declare a plan clean off show
+        # output that lacks resource_changes; the helper exits 1 instead.
+        self._plan_save()
+        rc, out = _run(
+            ["make", "assert-clean", "TENANT=" + TENANT, "TF=" + FAKE_TF],
+            {"FAKE_TF_NORC": "1"},
+        )
+        self.assertNotEqual(rc, 0, "assert-clean reported clean on show output with no resource_changes")
 
 
 if __name__ == "__main__":

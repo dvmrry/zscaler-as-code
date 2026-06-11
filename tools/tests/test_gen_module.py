@@ -185,6 +185,42 @@ class RenderRestTest(unittest.TestCase):
         out = render_versions("zia_url_categories", rs)
         self.assertIn('source = "zscaler/zia"', out)
 
+    def test_every_generated_versions_pins_its_provider(self):
+        # Regression: an unpinned zia/zpa lets deploy-time `terraform init`
+        # resolve a newer (pre-1.0, churn-expected) provider than the schema
+        # dumps were built from, breaking plan or splitting a cross-runner
+        # plan->apply. Every generated module MUST carry a version line.
+        from tools.registry import generated_types
+        for resource_type in generated_types():
+            out = render_versions(resource_type, load_resource(resource_type))
+            self.assertIn(
+                "      version = ", out,
+                "%s/versions.tf has no provider version pin — extend "
+                "_PROVIDER_VERSION_CONSTRAINTS (sourced from "
+                "tools/schema-extract/main.tf)" % resource_type,
+            )
+
+    def test_versions_pins_match_schema_extract(self):
+        # The pins the modules emit must equal the ones the schema dumps were
+        # extracted under, so variables.tf types and the installed provider
+        # can never silently diverge.
+        from tools.gen_module import _load_provider_pins
+        pins = _load_provider_pins()
+        self.assertEqual(pins.get("zia"), "4.7.24")
+        self.assertEqual(pins.get("zpa"), "4.4.4")
+        out_zia = render_versions("zia_url_categories", load_resource("zia_url_categories"))
+        self.assertIn('version = "4.7.24"', out_zia)
+        out_zpa = render_versions("zpa_segment_group", load_resource("zpa_segment_group"))
+        self.assertIn('version = "4.4.4"', out_zpa)
+
+    def test_load_provider_pins_fails_loud_on_missing_file(self):
+        # A silent {} would regenerate unpinned modules, reintroducing the bug;
+        # the parser must raise with remediation instead.
+        from tools.gen_module import _load_provider_pins
+        with self.assertRaises(ValueError) as ctx:
+            _load_provider_pins(os.path.join("tools", "schema-extract", "nope.tf"))
+        self.assertIn("provider pins not found", str(ctx.exception))
+
 
 class GenerateModuleTest(unittest.TestCase):
     def test_writes_all_files(self):

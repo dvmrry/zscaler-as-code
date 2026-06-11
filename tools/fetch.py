@@ -119,6 +119,12 @@ def paginate_single(opener, url, headers, query):
 def paginate_zcc_v2(opener, url, headers, query, per_page=100, max_pages=100000):
     """ZCC v2 offset-based pagination: {items, total, offset, limit, count}.
 
+    Speculative infrastructure: no registry entry currently sets
+    pagination="zcc_v2" (the four ZCC resources use "zia"/"single"), so this
+    is not exercised in production yet. Kept ready (and tested) for future
+    ZCC v2 offset-based endpoints; wire it by adding pagination="zcc_v2" to a
+    registry entry that returns this envelope.
+
     Advances skip by per_page after each page. Terminates on any of:
     - count == 0 or items empty (empty-page safety)
     - count < limit (short last page)
@@ -180,8 +186,12 @@ def compose_url(auth_mode, product, path, ctx):
 
     ZCC paths in the registry carry their full post-gateway path including
     the /zcc/papi/public/v1/ prefix (e.g. zcc/papi/public/v1/webForwardingProfile/listByCompany).
-    For OneAPI, the gateway is the same api.zsapi.net as zia/zpa.
-    For legacy, the base is https://api-mobile.<cloud>.net/papi (SDK v2_config.go).
+    For OneAPI, the gateway is the same api.zsapi.net as zia/zpa and routes
+    by the /zcc/ prefix, so the registry path is used verbatim.
+    For legacy, the base is https://api-mobile.<cloud>.net/papi (SDK
+    v2_config.go) which already carries /papi and is not gateway-routed, so
+    the registry's gateway-only "zcc/papi/" prefix is stripped here to avoid
+    a doubled /papi/ — yielding https://api-mobile.<cloud>.net/papi/public/v1/...
     """
     if auth_mode == "oneapi":
         if product == "zia":
@@ -200,7 +210,10 @@ def compose_url(auth_mode, product, path, ctx):
                 _LEGACY_ZPA_BASE, ctx["customer_id"], path
             )
         if product == "zcc":
-            return "%s/%s" % (_legacy_zcc_base(ctx["zcc_cloud"]), path)
+            # _legacy_zcc_base already ends in /papi; the registry's
+            # gateway-only "zcc/papi/" prefix would double it, so strip it.
+            leg_path = path[len("zcc/papi/"):] if path.startswith("zcc/papi/") else path
+            return "%s/%s" % (_legacy_zcc_base(ctx["zcc_cloud"]), leg_path)
     raise ValueError("unknown auth_mode/product: %r/%r" % (auth_mode, product))
 
 
@@ -541,9 +554,18 @@ def main(argv=None):
     env = os.environ
     auth_mode = auth_mode_from_env(env)
     opener = real_opener()
+    # ZPA_CUSTOMER_ID is only used to compose ZPA URLs, so require it only
+    # when ZPA is actually in scope — a RESOURCE=zia_* / zcc_* scoped fetch
+    # must not demand ZPA credentials it never uses (only= scoping benefit).
+    wanted = sorted(only) if only else sorted(load_manifest())
+    needed_products = set(manifest_entry(rt)["product"] for rt in wanted)
+    if "zpa" in needed_products:
+        customer_id = _require(env, "ZPA_CUSTOMER_ID")
+    else:
+        customer_id = env.get("ZPA_CUSTOMER_ID", "")
     ctx = {
         "cloud": env.get("ZIA_CLOUD", "") or env.get("ZSCALER_CLOUD", ""),
-        "customer_id": _require(env, "ZPA_CUSTOMER_ID"),
+        "customer_id": customer_id,
         "zcc_cloud": env.get("ZCC_CLOUD", ""),
     }
     out_dir = os.path.join("pulls", tenant)
@@ -597,15 +619,60 @@ def fetch_all(auth_mode, env, ctx, opener, out_dir, only=None):
         sys.stderr.write("\n%d resource(s) FAILED:\n" % len(failures))
         for resource_type in sorted(failures):
             sys.stderr.write("  %s: %s\n" % (resource_type, failures[resource_type]))
-        sys.stderr.write(
+        for line in failure_hints(failures.values(), scoped=bool(only)):
+            sys.stderr.write(line + "\n")
+        return 1
+    return 0
+
+
+def failure_hints(reasons, scoped=False):
+    """Remediation hints partitioned by failure type, so the advice matches
+    the actual cause instead of always blaming a 404.
+
+    A plain substring scan over the collected failure reason strings (the
+    same text printed above) — auth/HTTP-status/transient lines only fire
+    when that kind of failure is present. scoped=True (only= active) appends
+    a note that the EVERY-endpoint entitlement heuristic needs a full pull.
+    """
+    blob = " ".join(reasons)
+    hints = []
+    if "auth failed:" in blob:
+        hints.append(
+            "hint: a product's auth FAILED, so all its resources were "
+            "skipped. 'missing required env var' means that credential is "
+            "not set; a token/signin HTTP error means the credential was "
+            "rejected (rotate it or check the Zidentity/ZPA console)."
+        )
+    if "returned HTTP 401" in blob or "returned HTTP 403" in blob:
+        hints.append(
+            "hint: HTTP 401/403 means the token was rejected or lacks scope "
+            "(expired credential, or the API client is missing this "
+            "product's role); re-issue credentials in the Zidentity console."
+        )
+    if "returned HTTP 404" in blob:
+        hints.append(
             "hint: a 404 on ONE endpoint means that path/version is not "
             "mounted on the gateway for your cloud (try the v1 equivalent "
             "in the registry); 404s on EVERY endpoint of a product mean "
             "the API client lacks that product's entitlement (Zidentity "
-            "console). Successful pulls above are unaffected either way.\n"
+            "console)."
         )
-        return 1
-    return 0
+        if scoped:
+            hints.append(
+                "note: only= scoped this run, so the EVERY-endpoint "
+                "entitlement heuristic above needs an unscoped fetch to be "
+                "actionable (you are not seeing the full product's paths)."
+            )
+    if "returned HTTP 5" in blob:
+        hints.append(
+            "hint: an HTTP 5xx is a transient gateway/server error or "
+            "outage; retry shortly, and check the Zscaler status page if it "
+            "persists."
+        )
+    if not hints:
+        hints.append("hint: see tools/FETCH.md (auth, proxy and TLS notes).")
+    hints.append("Successful pulls above are unaffected either way.")
+    return hints
 
 
 if __name__ == "__main__":

@@ -187,8 +187,8 @@ def suggest(expected, got_repr, field_path):
         return "relay this line"
 
     if expected == "string":
-        if got_repr in ("int", "float"):
-            return "re-run make transform (numbers coerce to string)"
+        if got_repr in ("int", "float", "bool"):
+            return "re-run make transform (numbers/bools coerce to string)"
         return "relay this line"
 
     if expected == "number":

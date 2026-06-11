@@ -27,6 +27,7 @@ jobs:
       - run: make typecheck TENANT=FILL-tenant-label
       - run: make lint TENANT=FILL-tenant-label
       - run: make test-envs TENANT=FILL-tenant-label
+      - run: make validate-imports TENANT=FILL-tenant-label
 
   # ---- 2. Plan -> Apply (delivery) — needs real creds + state auth ----
   plan:
@@ -82,10 +83,16 @@ jobs:
   # Drift -> branch -> PR whose body is the item-level diff plus ZIA
   # audit-trail attribution (WHO changed it, advisory). The PR rides the
   # normal validation pipeline; drift-pr-plan below adds the real-plan
-  # auto-merge gate.
+  # merge-readiness gate (a human still merges).
+  # PRIVATE REPOS ONLY: the PR body/artifact carry live admin identities
+  # and tenant-derived values — never run this drift job in a public
+  # template/fork, or it would leak admin PII.
   drift:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write          # git push of the backfill branch
+      pull-requests: write     # gh pr create
     env:
       ZSCALER_CLIENT_ID: ${{ secrets.ZSCALER_RO_CLIENT_ID }}
       ZSCALER_CLIENT_SECRET: ${{ secrets.ZSCALER_RO_CLIENT_SECRET }}

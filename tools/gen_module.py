@@ -6,6 +6,7 @@ Consuming environments never run it. Stdlib-only, Python 3.6-floor syntax
 """
 import json
 import os
+import re
 import subprocess
 import sys
 from tools.registry import generated_types
@@ -25,13 +26,52 @@ _PROVIDER_SOURCES = {
     "zcc": "zscaler/zcc",
 }
 
-# Beta providers must be pinned explicitly in the module's required_providers
-# because the Terraform registry does not advertise pre-release versions as
-# "latest" — omitting the constraint causes `terraform init` to fail with
-# "no available releases match the given constraints".
-_PROVIDER_VERSION_CONSTRAINTS = {
-    "zcc": "0.1.0-beta.1",
-}
+# The provider pins are owned by tools/schema-extract/main.tf — the same file
+# that produces the committed schema dumps. Generated modules MUST carry the
+# version that the dumps (and thus variables.tf types) were built from, or a
+# deploy-time `terraform init` can resolve a newer provider whose retyped/
+# renamed attributes break plan or silently diverge from what was validated.
+# zia/zpa are pre-1.0 (churn expected) and zcc is a beta whose pre-release
+# version the registry never advertises as "latest" — so all three need an
+# explicit constraint. Reading the pins from one place keeps a version bump a
+# one-line edit there + `make schemas` + `make generate`, never a second pin to
+# forget. See README provider-bump workflow.
+_SCHEMA_EXTRACT_MAIN_TF = os.path.join("tools", "schema-extract", "main.tf")
+
+
+def _load_provider_pins(path=_SCHEMA_EXTRACT_MAIN_TF):
+    """Parse {provider: version} from a required_providers main.tf.
+
+    Matches the `xxx = { source = "...", version = "..." }` blocks in
+    tools/schema-extract/main.tf so the modules pin exactly the versions the
+    schema dumps were extracted under. Fails loudly if the file is missing or
+    advertises no versioned provider — a silent {} would regenerate modules
+    with no constraint, reintroducing the unpinned-deploy bug.
+    """
+    if not os.path.exists(path):
+        raise ValueError(
+            "provider pins not found: %s is missing — generation reads the "
+            "pins from there (the file the schema dumps are extracted under). "
+            "Restore it or pass an explicit path." % path
+        )
+    with open(path) as f:
+        text = f.read()
+    pins = {}
+    block_re = re.compile(
+        r'(\w+)\s*=\s*\{[^}]*?version\s*=\s*"([^"]+)"', re.DOTALL
+    )
+    for name, version in block_re.findall(text):
+        pins[name] = version
+    if not pins:
+        raise ValueError(
+            "no versioned providers found in %s — every required_providers "
+            "entry needs a version line so generated modules can pin it. Add "
+            "version = \"x.y.z\" beside each source." % path
+        )
+    return pins
+
+
+_PROVIDER_VERSION_CONSTRAINTS = _load_provider_pins()
 
 
 def _provider_of(resource_type):

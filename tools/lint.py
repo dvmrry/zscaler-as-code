@@ -252,11 +252,18 @@ def lint_config_file(rt, path, report):
     data = json.loads(raw_bytes.decode("utf-8-sig"))
     items = data.get("items") or {}
 
+    # A leading UTF-8 BOM is invisible to the canonical compare below
+    # (utf-8-sig strips it on decode), yet it can break terraform's JSON
+    # parser — flag it explicitly with its own remediation.
+    if raw_bytes.startswith(b"\xef\xbb\xbf"):
+        report.error(rt, path, "leading UTF-8 BOM",
+                     "run make fmt-config TENANT=<label>")
+
     canonical = render_tfvars(items)
     if raw_bytes.decode("utf-8-sig") != canonical:
         report.error(
             rt, path, "file is not in canonical transform form "
-            "(hand edit / CRLF / BOM / unsorted keys)",
+            "(hand edit / CRLF / unsorted keys)",
             "run make fmt-config TENANT=<label>",
         )
 

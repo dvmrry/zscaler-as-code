@@ -13,10 +13,17 @@ The landscape is three pipelines:
 |---|---|---|---|---|
 | **Validation** (PR gate) | every PR | none | never touched (`-backend=false` everywhere) | `test`, `validate`, `typecheck`, `lint`, `test-envs`, `validate-imports` |
 | **Plan → Apply** (delivery) | merge / manual | real API creds + state auth | locked during plan/apply | `plan-changed SAVE=1` → approval → `apply` |
-| **Drift** (scheduled) | cron (hourly scoped + weekly broad) | read-only API creds | not used | `drift [RESOURCE=…]` → exit 3 → backfill PR (`drift_summary` + `audit` body); `assert-clean` shows merge-readiness, a human merges |
+| **Drift** (scheduled) | cron (hourly scoped + weekly broad) | read-only API creds | not used | `drift [RESOURCE=…]` → exit 3 → backfill PR (`drift-report` output: drift summary + audit body); `assert-clean` shows merge-readiness, a human merges |
 
 Notes that apply to every platform:
 
+- **GitHub Actions token permissions**: the drift job pushes a backfill
+  branch and opens a PR using `github.token`. GitHub repositories default
+  to read-only token permissions for Actions. The drift job must declare
+  `permissions: { contents: write, pull-requests: write }` — without it
+  the push and `gh pr create` return 403 and the backfill PR is never
+  created. (ADO equivalent: build service identity granted **Contribute**
+  on the repository.)
 - **Full git history for `plan-changed`**: the diff-derived plan targets
   need the merge-base with the target branch. Shallow clones break it —
   set fetch depth 0 (examples below do).

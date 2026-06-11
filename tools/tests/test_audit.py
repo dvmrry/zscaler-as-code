@@ -4,9 +4,17 @@ The network flow (async report request/poll/download) is exercised at
 work like the fetcher was; everything that consumes its output is
 testable here, including degraded shapes.
 """
+import io
+import sys
 import unittest
 
-from tools.audit import filter_rows, parse_audit_rows, render_attribution
+try:
+    from unittest import mock
+except ImportError:  # pragma: no cover — 3.6-floor stdlib has unittest.mock
+    import mock
+
+from tools import audit
+from tools.audit import filter_rows, main, parse_audit_rows, render_attribution
 
 CSV = """\
 Time,Action,Category,Sub Category,Resource,Interface,Admin ID,Client IP,Result
@@ -55,6 +63,70 @@ class RenderTest(unittest.TestCase):
     def test_no_matches_message(self):
         out = render_attribution([], [], 24)
         self.assertIn("No audit entries matched", out)
+
+    def test_other_section_overflow_note(self):
+        # >limit "other" changes must announce the truncation, mirroring
+        # the matched-table "(+N more matching entries)" note.
+        other = [
+            {"time": "t%d" % i, "admin": "a@x.invalid",
+             "action": "UPDATE", "category": "CAT"}
+            for i in range(53)
+        ]
+        out = render_attribution([], other, 24, limit=50)
+        self.assertIn("(+3 more)", out)
+
+    def test_pipe_and_newline_escaped(self):
+        # A pipe in a field must not mis-split the table columns; a newline
+        # must not break the row across lines.
+        matched = [{
+            "time": "t", "admin": "ad|min@x.invalid", "action": "UP\nDATE",
+            "category": "URL_CATEGORIES", "resource": "name|with|pipes",
+        }]
+        out = render_attribution(matched, [], 24)
+        self.assertIn("ad\\|min@x.invalid", out)
+        self.assertIn("name\\|with\\|pipes", out)
+        self.assertNotIn("UP\nDATE", out)
+
+
+class MainContractTest(unittest.TestCase):
+    """main() is strictly advisory: ANY failure degrades to exit 0 with an
+    'attribution unavailable' note. These pin that contract — the most
+    important behavior in the module and previously untested."""
+
+    def _run_main(self, argv):
+        old = sys.stdout
+        sys.stdout = io.StringIO()
+        try:
+            rc = main(argv)
+            out = sys.stdout.getvalue()
+        finally:
+            sys.stdout = old
+        return rc, out
+
+    def test_non_integer_hours_degrades_to_exit_0(self):
+        # int(argv[1]) lives inside the try now: a bad hours value must
+        # NOT crash and gate the drift PR.
+        rc, out = self._run_main(["demo", "notanumber"])
+        self.assertEqual(rc, 0)
+        self.assertIn("unavailable", out)
+
+    def test_fetch_systemexit_degrades_to_exit_0(self):
+        # Missing-credential helpers in the fetch plumbing raise SystemExit;
+        # it must not escape the advisory contract.
+        with mock.patch.object(
+                audit, "fetch_audit_csv",
+                side_effect=SystemExit("missing env var")):
+            rc, out = self._run_main(["demo", "24"])
+        self.assertEqual(rc, 0)
+        self.assertIn("Audit attribution unavailable", out)
+
+    def test_fetch_runtimeerror_degrades_to_exit_0(self):
+        with mock.patch.object(
+                audit, "fetch_audit_csv",
+                side_effect=RuntimeError("HTTP 403")):
+            rc, out = self._run_main(["demo", "24"])
+        self.assertEqual(rc, 0)
+        self.assertIn("Audit attribution unavailable", out)
 
 
 if __name__ == "__main__":

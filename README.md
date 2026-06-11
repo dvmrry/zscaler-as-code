@@ -34,7 +34,7 @@ Common ops targets:
 | `make check-envs` | Regenerate all tenant env roots and fail if any differ from committed |
 | `make test-envs TENANT=<label>` | Mock-provider smoke tests across a tenant's env roots |
 | `make validate-imports TENANT=<label>` | Validate fixture import addresses against a tenant's roots |
-| `make validate-config` | Validate config/ tfvars against generated JSON Schemas (dev-only; skips gracefully if jsonschema is not installed) |
+| `make validate-config` | Validate config/ tfvars against generated JSON Schemas (dev-only; tries uv if jsonschema is not installed, skips gracefully if neither is available) |
 
 ## Layout
 
@@ -51,10 +51,10 @@ Directories not yet present are created by later build phases.
 
 ## CI
 
-`pipelines/azure-pipelines.example.yml` is a starting point for Azure DevOps: point a
-pipeline definition at it (or copy it) and adapt the agent pool and
-toolchain setup to your environment. Pipelines stay thin shells — they only
-call `make` targets.
+See `pipelines/README.md` for Azure DevOps, GitHub Actions, and Bitbucket
+examples — all thin shells over `make`. Point a pipeline definition at the
+relevant example (or copy it) and adapt the agent pool and toolchain setup
+to your environment.
 
 ## Regenerating provider schemas
 

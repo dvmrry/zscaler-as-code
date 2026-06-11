@@ -33,8 +33,15 @@ def main(argv=None):
             continue
         checked += 1
         with open(path, "rb") as f:
-            original = f.read().decode("utf-8-sig")
-        canonical = render_tfvars(json.loads(original).get("items") or {})
+            raw_bytes = f.read()
+        # Decode as PLAIN utf-8 (not utf-8-sig) for the comparison: a
+        # leading BOM stays in `original`, so a BOM-only file compares
+        # UNEQUAL to canonical and gets rewritten BOM-free below (lint
+        # flags it; this is the fix). Parse the items from a BOM-stripped
+        # copy, since json.loads rejects a leading BOM character.
+        original = raw_bytes.decode("utf-8")
+        items = json.loads(original.lstrip(u"﻿")).get("items") or {}
+        canonical = render_tfvars(items)
         if original != canonical:
             with open(path, "w") as f:
                 f.write(canonical)

@@ -12,6 +12,11 @@ is an async report (request -> poll -> download CSV) and only one
 report can generate at a time per org — another reason it stays
 best-effort.
 
+The rendered output embeds live admin identities (email addresses) and
+tenant-derived strings, so it must only ever be produced in the
+operator's PRIVATE deployment repo — never a public template/fork, where
+the drift PR body would leak admin PII.
+
 Usage: python -m tools.audit <tenant> <hours> [resource_type ...]
 (creds via the same env vars as make fetch; tenant label is opaque)
 
@@ -155,6 +160,16 @@ def filter_rows(rows, resource_types):
     return matched, other
 
 
+def _cell(value):
+    """Escape a field value for a Markdown table cell / details bullet.
+
+    Admin display names, resource names, and categories can legally carry
+    pipes and newlines; left raw they mis-split the table columns or emit
+    stray markup into the reviewer-facing PR body.
+    """
+    return value.replace("|", "\\|").replace("\n", " ")
+
+
 def render_attribution(matched, other, hours, limit=50):
     lines = ["## Who changed it (ZIA audit trail, last %dh)" % hours, ""]
     if matched:
@@ -162,8 +177,8 @@ def render_attribution(matched, other, hours, limit=50):
         lines.append("|---|---|---|---|---|")
         for row in matched[:limit]:
             lines.append("| %s | %s | %s | %s | %s |" % (
-                row["time"], row["admin"], row["action"],
-                row["category"], row["resource"]))
+                _cell(row["time"]), _cell(row["admin"]), _cell(row["action"]),
+                _cell(row["category"]), _cell(row["resource"])))
         if len(matched) > limit:
             lines.append("")
             lines.append("(+%d more matching entries)" % (len(matched) - limit))
@@ -179,7 +194,10 @@ def render_attribution(matched, other, hours, limit=50):
         lines.append("")
         for row in other[:limit]:
             lines.append("- %s — %s: %s (%s)" % (
-                row["time"], row["admin"], row["action"], row["category"]))
+                _cell(row["time"]), _cell(row["admin"]),
+                _cell(row["action"]), _cell(row["category"])))
+        if len(other) > limit:
+            lines.append("- (+%d more)" % (len(other) - limit))
         lines.append("</details>")
     return "\n".join(lines) + "\n"
 
@@ -190,9 +208,12 @@ def main(argv=None):
         sys.stderr.write(
             "usage: python -m tools.audit <tenant> <hours> [resource_type ...]\n")
         return 2
-    hours = int(argv[1])
     resource_types = argv[2:] or sorted(CATEGORY_KEYWORDS)
     try:
+        # int(argv[1]) lives inside the try: a non-numeric hours value
+        # (e.g. AUDIT_HOURS=24h) must degrade like every other failure,
+        # never crash and gate the drift PR (this module is advisory).
+        hours = int(argv[1])
         csv_text = fetch_audit_csv(os.environ, hours)
         rows = parse_audit_rows(csv_text)
         matched, other = filter_rows(rows, resource_types)

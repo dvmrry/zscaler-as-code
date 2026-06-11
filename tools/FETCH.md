@@ -15,9 +15,49 @@ The `make fetch` command reads credentials from the environment. These are
 the same variables the Zscaler Terraform providers read, so existing
 provider env config works unchanged.
 
+## Scoped fetch
+
+    make fetch TENANT=<tenant> RESOURCE=<type>     # pull one resource type
+
+`RESOURCE=<type>` maps to the `only=` argument of `tools.fetch` and pulls a
+single resource type instead of all of them — the mechanism behind scoped
+drift checks (e.g. an hourly `zia_url_categories` pull rather than the full
+set). Tokens are acquired only for the product the scoped resource belongs
+to.
+
+Env vars are required per product in scope, not unconditionally:
+
+- `ZPA_CUSTOMER_ID` is required only when a `zpa_*` resource is in scope (or
+  for an unscoped full fetch). A `RESOURCE=zia_*` or `RESOURCE=zcc_*` fetch
+  no longer demands it.
+- The auth env vars for the in-scope product's mode (OneAPI `ZSCALER_*`, or
+  the legacy per-product set below) are still required — a token is acquired
+  for that product before any resource is pulled.
+
+Limitations:
+
+- A single HTTP 404 on any one expand path (e.g. one of the
+  `zia_cloud_app_control_rule` rule-type paths) marks the entire resource
+  type failed and exits non-zero; other resource types are unaffected.
+- A scoped run writes only the named resource file; previously fetched files
+  for other types are left as-is.
+
+## Diagnosing connectivity (`make fetch-diag`)
+
+    make fetch-diag    # probe TLS to the fetcher's hosts; print issuer
+
+`make fetch-diag` (the `--diag` mode of `tools.fetch`) probes TLS to the
+hosts the fetcher will contact in the configured auth mode, under system
+trust and then with any configured CA bundle, and prints the verify result
+per host. Run it to diagnose CA-bundle or proxy configuration before a real
+fetch — it touches no credentials and writes nothing tenant-specific.
+
 Cloud-app-control rules fetch per rule type via the registry's `expand`
-list — trim or extend the types to what your tenant uses; unused types
-return empty lists.
+list — trim or extend the types to what your tenant uses. Rule types your
+tenant is not entitled to may return HTTP 404 (not a 200 empty list), and a
+404 on any one expand path fails the entire `zia_cloud_app_control_rule`
+pull (other resource types are unaffected). Trim the `expand` list in
+`tools/registry.json` to only the rule types your tenant is entitled to.
 
 ## Auth modes
 
@@ -26,7 +66,11 @@ truthy value (`1`, `true`, `yes`, `on`) for legacy mode; leave it unset or
 set it to a falsey value for OneAPI mode (the default).
 
 **OneAPI** (default; `ZSCALER_USE_LEGACY_CLIENT` unset or falsey) —
-one OAuth2 bearer for both products. Note the gateway actually dialed is
+one OAuth2 bearer for all three products (ZIA, ZPA, ZCC); the same
+credential set is used regardless of product. (The implementation currently
+acquires a token once per product — up to three requests — but all three
+are identical; a future cleanup could acquire it once and share it.) Note
+the gateway actually dialed is
 `api.zsapi.net` (`api.<cloud>.zsapi.net` off production); the similar
 `api.zscaler.com` is only the OAuth audience string and serves no valid
 certificate — attempts to call it fail TLS verification on any network.

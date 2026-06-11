@@ -309,6 +309,16 @@ class CoerceTest(unittest.TestCase):
         out = coerce_item(item, rs["block"])
         self.assertEqual(out["tcp_port_range"], [{"from": "9002", "to": "true"}])
 
+    def test_object_typed_list_attr_drops_undeclared_member(self):
+        # The generated HCL type is a strict object({...}), so an undeclared
+        # member key fails `terraform plan`. Members absent from the schema
+        # must be dropped, not passed through — the same treatment block
+        # values get from filter_item.
+        rs = load_resource("zpa_application_segment")
+        item = {"tcp_port_range": [{"from": "443", "to": "443", "extra_field": "x"}]}
+        out = coerce_item(item, rs["block"])
+        self.assertEqual(out["tcp_port_range"], [{"from": "443", "to": "443"}])
+
     def test_object_typed_list_attr_ref_unwrap(self):
         # An object-typed list attribute whose member is a number must unwrap
         # {id,name} reference objects and coerce, exactly like a block member.
@@ -333,6 +343,24 @@ class OverrideTest(unittest.TestCase):
         ov = {"renames": {"old_name": "new_name"}, "drop_if_default": {"flag": False}}
         item = {"old_name": "v", "flag": False, "keep": 1}
         self.assertEqual(apply_overrides(item, ov), {"new_name": "v", "keep": 1})
+
+    def test_drop_if_default_coerces_numeric_string(self):
+        # The API may hand back a number as a string (quirk 5). A non-divided
+        # drop_if_default field like time_quota:'0' must still match the int
+        # default 0 and drop, mirroring the divide step's own string-int
+        # coercion.
+        ov = {"drop_if_default": {"time_quota": 0}}
+        self.assertEqual(apply_overrides({"time_quota": "0"}, ov), {})
+
+    def test_drop_if_default_string_default_unaffected(self):
+        # A string default (e.g. policy_style:'NONE') still compares directly;
+        # the int-coercion branch must not perturb it.
+        ov = {"drop_if_default": {"policy_style": "NONE"}}
+        self.assertEqual(apply_overrides({"policy_style": "NONE"}, ov), {})
+        self.assertEqual(
+            apply_overrides({"policy_style": "REWRITE"}, ov),
+            {"policy_style": "REWRITE"},
+        )
 
     def test_forced_reference(self):
         ov = {"references": {"server_groups": True}}
@@ -394,6 +422,31 @@ class OverrideTest(unittest.TestCase):
             {"size_quota": "unlimited"},
         )
 
+    def test_zero_divisor_raises_with_file_path(self):
+        # A 0 divisor would raise a bare ZeroDivisionError deep in
+        # apply_overrides; load_override must catch it at load time and name
+        # both the field and the override file so the fix is actionable.
+        import tempfile
+        import tools.transform as transform_mod
+
+        tmp = tempfile.mkdtemp()
+        path = os.path.join(tmp, "zia_fake_div.json")
+        with open(path, "w") as f:
+            json.dump({"divide": {"size_quota": 0}}, f)
+        old_dir = transform_mod.OVERRIDES_DIR
+        transform_mod.OVERRIDES_DIR = tmp
+        try:
+            transform_mod.load_override("zia_fake_div")
+            self.fail("expected ValueError")
+        except ValueError as e:
+            self.assertIn("non-zero", str(e))
+            self.assertIn("size_quota", str(e))
+            self.assertIn(path, str(e))
+        finally:
+            transform_mod.OVERRIDES_DIR = old_dir
+            os.remove(path)
+            os.rmdir(tmp)
+
     def test_unconditional_drops(self):
         ov = {"drops": ["noise_field"]}
         item = {"noise_field": "anything", "keep": 1}
@@ -429,6 +482,21 @@ class DeriveKeyTest(unittest.TestCase):
             self.fail("expected KeyError")
         except KeyError as e:
             self.assertIn("name", str(e))
+
+    def test_non_ascii_name_falls_back_to_id_key(self):
+        # A name with NO ASCII-alphanumerics (e.g. CJK) slugs to '' on its
+        # own; derive_key must fall back to a non-empty 'id_<id>' key so no
+        # this[""] address is ever emitted.
+        self.assertEqual(slugify("東京"), "")
+        key = derive_key({"id": "42", "name": "東京"}, {})
+        self.assertEqual(key, "id_42")
+
+    def test_non_ascii_name_without_id_raises_with_remediation(self):
+        try:
+            derive_key({"name": "東京"}, {})
+            self.fail("expected ValueError")
+        except ValueError as e:
+            self.assertIn("key_field", str(e))
 
 
 class PipelineTest(unittest.TestCase):
@@ -498,6 +566,23 @@ class PipelineTest(unittest.TestCase):
         quota_item = items["streaming_media_large_file_quota"]
         self.assertEqual(quota_item["size_quota"], 100000)
 
+    def test_string_zero_time_quota_drops_through_pipeline(self):
+        # time_quota is in drop_if_default but NOT divided, so before the fix
+        # an API number-as-string timeQuota:'0' survived as an explicit
+        # time_quota=0 (plan drift). It must now drop the same way the int 0
+        # case does.
+        raw = [{
+            "id": "5",
+            "name": "rule1",
+            "timeQuota": "0",
+            "sizeQuota": "0",
+        }]
+        override = load_override("zia_url_filtering_rules")
+        items, _, _ = transform_items(raw, "zia_url_filtering_rules", override)
+        item = items["rule1"]
+        self.assertNotIn("time_quota", item)
+        self.assertNotIn("size_quota", item)
+
     def test_duplicate_keys_raise(self):
         with self.assertRaises(ValueError):
             transform_items(
@@ -505,6 +590,19 @@ class PipelineTest(unittest.TestCase):
                 "zpa_segment_group",
                 {},
             )
+
+    def test_two_non_ascii_names_transform_without_empty_key(self):
+        # Two distinct CJK-named items both slug to '' on their name alone;
+        # the id fallback gives each a distinct non-empty key, so the
+        # pipeline neither raises a duplicate-'' ValueError nor emits a
+        # this[""] address.
+        raw = [
+            {"id": "1", "name": "東京"},
+            {"id": "2", "name": "大阪"},
+        ]
+        items, originals, _ = transform_items(raw, "zpa_segment_group", {})
+        self.assertEqual(sorted(items), ["id_1", "id_2"])
+        self.assertNotIn("", items)
 
     def test_render_imports_sorted_and_templated(self):
         originals = {"b": {"id": "20"}, "a": {"id": "10"}}
