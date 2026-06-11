@@ -197,8 +197,10 @@ def main(argv=None):
         rows = parse_audit_rows(csv_text)
         matched, other = filter_rows(rows, resource_types)
         sys.stdout.write(render_attribution(matched, other, hours))
-    except Exception as exc:
+    except (Exception, SystemExit) as exc:
         # Advisory only — the drift PR proceeds without attribution.
+        # SystemExit included: missing-credential helpers in the fetch
+        # plumbing raise it, and it must not escape this contract.
         sys.stdout.write(
             "## Who changed it\n\n_Audit attribution unavailable: %s_\n" % exc)
     return 0

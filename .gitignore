@@ -18,6 +18,9 @@ envs/**/tfplan
 # make install-tf output
 bin/
 
+# Rendered drift/plan reports — pipeline artifacts, never committed
+reports/
+
 # Python
 __pycache__/
 *.py[cod]

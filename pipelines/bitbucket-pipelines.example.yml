@@ -43,9 +43,15 @@ pipelines:
             - make apply BACKEND_CONFIG=backend.conf
 
   custom:
-    drift: # schedule this pipeline daily in repo settings
+    drift: # schedule this pipeline in repo settings (hourly/weekly variants)
       - step:
           name: Drift detection (read-only creds)
           script:
-            - make drift TENANT=FILL-tenant-label
-            # exit 3 = drift; the git diff is the report — open a PR with it
+            # exit 3 = drift. On drift: render the report, commit the
+            # backfill branch, open a PR via the Bitbucket API with the
+            # report as description. Bitbucket has no run-summary pane —
+            # the report ships as a downloadable artifact instead.
+            - make drift TENANT=FILL-tenant-label || test $? -eq 3
+            - make drift-report TENANT=FILL-tenant-label
+          artifacts:
+            - reports/** # the delta/attribution report, downloadable per run

@@ -146,7 +146,14 @@ plan-changed: ## Plan only the (tenant, resource) pairs changed vs BASE (default
 	done < .plan-changed.tmp; \
 	rm -f .plan-changed.tmp
 
-assert-clean: ## Exit 0 only when every saved plan is no-op (imports allowed) — the drift-PR auto-merge gate ([TENANT=<label>] [RESOURCE=<type>])
+drift-report: ## Render the drift summary + audit attribution to reports/<tenant>/drift.md (TENANT=<label> [AUDIT_HOURS=24]) — the PR body and the publishable artifact
+	@test -n "$(TENANT)" || { echo "usage: make drift-report TENANT=<label> [AUDIT_HOURS=24]"; exit 2; }
+	@mkdir -p reports/$(TENANT)
+	@$(PYTHON) -m tools.drift_summary "$(TENANT)" > reports/$(TENANT)/drift.md
+	@$(PYTHON) -m tools.audit "$(TENANT)" $(or $(AUDIT_HOURS),24) >> reports/$(TENANT)/drift.md
+	@echo "wrote reports/$(TENANT)/drift.md"
+
+assert-clean: ## Exit 0 only when every saved plan is no-op (imports allowed) — the drift-PR merge-readiness check ([TENANT=<label>] [RESOURCE=<type>])
 	@set -e; checked=0; dirty=0; for d in envs/$(or $(TENANT),*)/$(or $(RESOURCE),*)/; do \
 		test -f "$$d/tfplan" || continue; \
 		rt=$$(basename $$d); t=$$(basename $$(dirname $$d)); \
