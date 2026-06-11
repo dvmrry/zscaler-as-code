@@ -17,13 +17,19 @@ provider env config works unchanged.
 
 ## Scoped fetch
 
-    make fetch TENANT=<tenant> RESOURCE=<type>     # pull one resource type
+    make fetch TENANT=<tenant> RESOURCE=<type>          # one resource type
+    make fetch TENANT=<tenant> RESOURCE="zia zpa"       # whole product(s)
+    make drift TENANT=<tenant> RESOURCE="zia zpa"       # scoped drift
 
-`RESOURCE=<type>` maps to the `only=` argument of `tools.fetch` and pulls a
-single resource type instead of all of them — the mechanism behind scoped
-drift checks (e.g. an hourly `zia_url_categories` pull rather than the full
-set). Tokens are acquired only for the product the scoped resource belongs
-to.
+`RESOURCE` accepts resource types AND product tokens (`zia`/`zpa`/`zcc`,
+expanded from the registry), space-separated. This is the mechanism behind
+scoped drift checks (an hourly `zia_url_categories` pull) and behind
+DISABLING a product operationally: a pipeline that should ignore ZCC until
+OneAPI is enabled sets `RESOURCE="zia zpa"` — fetch never contacts ZCC, no
+ZCC credentials are needed, and drift stays green and meaningful. Do NOT
+disable a product by deleting its credentials: the fetch failure aborts
+drift before transform and every run goes red. Tokens are acquired only
+for the products actually in scope.
 
 Env vars are required per product in scope, not unconditionally:
 

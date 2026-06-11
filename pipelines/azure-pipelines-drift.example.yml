@@ -46,6 +46,10 @@ steps:
       if [ "$(Build.CronSchedule.DisplayName)" = "hourly-hot-path" ]; then
         echo "##vso[task.setvariable variable=SCOPE]RESOURCE=$(HOT_RESOURCE)"
       else
+        # RESOURCE also takes product tokens — to run with a product
+        # disabled (e.g. ZCC until OneAPI is enabled), scope the broad
+        # sweep instead of deleting credentials (which turns every run
+        # red): RESOURCE="zia zpa"
         echo "##vso[task.setvariable variable=SCOPE]"
       fi
     displayName: Scope by schedule

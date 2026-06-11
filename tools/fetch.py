@@ -538,17 +538,23 @@ def main(argv=None):
         return run_diag(os.environ)
     if len(argv) < 1:
         sys.stderr.write(
-            "usage: python -m tools.fetch <tenant> [resource_type ...] | --diag\n"
+            "usage: python -m tools.fetch <tenant> "
+            "[resource_type|product ...] | --diag\n"
         )
         return 2
     tenant = argv[0]
-    only = set(argv[1:]) or None
+    only = expand_selectors(argv[1:])
     if only:
         unknown = only - set(load_manifest())
         if unknown:
             sys.stderr.write(
-                "error: unknown resource type(s): %s\nvalid: %s\n"
-                % (", ".join(sorted(unknown)), ", ".join(sorted(load_manifest())))
+                "error: unknown resource type(s)/product(s): %s\n"
+                "valid products: %s\nvalid resources: %s\n"
+                % (
+                    ", ".join(sorted(unknown)),
+                    ", ".join(sorted(products_in_manifest())),
+                    ", ".join(sorted(load_manifest())),
+                )
             )
             return 2
     env = os.environ
@@ -570,6 +576,30 @@ def main(argv=None):
     }
     out_dir = os.path.join("pulls", tenant)
     return fetch_all(auth_mode, env, ctx, opener, out_dir, only=only)
+
+
+def expand_selectors(args):
+    """Resource names and/or product tokens -> the resource-type set.
+
+    A selector that names a product (zia/zpa/zcc) expands to every
+    registered resource of that product, so a pipeline can disable a
+    whole product (e.g. ZCC until OneAPI is enabled) with
+    RESOURCE="zia zpa" instead of deleting its credentials and turning
+    every drift run red. Returns None for no selectors (= everything).
+    Unknown names pass through for the caller's loud validation.
+    """
+    if not args:
+        return None
+    products = set(products_in_manifest())
+    out = set()
+    for arg in args:
+        if arg in products:
+            for rt in load_manifest():
+                if manifest_entry(rt)["product"] == arg:
+                    out.add(rt)
+        else:
+            out.add(arg)
+    return out
 
 
 def fetch_all(auth_mode, env, ctx, opener, out_dir, only=None):

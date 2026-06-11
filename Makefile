@@ -83,7 +83,7 @@ transform: ## Transform pulled API JSON into tfvars + imports (IN=<dir> TENANT=<
 	test -z "$$failed" || { echo ""; echo "transform FAILED for:$$failed"; \
 		echo "(fix the override map per the error above; successful outputs are already written)"; exit 1; }
 
-fetch: ## Pull API JSON into pulls/<tenant> (TENANT=<name> [RESOURCE=<type>]; needs ZSCALER_*/ZIA_*/ZPA_* env, real creds — trusted env only)
+fetch: ## Pull API JSON into pulls/<tenant> (TENANT=<name> [RESOURCE="<type|product> ..."]; products zia/zpa/zcc expand; real creds via env — trusted env only)
 	@test -n "$(TENANT)" || { echo "usage: make fetch TENANT=<tenant> [RESOURCE=<type>] (with ZSCALER_*/ZIA_*/ZPA_* env set)"; exit 2; }
 	$(PYTHON) -m tools.fetch "$(TENANT)" $(RESOURCE)
 
@@ -231,11 +231,11 @@ apply: ## Apply ONLY saved plans from 'make plan SAVE=1' ([TENANT=<label>] [RESO
 	done; \
 	test $$applied -gt 0 || { echo "error: no saved plans found — run 'make plan SAVE=1 ...' (or plan-changed SAVE=1) first; apply's scope IS the saved plans"; exit 1; }
 
-drift: ## Fetch + transform + report config diff (TENANT=<label> [RESOURCE=<type>]; real creds via env)
-	@test -n "$(TENANT)" || { echo "usage: make drift TENANT=<label> [RESOURCE=<type>]"; exit 2; }
+drift: ## Fetch + transform + report config diff (TENANT=<label> [RESOURCE="<type|product> ..."]; real creds via env)
+	@test -n "$(TENANT)" || { echo "usage: make drift TENANT=<label> [RESOURCE=\"<type|product> ...\"]"; exit 2; }
 	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
-	$(MAKE) fetch TENANT=$(TENANT) $(if $(RESOURCE),RESOURCE=$(RESOURCE))
-	$(MAKE) transform IN=pulls/$(TENANT) TENANT=$(TENANT) $(if $(RESOURCE),RESOURCE=$(RESOURCE))
+	$(MAKE) fetch TENANT=$(TENANT) $(if $(RESOURCE),RESOURCE="$(RESOURCE)")
+	$(MAKE) transform IN=pulls/$(TENANT) TENANT=$(TENANT)
 	@if [ -n "$$(git status --porcelain config/$(TENANT) imports/$(TENANT) 2>/dev/null)" ]; then \
 		echo ""; echo "DRIFT DETECTED (tenant differs from committed config):"; \
 		git status --porcelain config/$(TENANT) imports/$(TENANT); \

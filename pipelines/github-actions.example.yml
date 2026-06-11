@@ -106,6 +106,9 @@ jobs:
           if [ "${{ github.event.schedule }}" = "0 * * * *" ]; then
             echo "SCOPE=RESOURCE=zia_url_categories" >> "$GITHUB_ENV"  # FILL: hot-path resource
           else
+            # RESOURCE also takes product tokens: to run with a product
+            # disabled (e.g. ZCC until OneAPI), use SCOPE=RESOURCE="zia zpa"
+            # instead of deleting its credentials (that turns runs red).
             echo "SCOPE=" >> "$GITHUB_ENV"
           fi
       - name: Detect drift
