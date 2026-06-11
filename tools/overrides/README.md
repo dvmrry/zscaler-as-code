@@ -13,8 +13,10 @@ resource (all keys optional): `key_field` (map key source, default
 `name`), `renames` (post-snake-case API→schema names), `drops` (fields
 always removed), `references` (force `{id,...}` unwrapping),
 `drop_if_default` (remove a field when it equals the given value —
-perma-diff suppression), `import_id` (format template over the item's
-snake_cased original fields, default `"{id}"`), `acknowledged_drops`
+perma-diff suppression), `split_csv` (list of post-rename fields whose
+comma-joined string values become real lists, empties dropped — ZCC
+returns list-typed settings this way), `import_id` (format template over
+the item's snake_cased original fields, default `"{id}"`), `acknowledged_drops`
 (list of dotted drop paths that are expected/known-unmanageable — suppressed
 from the drop report so only new provider-coverage surprises surface; the
 fields are still removed from the generated tfvars), `skip_if` (list of

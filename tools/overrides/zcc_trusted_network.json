@@ -1,3 +1,27 @@
 {
-  "import_id": "{id}"
+  "acknowledged_drops": [
+    "company_id",
+    "created_by",
+    "edited_by",
+    "guid"
+  ],
+  "import_id": "{id}",
+  "renames": {
+    "dns_servers": "dns_server_ips",
+    "hostnames": "hostname",
+    "network_name": "name",
+    "ssids": "ssid",
+    "trusted_dhcp_servers": "trusted_dhcp_servers_ips",
+    "trusted_gateways": "trusted_gateway_ips",
+    "trusted_subnets": "trusted_subnet_ips"
+  },
+  "split_csv": [
+    "dns_search_domains",
+    "dns_server_ips",
+    "resolved_ips_for_hostname",
+    "trusted_dhcp_servers_ips",
+    "trusted_egress_ips",
+    "trusted_gateway_ips",
+    "trusted_subnet_ips"
+  ]
 }

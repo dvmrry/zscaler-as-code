@@ -63,13 +63,15 @@ gen-env: ## Generate env roots for a tenant (TENANT=<label>)
 
 transform: ## Transform pulled API JSON into tfvars + imports (IN=<dir> TENANT=<name>)
 	@test -n "$(IN)" -a -n "$(TENANT)" || { echo "usage: make transform IN=pulls/<tenant> TENANT=<tenant>"; exit 2; }
-	@for rt in $$($(PYTHON) -c "from tools.registry import generated_types; print('\n'.join(generated_types()))"); do \
+	@failed=""; for rt in $$($(PYTHON) -c "from tools.registry import generated_types; print('\n'.join(generated_types()))"); do \
 		if [ -f "$(IN)/$$rt.json" ]; then \
-			$(PYTHON) -m tools.transform "$$rt" "$(IN)/$$rt.json" "$(TENANT)" || exit 1; \
+			$(PYTHON) -m tools.transform "$$rt" "$(IN)/$$rt.json" "$(TENANT)" || failed="$$failed $$rt"; \
 		else \
 			echo "skip $$rt (no $(IN)/$$rt.json)"; \
 		fi; \
-	done
+	done; \
+	test -z "$$failed" || { echo ""; echo "transform FAILED for:$$failed"; \
+		echo "(fix the override map per the error above; successful outputs are already written)"; exit 1; }
 
 fetch: ## Pull API JSON into pulls/<tenant> (TENANT=<name>; needs ZSCALER_*/ZIA_*/ZPA_* env, real creds — trusted env only)
 	@test -n "$(TENANT)" || { echo "usage: make fetch TENANT=<tenant> (with ZSCALER_*/ZIA_*/ZPA_* env set)"; exit 2; }

@@ -151,12 +151,18 @@ def load_override(resource_type):
 
 
 def apply_overrides(item, override):
-    """Renames, unconditional drops, forced reference unwrapping, drop-if-default.
-    Post-snake, pre-filter, so renamed fields are filtered under their schema names."""
+    """Renames, CSV splitting, unconditional drops, forced reference
+    unwrapping, drop-if-default. Post-snake, pre-filter, so renamed fields
+    are filtered under their schema names."""
     out = dict(item)
     for old, new in sorted((override.get("renames") or {}).items()):
         if old in out:
             out[new] = out.pop(old)
+    for field in sorted(override.get("split_csv") or []):
+        # Some APIs (ZCC) return list-typed settings as comma-joined
+        # strings; split into real lists, dropping empties.
+        if field in out and isinstance(out[field], str):
+            out[field] = [v.strip() for v in out[field].split(",") if v.strip()]
     for field in sorted(override.get("drops") or []):
         out.pop(field, None)
     for field in sorted(override.get("references") or {}):
