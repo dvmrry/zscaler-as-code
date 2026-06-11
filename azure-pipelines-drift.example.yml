@@ -1,0 +1,36 @@
+# Example scheduled drift/plan pipeline — reference material, not a working
+# config. Copy or point a pipeline at this file and adapt: schedule, pool,
+# variable group names, tenant labels. Keep it a thin shell over make
+# (AGENTS.md rule 9). The CI pipeline example (azure-pipelines.example.yml)
+# covers tests/validation; this one is the recurring tenant-sync job.
+schedules:
+  - cron: "0 6 * * *"
+    displayName: Daily drift detection
+    branches:
+      include:
+        - main
+    always: true
+
+trigger: none
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  # Adapt: a variable group holding ZSCALER_*/ZIA_*/ZPA_*/ZCC_* credentials
+  # (secret variables) and REQUESTS_CA_BUNDLE if TLS inspection applies.
+  - group: zscaler-credentials
+  - name: TENANT
+    value: replace-with-your-label
+
+steps:
+  - script: make env
+    displayName: Toolchain versions
+  # Exit 3 = drift detected (tenant differs from committed config) — the
+  # git status/diff in the log is the report. Treat as a failed run and
+  # review; adopt new objects via the freshly emitted import blocks.
+  - script: make drift TENANT=$(TENANT)
+    displayName: Fetch + transform + diff
+  # Config-vs-state check; needs provider credentials (read-only works).
+  - script: make plan TENANT=$(TENANT)
+    displayName: Terraform plan
