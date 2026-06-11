@@ -7,6 +7,16 @@
     "time_quota": 0
   },
   "import_id": "{id}",
+  "ranges": {
+    "size_quota": [
+      10,
+      100000
+    ],
+    "time_quota": [
+      15,
+      600
+    ]
+  },
   "sample": {
     "protocols": [
       "ANY_RULE"

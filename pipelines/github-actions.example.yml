@@ -24,6 +24,7 @@ jobs:
       - run: make test
       - run: make validate
       - run: make typecheck TENANT=FILL-tenant-label
+      - run: make lint TENANT=FILL-tenant-label
       - run: make test-envs TENANT=FILL-tenant-label
 
   # ---- 2. Plan -> Apply (delivery) — needs real creds + state auth ----

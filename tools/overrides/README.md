@@ -25,6 +25,10 @@ for fields where the provider schema stores a larger unit than the API
 returns and converts internally — e.g. ZIA `size_quota` is KB on the API
 but MB in config, so `"divide": {"size_quota": 1024}`; integer division,
 applied before `drop_if_default` so a converted 0 still drops),
+`ranges` (field→[min, max]: provider RUNTIME validator bounds mined from
+provider source — invisible in the schema dump; enforced by `make lint`
+so hand-edited values fail the PR gate instead of the plan stage, e.g.
+`"ranges": {"size_quota": [10, 100000]}` — size_quota is MB in config),
 `split_csv` (list of post-rename fields whose
 comma-joined string values become real lists, empties dropped — ZCC
 returns list-typed settings this way), `import_id` (format template over

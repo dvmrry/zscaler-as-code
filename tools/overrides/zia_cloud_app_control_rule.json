@@ -10,5 +10,15 @@
   "key_field": [
     "type",
     "name"
-  ]
+  ],
+  "ranges": {
+    "size_quota": [
+      10,
+      100000
+    ],
+    "time_quota": [
+      15,
+      600
+    ]
+  }
 }

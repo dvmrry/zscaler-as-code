@@ -23,6 +23,7 @@ pipelines:
             - make test
             - make validate
             - make typecheck TENANT=FILL-tenant-label
+            - make lint TENANT=FILL-tenant-label
             - make test-envs TENANT=FILL-tenant-label
 
   branches:

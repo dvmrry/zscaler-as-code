@@ -196,6 +196,14 @@ check-demo: ## Fail if the committed demo tenant drifts from the pipeline output
 		git status --porcelain -- config/demo imports/demo; \
 		echo "Run 'make demo' and commit (or fix the regression it reveals)."; exit 1; }
 
+lint: ## Semantic config lint — pasted chars, URL/IP syntax, set duplicates, order collisions, category shadowing (TENANT=<label>)
+	@test -n "$(TENANT)" || { echo "usage: make lint TENANT=<label>"; exit 2; }
+	$(PYTHON) -m tools.lint "$(TENANT)"
+
+fmt-config: ## Rewrite a tenant's config files in canonical transform form (TENANT=<label>)
+	@test -n "$(TENANT)" || { echo "usage: make fmt-config TENANT=<label>"; exit 2; }
+	$(PYTHON) -m tools.fmt_config "$(TENANT)"
+
 typecheck: ## Type-check a tenant's config against the provider schemas (stdlib; TENANT=<label>)
 	@test -n "$(TENANT)" || { echo "usage: make typecheck TENANT=<label>"; exit 2; }
 	$(PYTHON) -m tools.typecheck "$(TENANT)"

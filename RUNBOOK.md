@@ -99,6 +99,23 @@ field" require a human decision; all others are mechanical fixes (re-run
 Exit 0 means all config files type-check clean; exit 1 means mismatches were
 found. Fix and re-run `make transform` until this step exits 0.
 
+### 3a. Lint the config (semantic checks)
+
+```
+make lint TENANT=<label>
+```
+
+Catches type-correct config that is still operationally wrong: pasted
+invisible characters, URL entries with schemes or CSV remnants, invalid
+IP/CIDR values, duplicates in set-typed fields (terraform dedupes sets —
+guaranteed perma-drift), colliding rule orders, values outside known
+provider runtime-validator ranges, and cross-category URL shadowing —
+an entry more specific than another category's entry silently pulls that
+traffic out of the policies matching the broader entry (e.g. an SSL
+bypass). ERRORs gate; WARNs (like shadowing) need a human glance —
+shadowing is sometimes intended. Hand-edited files failing the
+canonical-form check are fixed with `make fmt-config TENANT=<label>`.
+
 ### 4. Acknowledge drops (one-time, per field)
 
 For each reported field, add it to `acknowledged_drops` in

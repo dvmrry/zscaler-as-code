@@ -11,7 +11,7 @@ The landscape is three pipelines:
 
 | Pipeline | Trigger | Credentials | State | Make targets |
 |---|---|---|---|---|
-| **Validation** (PR gate) | every PR | none | never touched (`-backend=false` everywhere) | `test`, `validate`, `typecheck`, `test-envs`, `validate-imports` |
+| **Validation** (PR gate) | every PR | none | never touched (`-backend=false` everywhere) | `test`, `validate`, `typecheck`, `lint`, `test-envs`, `validate-imports` |
 | **Plan → Apply** (delivery) | merge / manual | real API creds + state auth | locked during plan/apply | `plan-changed SAVE=1` → approval → `apply` |
 | **Drift** (scheduled) | cron | read-only API creds | not used | `drift` (exit 3 = drift; open a PR with the diff) |
 
