@@ -1,4 +1,11 @@
 {
   "import_id": "{id}",
-  "skip_if": [{"default_rule": true}]
+  "skip_if": [
+    {
+      "default_rule": true
+    },
+    {
+      "predefined": true
+    }
+  ]
 }

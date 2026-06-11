@@ -39,7 +39,18 @@ class DemoPipelineTest(unittest.TestCase):
             self.assertTrue(raw, "%s demo file is empty" % rt)
             override = load_override(rt)
             items, originals, drops = transform_items(raw, rt, override)
-            self.assertTrue(items, "%s produced no items" % rt)
+            if not items:
+                # Empty output is legitimate ONLY when every raw item
+                # matched a skip_if matcher (e.g. ssl_inspection demo data
+                # is entirely predefined one-click rules). Anything else
+                # empty means silent loss — still a failure.
+                from tools.transform import _skip_item, snake_keys
+
+                self.assertTrue(
+                    all(_skip_item(snake_keys(r), override) for r in raw),
+                    "%s produced no items and not all raw items were "
+                    "skip_if-matched — silent loss" % rt,
+                )
             # determinism: byte-identical double run
             again, _, _ = transform_items(raw, rt, override)
             self.assertEqual(render_tfvars(items), render_tfvars(again), rt)
@@ -55,9 +66,13 @@ class DemoPipelineTest(unittest.TestCase):
                     unknown, set(),
                     "%s item %r emitted non-input keys %r" % (rt, key, unknown),
                 )
-            # imports render with the resource's template
+            # imports render with the resource's template (an all-skipped
+            # resource legitimately has nothing to import)
             text = render_imports(rt, originals, override)
-            self.assertIn('module.%s.%s.this[' % (rt, rt), text)
+            if items:
+                self.assertIn('module.%s.%s.this[' % (rt, rt), text)
+            else:
+                self.assertEqual(text, "")
 
     def test_demo_output_matches_blessed_goldens(self):
         for rt in _demo_types():
