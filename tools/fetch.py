@@ -526,21 +526,57 @@ def main(argv=None):
         "customer_id": _require(env, "ZPA_CUSTOMER_ID"),
         "zcc_cloud": env.get("ZCC_CLOUD", ""),
     }
-    tokens = {}
-    for product in products_in_manifest():
-        tokens[product] = acquire_token(auth_mode, product, env, ctx, opener)
     out_dir = os.path.join("pulls", tenant)
+    return fetch_all(auth_mode, env, ctx, opener, out_dir)
+
+
+def fetch_all(auth_mode, env, ctx, opener, out_dir):
+    """Fetch every registered resource, completing what it can.
+
+    One product's failure (missing entitlement, wrong path, outage) must
+    not block the others — failures are collected and summarized at the
+    end, and the exit code is non-zero when anything failed. Learned the
+    hard way: zcc sorts first, so a single 404 used to abort all the
+    healthy pulls behind it.
+    """
+    tokens = {}
+    failed_products = {}
+    for product in products_in_manifest():
+        try:
+            tokens[product] = acquire_token(auth_mode, product, env, ctx, opener)
+        except SystemExit as e:
+            failed_products[product] = str(e)
     os.makedirs(out_dir, exist_ok=True)
+    failures = {}
     for resource_type in sorted(load_manifest()):
         product = manifest_entry(resource_type)["product"]
-        items = fetch_resource(
-            resource_type, auth_mode, ctx, tokens[product], opener
-        )
+        if product in failed_products:
+            failures[resource_type] = "auth failed: %s" % failed_products[product]
+            continue
+        try:
+            items = fetch_resource(
+                resource_type, auth_mode, ctx, tokens[product], opener
+            )
+        except (RuntimeError, SystemExit, ValueError) as e:
+            failures[resource_type] = str(e)
+            continue
         path = os.path.join(out_dir, resource_type + ".json")
         with open(path, "w") as f:
             json.dump(items, f, indent=2, sort_keys=True)
             f.write("\n")
         sys.stderr.write("wrote %s (%d items)\n" % (path, len(items)))
+    if failures:
+        sys.stderr.write("\n%d resource(s) FAILED:\n" % len(failures))
+        for resource_type in sorted(failures):
+            sys.stderr.write("  %s: %s\n" % (resource_type, failures[resource_type]))
+        sys.stderr.write(
+            "hint: a 404 on ONE endpoint means that path/version is not "
+            "mounted on the gateway for your cloud (try the v1 equivalent "
+            "in the registry); 404s on EVERY endpoint of a product mean "
+            "the API client lacks that product's entitlement (Zidentity "
+            "console). Successful pulls above are unaffected either way.\n"
+        )
+        return 1
     return 0
 
 
