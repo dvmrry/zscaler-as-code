@@ -115,8 +115,16 @@ jobs:
           make drift TENANT=FILL-tenant-label $SCOPE
           rc=$?
           set -e
-          if [ "$rc" = "3" ]; then echo "drifted=true" >> "$GITHUB_OUTPUT"; fi
-          if [ "$rc" != "0" ] && [ "$rc" != "3" ]; then exit "$rc"; fi
+          # make flattens recipe exit codes (any failing recipe -> exit 2),
+          # so the drift tool's exit-3 never reaches us. Drift vs real
+          # failure is decided by whether the worktree changed.
+          if [ "$rc" -ne 0 ]; then
+            if [ -n "$(git status --porcelain config/FILL-tenant-label imports/FILL-tenant-label)" ]; then
+              echo "drifted=true" >> "$GITHUB_OUTPUT"
+            else
+              exit "$rc"
+            fi
+          fi
       - name: Render drift report (summary + audit attribution)
         if: steps.drift.outputs.drifted == 'true'
         run: |

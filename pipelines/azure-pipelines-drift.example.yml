@@ -54,12 +54,17 @@ steps:
       make drift TENANT=$(TENANT) $(SCOPE)
       rc=$?
       set -e
-      if [ "$rc" = "3" ]; then
-        echo "##vso[task.setvariable variable=DRIFTED]true"
-      elif [ "$rc" != "0" ]; then
-        exit "$rc"
+      # make flattens recipe exit codes (any failing recipe -> exit 2),
+      # so the drift tool's exit-3 never reaches us. Drift vs real
+      # failure is decided by whether the worktree changed.
+      if [ "$rc" -ne 0 ]; then
+        if [ -n "$(git status --porcelain config/$(TENANT) imports/$(TENANT))" ]; then
+          echo "##vso[task.setvariable variable=DRIFTED]true"
+        else
+          exit "$rc"
+        fi
       fi
-    displayName: Detect drift (exit 3 = drift)
+    displayName: Detect drift (non-zero + changed worktree = drift)
   - script: make drift-report TENANT=$(TENANT)
     displayName: Render drift report (summary + audit attribution)
     condition: eq(variables.DRIFTED, 'true')

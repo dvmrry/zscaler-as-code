@@ -48,12 +48,13 @@ pipelines:
       - step:
           name: Drift detection + backfill PR (read-only fetch creds; push via repo token)
           script:
-            # Capture exit code: 3 = drift, 0 = clean, anything else = real failure.
-            # The || guard is intentionally absent — we need the rc to branch on.
+            # make flattens recipe exit codes (ANY failing recipe -> exit 2),
+            # so the drift tool's exit-3 never reaches us. Drift vs real
+            # failure is decided by whether the worktree changed.
             - set +e; make drift TENANT=FILL-tenant-label; rc=$?; set -e
-            - if [ "$rc" != "0" ] && [ "$rc" != "3" ]; then exit "$rc"; fi
+            - drifted=""; if [ "$rc" != "0" ]; then if [ -n "$(git status --porcelain config/FILL-tenant-label imports/FILL-tenant-label)" ]; then drifted=yes; else exit "$rc"; fi; fi
             # No drift: nothing to render, commit, or PR.
-            - test "$rc" = "3" || { echo "no drift -- nothing to backfill"; exit 0; }
+            - test -n "$drifted" || { echo "no drift -- nothing to backfill"; exit 0; }
             # Render the report (summary + audit attribution).
             # Bitbucket has no run-summary pane; report ships as artifact below.
             - make drift-report TENANT=FILL-tenant-label

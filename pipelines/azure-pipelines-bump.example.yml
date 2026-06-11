@@ -1,0 +1,36 @@
+# Example scheduled dependency-bump check — reference material, not a
+# working config. The basic renovate for environments without one: the
+# dependency surface is three pinned providers + terraform, so the check
+# is one make target. Updates available -> the tool exits 4, make turns
+# any recipe failure into a red run, and
+# THAT is the notification; a human follows RUNBOOK "Provider Bumps"
+# (the drop-report review is a judgment step — never auto-bump).
+# Keep pipelines thin shells over make (AGENTS.md rule 9).
+schedules:
+  - cron: "0 7 * * 1"
+    displayName: Weekly dependency bump check
+    branches:
+      include:
+        - main
+    always: true
+
+trigger: none
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - script: make bump-check
+    displayName: Check provider + terraform versions
+    # No credentials needed — public registry endpoints. Behind a proxy,
+    # set HTTPS_PROXY (and REQUESTS_CA_BUNDLE for TLS inspection), same
+    # as make fetch.
+    #
+    # Optional: instead of relying on the red run, create a work item:
+    # - script: |
+    #     az boards work-item create --type Task \
+    #       --title "Dependency updates available (bump-check)" \
+    #       --description "$(make bump-check 2>&1 || true)"
+    #   condition: failed()
+    #   env:
+    #     AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
