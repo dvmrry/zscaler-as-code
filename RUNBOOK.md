@@ -235,8 +235,7 @@ make drift TENANT=<label>
 
 Runs fetch + transform and compares the result against committed config.
 
-- **Exit 0**: no drift.
-- **Exit 3**: drift detected — the git diff is the report.
+- **Exit 0**: no drift. **Non-zero**: the drift TOOL exits 3, but make flattens every failing recipe to exit 2 — so callers cannot read the 3. Distinguish drift from a real failure by the worktree: `git status --porcelain config/<label> imports/<label>` non-empty = drift (the git diff is the report); empty = the run itself failed (fetch/transform error — read the log).
 
 Reading the diff:
 
@@ -263,7 +262,7 @@ drift pipeline can open the backfill PR itself (full reference flows in
 1. **Scheduled, two cadences** — hourly scoped to the hot-path resource
    (`make drift TENANT=<label> RESOURCE=<type>` fetches just that one),
    weekly for the broad sweep.
-2. **Drift (exit 3) → branch → PR.** The PR body is
+2. **Drift (non-zero run + changed worktree) → branch → PR.** The PR body is
    `tools/drift_summary` (item-level: added / removed / changed-with-
    fields) plus `tools/audit` — the ZIA audit trail for the window,
    answering WHO made the change. Attribution is strictly advisory: any
