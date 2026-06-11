@@ -54,7 +54,7 @@ def _load_provider_pins(path=_SCHEMA_EXTRACT_MAIN_TF):
             "pins from there (the file the schema dumps are extracted under). "
             "Restore it or pass an explicit path." % path
         )
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         text = f.read()
     pins = {}
     block_re = re.compile(
@@ -300,7 +300,7 @@ def _load_json_override(resource_type, overrides_root):
     path = os.path.join(overrides_root, resource_type + ".json")
     if not os.path.exists(path):
         return {}
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -311,7 +311,7 @@ def generate_module(resource_type, out_root=MODULES_ROOT, overrides_root=OVERRID
     json_override = _load_json_override(resource_type, overrides_root)
     override_main = os.path.join(overrides_root, resource_type, "main.tf")
     if os.path.exists(override_main):
-        with open(override_main) as f:
+        with open(override_main, encoding="utf-8") as f:
             main_text = f.read()
     else:
         main_text = render_main(resource_type, rs)
@@ -329,7 +329,7 @@ def generate_module(resource_type, out_root=MODULES_ROOT, overrides_root=OVERRID
     for rel, text in sorted(files.items()):
         if fmt and (rel.endswith(".tf") or rel.endswith(".tftest.hcl")):
             text = _fmt(text)
-        with open(os.path.join(base, rel), "w") as f:
+        with open(os.path.join(base, rel), "w", encoding="utf-8") as f:
             f.write(text)
         sys.stderr.write("wrote %s\n" % os.path.join(base, rel))
 

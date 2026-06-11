@@ -641,7 +641,7 @@ def fetch_all(auth_mode, env, ctx, opener, out_dir, only=None):
             failures[resource_type] = str(e)
             continue
         path = os.path.join(out_dir, resource_type + ".json")
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(items, f, indent=2, sort_keys=True)
             f.write("\n")
         sys.stderr.write("wrote %s (%d items)\n" % (path, len(items)))

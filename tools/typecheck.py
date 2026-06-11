@@ -151,7 +151,7 @@ def check_config_file(resource_type, path):
 
     Returns list of (item_key, field_path, expected, got_repr) tuples.
     """
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         data = json.load(f)
     items = data.get("items") or {}
     rs = load_resource(resource_type)

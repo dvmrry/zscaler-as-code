@@ -235,7 +235,7 @@ class MainExitCodeTest(unittest.TestCase):
             items = {"test": {"urls": ["https://example.com"]}}
             path = os.path.join(
                 config_dir, "zia_url_categories.auto.tfvars.json")
-            with open(path, "w") as f:
+            with open(path, "w", encoding="utf-8") as f:
                 f.write(render_tfvars(items))
 
             old = sys.stdout

@@ -405,7 +405,7 @@ class SuggestTest(unittest.TestCase):
 class CheckConfigFileTest(unittest.TestCase):
     def _write_config(self, tmp_dir, rt, items):
         path = os.path.join(tmp_dir, rt + ".auto.tfvars.json")
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump({"items": items}, f)
         return path
 

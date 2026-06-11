@@ -24,7 +24,10 @@ instead of being clever.
 5. Python under `tools/` is stdlib-only with Python 3.6-floor syntax: no
    `match`, no `X | Y` unions, no walrus `:=`, no f-string `=`, no
    `dataclasses`, no pip dependencies at runtime, so it runs in
-   restricted enterprise environments. `make test-floor` verifies this
+   restricted enterprise environments. Every text-mode `open()` pins
+   `encoding="utf-8"` — the default is locale-dependent and non-UTF-8
+   agents mis-read the generated files' em-dashes (enforced by
+   tools/tests/test_encoding_discipline.py). `make test-floor` verifies this
    under a real Python 3.6 where Docker is available (optional dev
    check — CI runs `make test` with whatever interpreter the agent has).
 6. `modules/` is generated output. Never hand-edit it. Change the generator

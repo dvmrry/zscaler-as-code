@@ -19,7 +19,7 @@ class ConfigPairsTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             os.makedirs(os.path.join(td, "zsX"))
             bad = os.path.join(td, "zsX", "zia_nope.auto.tfvars.json")
-            with open(bad, "w") as f:
+            with open(bad, "w", encoding="utf-8") as f:
                 f.write("{}")
             with self.assertRaises(SystemExit):
                 config_pairs(config_root=td)

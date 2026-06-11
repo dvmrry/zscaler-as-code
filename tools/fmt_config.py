@@ -32,7 +32,7 @@ def main(argv=None):
         if not os.path.exists(path):
             continue
         checked += 1
-        with open(path, "rb") as f:
+        with open(path, "rb", encoding="utf-8") as f:
             raw_bytes = f.read()
         # Decode as PLAIN utf-8 (not utf-8-sig) for the comparison: a
         # leading BOM stays in `original`, so a BOM-only file compares
@@ -43,7 +43,7 @@ def main(argv=None):
         items = json.loads(original.lstrip(u"﻿")).get("items") or {}
         canonical = render_tfvars(items)
         if original != canonical:
-            with open(path, "w") as f:
+            with open(path, "w", encoding="utf-8") as f:
                 f.write(canonical)
             sys.stderr.write("rewrote %s\n" % path)
             rewritten += 1
