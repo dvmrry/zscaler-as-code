@@ -138,6 +138,17 @@ class CoerceTest(unittest.TestCase):
             coerce_item(item, fake_block), {"ids": [10], "names": ["solo"]}
         )
 
+    def test_empty_string_becomes_empty_collection(self):
+        fake_block = {
+            "attributes": {
+                "ids": {"type": ["list", "number"], "optional": True},
+                "names": {"type": ["set", "string"], "optional": True},
+            }
+        }
+        out = coerce_item({"ids": "", "names": ""}, fake_block)
+        self.assertEqual(out["ids"], [])
+        self.assertEqual(out["names"], [])
+
 
 class OverrideTest(unittest.TestCase):
     def test_missing_override_is_empty(self):

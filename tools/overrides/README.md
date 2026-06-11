@@ -1,5 +1,10 @@
 # Generator overrides
 
+Run `make typecheck TENANT=<label>` after every `make transform` to catch type
+mismatches before Terraform does. Each output line ends with a one-line
+remediation — follow that suggestion exactly; it is the authoritative decision
+table for every known mismatch class.
+
 If `tools/overrides/<resource_type>/main.tf` exists, `make generate` uses
 it verbatim instead of the rendered `main.tf` for that resource — the
 escape hatch for provider quirks the generator cannot express. Each

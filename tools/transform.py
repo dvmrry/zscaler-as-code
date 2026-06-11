@@ -131,7 +131,9 @@ def coerce_item(item, block):
         if isinstance(enc, str):
             out[key] = _coerce_primitive(_unwrap_ref(value), enc)
         elif isinstance(enc, list) and len(enc) == 2 and isinstance(enc[1], str):
-            if isinstance(value, list):
+            if value == "":
+                out[key] = []
+            elif isinstance(value, list):
                 out[key] = [
                     _coerce_primitive(_unwrap_ref(v), enc[1]) for v in value
                 ]
