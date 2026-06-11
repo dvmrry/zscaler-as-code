@@ -250,3 +250,5 @@ modes are supported; the fetcher resolves mode from
 | CHECK gate failure in CI | Run `make generate` and commit; never hand-edit `modules/` or `schemas/tfvars/` |
 | `import blocks error: resource already managed` | Delete `_imports.tf` from the env root after first apply |
 | Plan rejects a predefined/system object (e.g. order -1) | Add a `skip_if` matcher to `tools/overrides/<type>.json` (e.g. `"skip_if": [{"default_rule": true}]`); run `make transform` — the item is excluded from config and imports with a stderr note |
+| `Too many <field> blocks` at plan/test | Stale config from before the max_items merge — `git pull && make transform`; max_items=1 blocks are ONE object with list members (e.g. `departments: {"id": [..]}`) |
+| Plan rejects a value the schema allows (e.g. `size_quota`) | Provider runtime validator (not in the schema dump). If the API uses 0/empty for "not set", add the field to `drop_if_default`; otherwise relay the one-line error |
