@@ -278,6 +278,23 @@ def apply_overrides(item, override):
                 out[field] = [_unwrap_ref(v) for v in value]
             else:
                 out[field] = _unwrap_ref(value)
+    for field, divisor in sorted((override.get("divide") or {}).items()):
+        # Unit conversion: some provider schemas store a field in a larger
+        # unit than the API returns and convert internally (e.g. ZIA
+        # size_quota — API speaks KB, the schema value is MB, and the
+        # provider does `resp.SizeQuota / 1024` on read). Mirror that
+        # integer division so config matches what the provider would
+        # store. Runs before drop_if_default so a divided 0 still drops.
+        if field in out:
+            value = out[field]
+            if isinstance(value, str):
+                try:
+                    value = int(value)
+                except ValueError:
+                    continue
+            if isinstance(value, bool) or not isinstance(value, int):
+                continue
+            out[field] = value // divisor
     for field, default in sorted((override.get("drop_if_default") or {}).items()):
         if field in out and out[field] == default:
             del out[field]

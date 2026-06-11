@@ -1,4 +1,7 @@
 {
+  "divide": {
+    "size_quota": 1024
+  },
   "drop_if_default": {
     "size_quota": 0,
     "time_quota": 0
