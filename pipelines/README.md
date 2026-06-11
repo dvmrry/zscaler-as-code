@@ -40,11 +40,13 @@ Notes that apply to every platform:
 - **Manual scoped runs**: every platform's manual-run parameters map
   directly to make variables — `make plan TENANT=<t> RESOURCE=<rt>`.
 - **Multi-tenant credentials without YAML case statements**: hold each
-  tenant's secrets once under tenant-prefixed names
-  (`ZS2_ZSCALER_CLIENT_ID`, `ZS2_ZSCALER_CLOUD`, ...) and resolve in a
-  step with `eval "$(python3 -m tools.cred_env <tenant>)"` — the
-  mapping is a tested allowlist in code; tenant-specific values stay
-  pipeline-side. Don't run that step under `set -x`.
+  tenant's secrets once under tenant-scoped names — tenant-first
+  (`ZS2_ZSCALER_CLIENT_ID`) or product-first (`ZSCALER_ZS2_CLIENT_ID`);
+  tenant-first wins, and a both-set-with-different-values conflict is
+  warned, never silent — then resolve in a step with
+  `eval "$(python3 -m tools.cred_env <tenant>)"`. The mapping is a
+  tested allowlist in code; tenant-specific values stay pipeline-side.
+  Don't run that step under `set -x`.
 - **Agents without terraform**: `make install-tf VERSION=1.15.4`
   downloads and checksum-verifies the binary into `bin/`; either PATH
   it or pass `TF=bin/terraform` to subsequent make calls.
