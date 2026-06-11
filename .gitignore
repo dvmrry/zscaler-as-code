@@ -15,6 +15,9 @@ backend.conf
 envs/**/tfplan
 .plan-changed.tmp
 
+# make install-tf output
+bin/
+
 # Python
 __pycache__/
 *.py[cod]
