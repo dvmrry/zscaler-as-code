@@ -1,11 +1,13 @@
 # Example scheduled dependency-bump check — reference material, not a
 # working config. The basic renovate for environments without one: the
 # dependency surface is three pinned providers + terraform, so the check
-# is one make target. Updates available -> the tool exits 4, make turns
-# any recipe failure into a red run, and
-# THAT is the notification; a human follows RUNBOOK "Provider Bumps"
-# (the drop-report review is a judgment step — never auto-bump).
-# Keep pipelines thin shells over make (AGENTS.md rule 9).
+# is one make target. With no webhook/email alerting, the notification
+# surface is (a) the run turning ORANGE (SucceededWithIssues — updates
+# are schedulable work, not an outage; RED is reserved for the check
+# itself failing) and (b) an ADO work item filed on the target board,
+# deduplicated by a fingerprint of the pending updates. A human follows
+# RUNBOOK "Provider Bumps" — the drop-report review is a judgment step;
+# never auto-bump. Keep pipelines thin shells over make (AGENTS.md rule 9).
 schedules:
   - cron: "0 7 * * 1"
     displayName: Weekly dependency bump check
@@ -19,18 +21,63 @@ trigger: none
 pool:
   vmImage: ubuntu-latest
 
+variables:
+  # Work item targeting. Cross-project boards need the org/project setting
+  # "Limit job authorization scope to current project" DISABLED, or swap
+  # System.AccessToken for a PAT secret with Work Items (Read & Write).
+  - name: WI_PROJECT
+    value: FILL-project-name
+  - name: WI_AREA
+    value: FILL-area-path # e.g. ProjectName\TeamBoard ('' = project default)
+  - name: WI_TYPE
+    value: Task # match your process template (Task / Issue / User Story)
+
 steps:
-  - script: make bump-check
+  - script: |
+      set +e
+      out=$(make bump-check 2>&1)
+      rc=$?
+      set -e
+      echo "$out"
+      echo "$out" > /tmp/bump.txt
+      # The tool exits 4 on updates but make flattens every failing recipe
+      # to 2 — discriminate on the output lines, not the rc (same lesson
+      # as drift detection).
+      if echo "$out" | grep -q '^UPDATE '; then
+        echo "##vso[task.setvariable variable=UPDATES]true"
+      elif [ "$rc" != "0" ]; then
+        exit "$rc"  # real failure (network/parse) stays RED
+      fi
     displayName: Check provider + terraform versions
-    # No credentials needed — public registry endpoints. Behind a proxy,
-    # set HTTPS_PROXY (and REQUESTS_CA_BUNDLE for TLS inspection), same
-    # as make fetch.
-    #
-    # Optional: instead of relying on the red run, create a work item:
-    # - script: |
-    #     az boards work-item create --type Task \
-    #       --title "Dependency updates available (bump-check)" \
-    #       --description "$(make bump-check 2>&1 || true)"
-    #   condition: failed()
-    #   env:
-    #     AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
+  - script: |
+      # Fingerprint the pending update set: same pending updates week after
+      # week -> same title -> no duplicate work items; a NEW version bump
+      # changes the fingerprint -> a fresh work item.
+      updates=$(grep '^UPDATE ' /tmp/bump.txt)
+      fingerprint=$(printf '%s' "$updates" | cksum | cut -d' ' -f1)
+      count=$(printf '%s\n' "$updates" | wc -l | tr -d ' ')
+      title="bump-check: $count dependency update(s) available [$fingerprint]"
+      az extension add --name azure-devops --only-show-errors
+      existing=$(az boards query --org "$(System.CollectionUri)" --project "$(WI_PROJECT)" \
+        --wiql "SELECT [System.Id] FROM WorkItems WHERE [System.Title] = '$title' AND [System.State] NOT IN ('Done', 'Closed', 'Removed')" \
+        -o tsv 2>/dev/null | wc -l | tr -d ' ')
+      if [ "$existing" != "0" ]; then
+        echo "work item for this exact update set already open — not duplicating"
+      else
+        az boards work-item create --org "$(System.CollectionUri)" \
+          --project "$(WI_PROJECT)" --type "$(WI_TYPE)" \
+          --title "$title" \
+          --description "$(cat /tmp/bump.txt)
+
+Follow RUNBOOK 'Provider Bumps': edit tools/schema-extract/main.tf, make schemas && make generate, review the drop report, make lock, commit." \
+          $( [ -n "$(WI_AREA)" ] && printf -- '--area %s' "$(WI_AREA)" ) \
+          --only-show-errors > /dev/null \
+          && echo "work item created: $title" \
+          || echo "##vso[task.logissue type=warning]work item creation FAILED — grant the build service identity 'Edit work items in this node' on the target area path (or use a PAT with Work Items R&W); updates are still listed in this run's log"
+      fi
+      # Orange, not red: visible in the runs list without crying outage.
+      echo "##vso[task.complete result=SucceededWithIssues;]dependency updates available"
+    displayName: File (deduplicated) work item on the board
+    condition: eq(variables.UPDATES, 'true')
+    env:
+      AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
