@@ -20,7 +20,12 @@ e.g. `["type", "name"]` where names are only unique within a type),
 `renames` (post-snake-case API→schema names), `drops` (fields
 always removed), `references` (force `{id,...}` unwrapping),
 `drop_if_default` (remove a field when it equals the given value —
-perma-diff suppression), `split_csv` (list of post-rename fields whose
+perma-diff suppression), `divide` (field→integer divisor: unit conversion
+for fields where the provider schema stores a larger unit than the API
+returns and converts internally — e.g. ZIA `size_quota` is KB on the API
+but MB in config, so `"divide": {"size_quota": 1024}`; integer division,
+applied before `drop_if_default` so a converted 0 still drops),
+`split_csv` (list of post-rename fields whose
 comma-joined string values become real lists, empties dropped — ZCC
 returns list-typed settings this way), `import_id` (format template over
 the item's snake_cased original fields, default `"{id}"`), `acknowledged_drops`

@@ -365,6 +365,35 @@ class OverrideTest(unittest.TestCase):
             apply_overrides(item, ov), {"dns_server_ips": ["1.1.1.1", "2.2.2.2"]}
         )
 
+    def test_divide_converts_units(self):
+        # ZIA size_quota: API returns KB, the provider schema value is MB
+        # (the provider does resp.SizeQuota / 1024 on read; its validator
+        # range 10-100000 is in MB). 512000 KB -> 500 MB.
+        ov = {"divide": {"size_quota": 1024}}
+        self.assertEqual(
+            apply_overrides({"size_quota": 512000}, ov), {"size_quota": 500}
+        )
+
+    def test_divide_handles_string_numbers(self):
+        # API number-as-string still converts (and a string "0" lands on
+        # int 0, so a following drop_if_default 0 catches it).
+        ov = {"divide": {"size_quota": 1024}, "drop_if_default": {"size_quota": 0}}
+        self.assertEqual(
+            apply_overrides({"size_quota": "51200000"}, ov), {"size_quota": 50000}
+        )
+        self.assertEqual(apply_overrides({"size_quota": "0"}, ov), {})
+
+    def test_divide_zero_still_drops(self):
+        ov = {"divide": {"size_quota": 1024}, "drop_if_default": {"size_quota": 0}}
+        self.assertEqual(apply_overrides({"size_quota": 0}, ov), {})
+
+    def test_divide_leaves_non_numeric_untouched(self):
+        ov = {"divide": {"size_quota": 1024}}
+        self.assertEqual(
+            apply_overrides({"size_quota": "unlimited"}, ov),
+            {"size_quota": "unlimited"},
+        )
+
     def test_unconditional_drops(self):
         ov = {"drops": ["noise_field"]}
         item = {"noise_field": "anything", "keep": 1}
@@ -441,21 +470,33 @@ class PipelineTest(unittest.TestCase):
                     {"id": 20, "name": "Sales"},
                 ],
                 "groups": [{"id": 7, "name": "All"}],
-            }
+            },
+            {
+                "id": 102,
+                "type": "STREAMING_MEDIA",
+                "name": "Large file quota",
+                "order": 2,
+                "sizeQuota": 102400000,
+                "timeQuota": 0,
+            },
         ]
         override = {
             "key_field": ["type", "name"],
+            "divide": {"size_quota": 1024},
             "drop_if_default": {"size_quota": 0, "time_quota": 0},
         }
         items, originals, drops = transform_items(
             raw, "zia_cloud_app_control_rule", override
         )
-        (key,) = list(items)
-        item = items[key]
+        item = items["streaming_media_block_big_streams"]
         self.assertEqual(item["departments"], {"id": [10, 20]})
         self.assertEqual(item["groups"], {"id": [7]})
         self.assertNotIn("size_quota", item)
         self.assertNotIn("time_quota", item)
+        # 102400000 KB from the API -> 100000 MB in config (the provider
+        # validator's exact ceiling — a real 100GB tenant rule).
+        quota_item = items["streaming_media_large_file_quota"]
+        self.assertEqual(quota_item["size_quota"], 100000)
 
     def test_duplicate_keys_raise(self):
         with self.assertRaises(ValueError):
