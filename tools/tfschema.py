@@ -26,7 +26,7 @@ def _provider_for(resource_type):
 def load_provider(provider):
     if provider not in _cache:
         path = os.path.join(SCHEMA_DIR, provider + ".json")
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             _cache[provider] = json.load(f)
     return _cache[provider]
 

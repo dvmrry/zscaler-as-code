@@ -15,7 +15,7 @@ _cache = {}
 
 def load_registry():
     if not _cache:
-        with open(REGISTRY_PATH) as f:
+        with open(REGISTRY_PATH, encoding="utf-8") as f:
             _cache.update(json.load(f))
     return _cache
 

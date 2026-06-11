@@ -41,7 +41,7 @@ def main():
     schemas = split_schemas(combined)
     for name in sorted(schemas):
         path = os.path.join(OUT_DIR, name + ".json")
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(schemas[name], f, indent=2, sort_keys=True)
             f.write("\n")
         sys.stderr.write("wrote %s\n" % path)

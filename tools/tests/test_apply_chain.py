@@ -39,11 +39,11 @@ class ApplyChainTest(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.config_dir, True)
         os.makedirs(self.root, exist_ok=True)
         os.makedirs(self.config_dir, exist_ok=True)
-        with open(os.path.join(self.root, "main.tf"), "w") as f:
+        with open(os.path.join(self.root, "main.tf"), "w", encoding="utf-8") as f:
             f.write("# fake root for chain test\n")
         with open(
             os.path.join(self.config_dir, "fake_rt.auto.tfvars.json"), "w"
-        ) as f:
+        , encoding="utf-8") as f:
             f.write('{"items": {}}\n')
         self.tfplan = os.path.join(self.root, "tfplan")
 
@@ -66,7 +66,7 @@ class ApplyChainTest(unittest.TestCase):
         )
         self.assertEqual(rc, 0, out)
         self.assertFalse(os.path.exists(self.tfplan), "tfplan not deleted")
-        with open(log) as f:
+        with open(log, encoding="utf-8") as f:
             self.assertIn("fake_rt", f.read())
 
     def test_apply_refuses_destroys_without_allow(self):
@@ -101,7 +101,7 @@ class ApplyChainTest(unittest.TestCase):
         # remediation, not a bare terraform backend error. The artifact must
         # survive so a human can re-run with BACKEND_CONFIG.
         self._plan_save()
-        with open(os.path.join(self.root, "main.tf"), "w") as f:
+        with open(os.path.join(self.root, "main.tf"), "w", encoding="utf-8") as f:
             f.write('terraform {\n  backend "azurerm" {}\n}\n')
         rc, out = _run(
             ["make", "apply", "TENANT=" + TENANT, "TF=" + FAKE_TF])
@@ -132,7 +132,7 @@ class ApplyChainTest(unittest.TestCase):
         rc, out = _run(
             ["make", "plan-report", "TENANT=" + TENANT, "TF=" + FAKE_TF])
         self.assertEqual(rc, 0, out)
-        with open(os.path.join("reports", "plan.md")) as f:
+        with open(os.path.join("reports", "plan.md"), encoding="utf-8") as f:
             body = f.read()
         self.assertIn("fake_rt", body)
         self.assertIn("Plan:", body)

@@ -258,7 +258,7 @@ def load_override(resource_type):
     path = os.path.join(OVERRIDES_DIR, resource_type + ".json")
     if not os.path.exists(path):
         return {}
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         data = json.load(f)
     # Validate authoring-side once at load (not per item): a 0 divisor would
     # raise a bare ZeroDivisionError deep in apply_overrides with no clue
@@ -496,7 +496,7 @@ def main(argv=None):
         return 2
     resource_type, input_path, tenant = argv
     override = load_override(resource_type)
-    with open(input_path) as f:
+    with open(input_path, encoding="utf-8") as f:
         raw_items = json.load(f)
     _warn_if_slim(raw_items, load_resource(resource_type)["block"], resource_type)
     items, originals, drops = transform_items(raw_items, resource_type, override)
@@ -514,10 +514,10 @@ def main(argv=None):
     # object. The moves file is staged ONLY when renames exist; copy it
     # into the env root alongside the imports file and delete after apply.
     if os.path.exists(imports_path):
-        with open(imports_path) as f:
+        with open(imports_path, encoding="utf-8") as f:
             moves = derive_moves(f.read(), new_imports)
         if moves:
-            with open(moves_path, "w") as f:
+            with open(moves_path, "w", encoding="utf-8") as f:
                 f.write(render_moves(resource_type, moves))
             sys.stderr.write(
                 "RENAME(S) DETECTED: %d item(s) re-keyed — moved blocks "
@@ -525,9 +525,9 @@ def main(argv=None):
                 "file before plan/apply (RUNBOOK: Drift)\n"
                 % (len(moves), moves_path)
             )
-    with open(tfvars_path, "w") as f:
+    with open(tfvars_path, "w", encoding="utf-8") as f:
         f.write(render_tfvars(items))
-    with open(imports_path, "w") as f:
+    with open(imports_path, "w", encoding="utf-8") as f:
         f.write(new_imports)
     # drops contains only unacknowledged paths; acknowledged_drops in the override
     # suppress known-unmanageable metadata from this report (fields still removed).

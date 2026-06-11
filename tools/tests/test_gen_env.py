@@ -102,11 +102,11 @@ class BackendMarkerTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             generate_env("zs2", out_root=td, fmt=False, backend="azurerm")
             main_path = os.path.join(td, "zs2", "zpa_segment_group", "main.tf")
-            with open(main_path) as f:
+            with open(main_path, encoding="utf-8") as f:
                 first = f.read()
             self.assertIn('backend "azurerm"', first)
             generate_env("zs2", out_root=td, fmt=False)  # no backend arg
-            with open(main_path) as f:
+            with open(main_path, encoding="utf-8") as f:
                 second = f.read()
             self.assertEqual(first, second)
 
@@ -117,7 +117,7 @@ class BackendMarkerTest(unittest.TestCase):
             self.assertFalse(
                 os.path.exists(os.path.join(td, "zs2", ".backend"))
             )
-            with open(os.path.join(td, "zs2", "zpa_segment_group", "main.tf")) as f:
+            with open(os.path.join(td, "zs2", "zpa_segment_group", "main.tf"), encoding="utf-8") as f:
                 self.assertNotIn('backend "', f.read())
 
 

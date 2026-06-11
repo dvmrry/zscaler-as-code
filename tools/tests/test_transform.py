@@ -431,7 +431,7 @@ class OverrideTest(unittest.TestCase):
 
         tmp = tempfile.mkdtemp()
         path = os.path.join(tmp, "zia_fake_div.json")
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump({"divide": {"size_quota": 0}}, f)
         old_dir = transform_mod.OVERRIDES_DIR
         transform_mod.OVERRIDES_DIR = tmp
@@ -693,7 +693,7 @@ class MovedBlocksEndToEndTest(unittest.TestCase):
         self.addCleanup(shutil.rmtree, os.path.join("imports", self.TENANT), True)
         with tempfile.TemporaryDirectory() as td:
             src = os.path.join(td, "in.json")
-            with open(src, "w") as f:
+            with open(src, "w", encoding="utf-8") as f:
                 json.dump([{"id": 7, "name": "Original Name"}], f)
             self.assertEqual(
                 transform_main(["zia_rule_labels", src, self.TENANT]), 0)
@@ -701,12 +701,12 @@ class MovedBlocksEndToEndTest(unittest.TestCase):
                 "imports", self.TENANT, "zia_rule_labels_moves.tf")
             self.assertFalse(os.path.exists(moves_path), "no rename yet")
             # the console rename: same id, new name -> new derived key
-            with open(src, "w") as f:
+            with open(src, "w", encoding="utf-8") as f:
                 json.dump([{"id": 7, "name": "Renamed Thing"}], f)
             self.assertEqual(
                 transform_main(["zia_rule_labels", src, self.TENANT]), 0)
             self.assertTrue(os.path.exists(moves_path))
-            with open(moves_path) as f:
+            with open(moves_path, encoding="utf-8") as f:
                 body = f.read()
             self.assertIn('from = module.zia_rule_labels.zia_rule_labels.this["original_name"]', body)
             self.assertIn('to   = module.zia_rule_labels.zia_rule_labels.this["renamed_thing"]', body)
@@ -762,13 +762,13 @@ class GoldenTransformTest(unittest.TestCase):
         base = os.path.join(
             "tools", "tests", "fixtures", "transform", resource_type
         )
-        with open(os.path.join(base, "api.json")) as f:
+        with open(os.path.join(base, "api.json"), encoding="utf-8") as f:
             raw = json.load(f)
         override = load_override(resource_type)
         items, originals, _ = transform_items(raw, resource_type, override)
-        with open(os.path.join(base, "expected.auto.tfvars.json")) as f:
+        with open(os.path.join(base, "expected.auto.tfvars.json"), encoding="utf-8") as f:
             self.assertEqual(render_tfvars(items), f.read())
-        with open(os.path.join(base, "expected_imports.tf")) as f:
+        with open(os.path.join(base, "expected_imports.tf"), encoding="utf-8") as f:
             self.assertEqual(
                 render_imports(resource_type, originals, override), f.read()
             )

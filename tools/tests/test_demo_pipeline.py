@@ -34,7 +34,7 @@ class DemoPipelineTest(unittest.TestCase):
 
     def test_pipeline_handles_demo_data(self):
         for rt in _demo_types():
-            with open(os.path.join(DEMO_DIR, rt + ".json")) as f:
+            with open(os.path.join(DEMO_DIR, rt + ".json"), encoding="utf-8") as f:
                 raw = json.load(f)
             self.assertTrue(raw, "%s demo file is empty" % rt)
             override = load_override(rt)
@@ -61,16 +61,16 @@ class DemoPipelineTest(unittest.TestCase):
 
     def test_demo_output_matches_blessed_goldens(self):
         for rt in _demo_types():
-            with open(os.path.join(DEMO_DIR, rt + ".json")) as f:
+            with open(os.path.join(DEMO_DIR, rt + ".json"), encoding="utf-8") as f:
                 raw = json.load(f)
             override = load_override(rt)
             items, originals, _ = transform_items(raw, rt, override)
 
             tfvars_path = os.path.join(DEMO_EXPECTED_DIR, rt + ".tfvars.json")
             imports_path = os.path.join(DEMO_EXPECTED_DIR, rt + "_imports.tf")
-            with open(tfvars_path) as f:
+            with open(tfvars_path, encoding="utf-8") as f:
                 expected_tfvars = f.read()
-            with open(imports_path) as f:
+            with open(imports_path, encoding="utf-8") as f:
                 expected_imports = f.read()
 
             self.assertEqual(

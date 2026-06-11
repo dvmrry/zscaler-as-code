@@ -41,9 +41,9 @@ def main():
     import jsonschema  # dev-only; Makefile warn-skips when missing
     failures = 0
     for tenant, rt, cfg_path, schema_path in config_pairs():
-        with open(cfg_path) as f:
+        with open(cfg_path, encoding="utf-8") as f:
             data = json.load(f)
-        with open(schema_path) as f:
+        with open(schema_path, encoding="utf-8") as f:
             schema = json.load(f)
         try:
             jsonschema.validate(data, schema)

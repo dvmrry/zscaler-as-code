@@ -127,11 +127,11 @@ def generate_env(tenant, out_root=ENVS_ROOT, fmt=True, backend=None):
     """
     marker = os.path.join(out_root, tenant, ".backend")
     if backend is None and os.path.exists(marker):
-        with open(marker) as f:
+        with open(marker, encoding="utf-8") as f:
             backend = f.read().strip() or None
     os.makedirs(os.path.join(out_root, tenant), exist_ok=True)
     if backend:
-        with open(marker, "w") as f:
+        with open(marker, "w", encoding="utf-8") as f:
             f.write(backend + "\n")
     for resource_type in generated_types():
         base = os.path.join(out_root, tenant, resource_type)
@@ -139,10 +139,10 @@ def generate_env(tenant, out_root=ENVS_ROOT, fmt=True, backend=None):
         main_text = render_env_main(resource_type, tenant, backend=backend)
         if fmt:
             main_text = _fmt(main_text)
-        with open(os.path.join(base, "main.tf"), "w") as f:
+        with open(os.path.join(base, "main.tf"), "w", encoding="utf-8") as f:
             f.write(main_text)
         sys.stderr.write("wrote %s\n" % os.path.join(base, "main.tf"))
-        with open(os.path.join(base, "README.md"), "w") as f:
+        with open(os.path.join(base, "README.md"), "w", encoding="utf-8") as f:
             f.write(render_env_readme(resource_type, tenant))
         tests_dir = os.path.join(base, "tests")
         os.makedirs(tests_dir, exist_ok=True)
@@ -154,7 +154,7 @@ def generate_env(tenant, out_root=ENVS_ROOT, fmt=True, backend=None):
         test_text = render_env_test(resource_type, tenant, has_config=has_config)
         if fmt:
             test_text = _fmt(test_text)
-        with open(os.path.join(tests_dir, "smoke.tftest.hcl"), "w") as f:
+        with open(os.path.join(tests_dir, "smoke.tftest.hcl"), "w", encoding="utf-8") as f:
             f.write(test_text)
         sys.stderr.write("wrote %s\n" % os.path.join(tests_dir, "smoke.tftest.hcl"))
 

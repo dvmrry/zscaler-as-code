@@ -236,10 +236,10 @@ class GenerateModuleTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             ov = os.path.join(td, "ov", "zpa_segment_group")
             os.makedirs(ov)
-            with open(os.path.join(ov, "main.tf"), "w") as f:
+            with open(os.path.join(ov, "main.tf"), "w", encoding="utf-8") as f:
                 f.write("# OVERRIDE\n")
             generate_module("zpa_segment_group", out_root=os.path.join(td, "mod"), overrides_root=os.path.join(td, "ov"), fmt=False)
-            with open(os.path.join(td, "mod", "zpa_segment_group", "main.tf")) as f:
+            with open(os.path.join(td, "mod", "zpa_segment_group", "main.tf"), encoding="utf-8") as f:
                 self.assertEqual(f.read(), "# OVERRIDE\n")
 
 class GoldenTest(unittest.TestCase):
@@ -300,7 +300,7 @@ class GoldenTest(unittest.TestCase):
         import tools.gen_module as g
         for resource_type, fname, renderer in self.GOLDENS:
             path = os.path.join("tools", "tests", "fixtures", "gen", resource_type, fname)
-            with open(path) as f:
+            with open(path, encoding="utf-8") as f:
                 expected = f.read()
             rendered = g._fmt(getattr(g, renderer)(resource_type, load_resource(resource_type)))
             self.assertEqual(rendered, expected, "%s/%s drifted — make update-goldens after intentional changes" % (resource_type, fname))

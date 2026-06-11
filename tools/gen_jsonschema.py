@@ -76,12 +76,12 @@ def main():
     for resource_type in generated_types():
         schema = build_schema(resource_type, load_resource(resource_type))
         path = os.path.join(OUT_DIR, resource_type + ".schema.json")
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(schema, f, indent=2, sort_keys=True)
             f.write("\n")
         sys.stderr.write("wrote %s\n" % path)
     settings_path = os.path.join(OUT_DIR, "vscode.settings.example.json")
-    with open(settings_path, "w") as f:
+    with open(settings_path, "w", encoding="utf-8") as f:
         json.dump(build_editor_settings(), f, indent=2, sort_keys=True)
         f.write("\n")
     sys.stderr.write("wrote %s\n" % settings_path)
