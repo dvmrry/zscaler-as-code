@@ -1,7 +1,7 @@
 PYTHON ?= python3
 TF     ?= terraform
 
-.PHONY: help env install-tf bump-check plan-report test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck conformance
+.PHONY: help env install-tf bump-check plan-report lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck conformance
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
@@ -125,6 +125,25 @@ validate-imports: ## Validate fixture import addresses against a tenant's roots 
 			echo "skip $$rt (no fixture imports)"; \
 		fi; \
 	done
+
+lock: ## Pin provider HASHES per env root (TENANT=<label>; one registry fetch per product, copied to sibling roots; commit the lock files)
+	@test -n "$(TENANT)" || { echo "usage: make lock TENANT=<label>"; exit 2; }
+	@set -e; locked=0; for prefix in zia zpa zcc; do \
+		first=""; \
+		for d in envs/$(TENANT)/$${prefix}_*/; do \
+			test -d "$$d" || continue; \
+			if [ -z "$$first" ]; then \
+				first="$$d"; \
+				echo "== lock $$d (3 platforms — downloads provider archives once per product)"; \
+				$(TF) -chdir=$$d providers lock -platform=linux_amd64 -platform=darwin_amd64 -platform=darwin_arm64; \
+			else \
+				cp "$${first}.terraform.lock.hcl" "$$d.terraform.lock.hcl"; \
+			fi; \
+			locked=$$((locked+1)); \
+		done; \
+	done; \
+	test $$locked -gt 0 || { echo "error: no env roots found for TENANT=$(TENANT) — run make gen-env first"; exit 1; }; \
+	echo "locked $$locked root(s); commit envs/$(TENANT)/**/.terraform.lock.hcl"
 
 plan: ## Terraform plan for a tenant's roots (TENANT=<label> [RESOURCE=<type>] [BACKEND_CONFIG=<file>]; real creds via env)
 	@test -n "$(TENANT)" || { echo "usage: make plan TENANT=<label> [RESOURCE=<type>] [BACKEND_CONFIG=<file>]"; exit 2; }
