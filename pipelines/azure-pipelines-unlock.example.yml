@@ -1,0 +1,39 @@
+# Example state-unlock pipeline — reference material, not a working config.
+# Recovery for a KILLED run that left the azurerm blob lease held: the
+# lock never self-expires, and in blob-locked environments workstations
+# cannot reach the state container — so force-unlock must run on an
+# agent too. Manual trigger only; LOCK_ID comes from the
+# "Error acquiring the state lock" message of the blocked run.
+#
+# CAUTION: only break a lock whose holder is DEAD. If a run is currently
+# active on this root, cancel that run instead. (Storage-admin
+# alternative, no pipeline needed: break the lease on the state blob in
+# the portal / az storage blob lease break.)
+# Keep pipelines thin shells over make (AGENTS.md rule 9).
+
+parameters:
+  - name: tenant
+    displayName: Tenant label
+    type: string
+  - name: resource
+    displayName: Resource type (ONE concrete type — locks are per root)
+    type: string
+  - name: lock_id
+    displayName: Lock ID (uuid from the lock error message)
+    type: string
+
+trigger: none
+pr: none
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  - group: zscaler-credentials # ARM_SAS_TOKEN for the state container
+
+steps:
+  - checkout: self
+  - script: make unlock TENANT=${{ parameters.tenant }} RESOURCE=${{ parameters.resource }} LOCK_ID=${{ parameters.lock_id }} BACKEND_CONFIG=backend.conf
+    displayName: Break the stale state lock
+    env:
+      ARM_SAS_TOKEN: $(ARM_SAS_TOKEN)

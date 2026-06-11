@@ -292,6 +292,23 @@ class ApplyChainTest(unittest.TestCase):
         # committed/source files untouched
         self.assertTrue(os.path.exists(os.path.join(self.root, "main.tf")))
 
+    def test_unlock_passes_lock_id_to_force_unlock(self):
+        log = os.path.join(self.config_dir, "unlock.log")
+        rc, out = _run(
+            ["make", "unlock", "TENANT=" + TENANT, "RESOURCE=fake_rt",
+             "LOCK_ID=abc-123", "TF=" + FAKE_TF],
+            {"FAKE_TF_LOG": log},
+        )
+        self.assertEqual(rc, 0, out)
+        self.assertIn("CAUTION", out)
+        with open(log, encoding="utf-8") as f:
+            self.assertIn("force-unlock -force abc-123", f.read())
+
+    def test_unlock_requires_all_args(self):
+        rc, out = _run(["make", "unlock", "TENANT=" + TENANT, "TF=" + FAKE_TF])
+        self.assertNotEqual(rc, 0)
+        self.assertIn("LOCK_ID", out)
+
     def test_stage_imports_nothing_to_stage_fails_loudly(self):
         rc, out = _run(["make", "stage-imports", "TENANT=" + TENANT])
         self.assertNotEqual(rc, 0)
