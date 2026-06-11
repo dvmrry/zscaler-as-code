@@ -1,7 +1,8 @@
 # Terraform
 **/.terraform/
 modules/**/.terraform.lock.hcl
-envs/**/.terraform.lock.hcl
+# envs lock files ARE committed (make lock): version pins alone don't pin
+# artifact hashes; the lock file closes the supply-chain gap at init.
 *.tfstate
 *.tfstate.*
 crash.log

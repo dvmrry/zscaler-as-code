@@ -145,9 +145,11 @@ it is overwritten on the next `make transform`.
 
 ```
 make gen-env TENANT=<label>
+make lock TENANT=<label>
 ```
 
-Creates `envs/<label>/<type>/` root modules. Safe to re-run.
+Creates `envs/<label>/<type>/` root modules and pins provider artifact
+HASHES per root (lock files; commit them with the roots). Safe to re-run.
 
 ### 7. Plan each resource type (expect N imports, 0 changes)
 
@@ -314,7 +316,9 @@ catalog — before any tenant contact.
 4. Review the git diff — drop-report changes mean coverage changed; update
    `acknowledged_drops` entries as needed.
 5. `make test`
-6. Commit the lock file, `schemas/provider/`, generated modules, and any
+6. `make lock TENANT=<label>` for each committed tenant — version pins
+   alone don't pin artifact hashes; the per-root lock files do.
+7. Commit the lock files, `schemas/provider/`, generated modules, and any
    override changes together.
 
 ---
