@@ -8,7 +8,7 @@ TF     ?= terraform
 # the python side expands those.
 SCOPE_GLOB = $(if $(RESOURCE),$(if $(word 2,$(RESOURCE)),$(RESOURCE),$(if $(filter zia zpa zcc,$(RESOURCE)),$(RESOURCE)_*,$(RESOURCE))),*)
 
-.PHONY: help env install-tf bump-check plan-report clean clean-plans stage-imports unstage-imports lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck conformance
+.PHONY: help env install-tf bump-check plan-report clean clean-plans unlock stage-imports unstage-imports lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck conformance
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
@@ -273,6 +273,14 @@ assert-clean: ## Exit 0 only when every saved plan is no-op (imports allowed) �
 	test $$checked -gt 0 || { echo "error: no saved plans to check — run make plan-changed SAVE=1 first"; exit 1; }; \
 	test $$dirty -eq 0 || { echo ""; echo "tenant moved since fetch (or transform disagrees) — do NOT auto-merge; re-run drift"; exit 1; }; \
 	echo "all $$checked saved plan(s) clean (no-op/imports only)"
+
+unlock: ## Break a stale state lock after a killed run (TENANT=<label> RESOURCE=<one type> LOCK_ID=<uuid from the lock error> [BACKEND_CONFIG=<file>])
+	@test -n "$(TENANT)" -a -n "$(RESOURCE)" -a -n "$(LOCK_ID)" || { echo "usage: make unlock TENANT=<label> RESOURCE=<type> LOCK_ID=<uuid> [BACKEND_CONFIG=<file>]"; echo "(LOCK_ID is in the 'Error acquiring the state lock' message)"; exit 2; }
+	@test -d "envs/$(TENANT)/$(RESOURCE)" || { echo "error: envs/$(TENANT)/$(RESOURCE) is not an env root — RESOURCE must be ONE concrete type (locks are per root)"; exit 2; }
+	@echo "CAUTION: only break a lock whose holder is DEAD (a killed run)."
+	@echo "If a pipeline run is currently active on this root, cancel it instead."
+	$(TF) -chdir=envs/$(TENANT)/$(RESOURCE) init -input=false $(if $(BACKEND_CONFIG),-reconfigure -backend-config="$(abspath $(BACKEND_CONFIG))" -backend-config="key=$(TENANT)/$(RESOURCE).tfstate") > /dev/null
+	$(TF) -chdir=envs/$(TENANT)/$(RESOURCE) force-unlock -force "$(LOCK_ID)"
 
 apply: ## Apply ONLY saved plans from 'make plan SAVE=1' ([TENANT=<label>] [RESOURCE=<type>] [BACKEND_CONFIG=<file>] [ALLOW_DESTROY=1] [ALLOW_NON_MAIN=1]) — refuses to run off $(or $(MAIN_BRANCH),main)
 	@ref="$${BUILD_SOURCEBRANCH:-$${GITHUB_REF:-$${BITBUCKET_BRANCH:-}}}"; \

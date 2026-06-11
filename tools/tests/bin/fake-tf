@@ -54,6 +54,9 @@ case "$cmd" in
     done
     printf ']}'
     exit 0 ;;
+  force-unlock)
+    [ -n "$FAKE_TF_LOG" ] && echo "force-unlock $*" >> "$FAKE_TF_LOG"
+    exit 0 ;;
   state)
     # `state list`: managed addresses from $FAKE_TF_STATE (newline-sep)
     [ -n "$FAKE_TF_STATE" ] && printf '%s\n' "$FAKE_TF_STATE"
