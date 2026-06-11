@@ -244,6 +244,12 @@ Reading the diff:
 - **New keys / new objects**: unmanaged resources. Fresh import blocks are
   already in `imports/<label>/`; cherry-pick the relevant type file and
   follow steps 6–7 to adopt them.
+- **Renames**: when a console rename re-keys an item (same object id,
+  different derived key), transform stages `imports/<label>/<type>_moves.tf`
+  with `moved` blocks and prints RENAME(S) DETECTED. Copy that file into
+  the env root alongside the imports file before plan/apply — the rename
+  becomes a pure state-address change instead of a destroy+create of the
+  live object. Delete the copy after apply, like import blocks.
 
 After addressing drift, run `make plan TENANT=<label>` for the state-side
 check.
@@ -335,4 +341,5 @@ modes are supported; the fetcher resolves mode from
 | `missing required env var <ZIA_API_KEY\|ZIA_USERNAME\|ZIA_PASSWORD\|ZIA_CLOUD\|ZPA_CLIENT_ID\|ZPA_CLIENT_SECRET\|ZCC_CLIENT_ID\|ZCC_CLIENT_SECRET\|ZCC_CLOUD>` after setting `ZSCALER_USE_LEGACY_CLIENT` | Legacy mode needs a separate full credential set — see `tools/FETCH.md` **Legacy** section. Switching from OneAPI requires re-exporting all nine vars; only the first missing one is named in the error |
 | Plan rejects a predefined/system object (e.g. order -1) | Add a `skip_if` matcher to `tools/overrides/<type>.json` (e.g. `"skip_if": [{"default_rule": true}]`); run `make transform` — the item is excluded from config and imports with a stderr note |
 | `Too many <field> blocks` at plan/test | Stale config from before the max_items merge — `git pull && make transform`; max_items=1 blocks are ONE object with list members (e.g. `departments: {"id": [..]}`) |
+| Plan shows destroy+create of the SAME object after a console rename | Copy `imports/<label>/<type>_moves.tf` (staged by `make transform`/`make drift`) into the env root; the moved blocks turn it into a state-address change |
 | Plan rejects a value the schema allows (e.g. `size_quota`) | Provider runtime validator (not in the schema dump). If the API uses 0/empty for "not set", add the field to `drop_if_default`; otherwise relay the one-line error |

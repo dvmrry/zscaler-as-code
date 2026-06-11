@@ -621,6 +621,97 @@ class PipelineTest(unittest.TestCase):
         self.assertIn('id = "CUSTOM:10"', text)
 
 
+class MovedBlocksTest(unittest.TestCase):
+    OLD = (
+        'import {\n'
+        '  to = module.zia_rule_labels.zia_rule_labels.this["old_name"]\n'
+        '  id = "101"\n'
+        '}\n\n'
+        'import {\n'
+        '  to = module.zia_rule_labels.zia_rule_labels.this["stable"]\n'
+        '  id = "102"\n'
+        '}\n'
+    )
+
+    def test_parse_import_pairs(self):
+        from tools.transform import parse_import_pairs
+        self.assertEqual(
+            parse_import_pairs(self.OLD), {"old_name": "101", "stable": "102"}
+        )
+
+    def test_rename_detected_same_id_new_key(self):
+        from tools.transform import derive_moves
+        new = self.OLD.replace("old_name", "new_name")
+        self.assertEqual(derive_moves(self.OLD, new), [("old_name", "new_name")])
+
+    def test_add_and_remove_are_not_renames(self):
+        from tools.transform import derive_moves
+        # 101 removed entirely; 103 added: neither is a rename.
+        new = (
+            'import {\n'
+            '  to = module.zia_rule_labels.zia_rule_labels.this["stable"]\n'
+            '  id = "102"\n'
+            '}\n\n'
+            'import {\n'
+            '  to = module.zia_rule_labels.zia_rule_labels.this["brand_new"]\n'
+            '  id = "103"\n'
+            '}\n'
+        )
+        self.assertEqual(derive_moves(self.OLD, new), [])
+
+    def test_composite_import_id_renames(self):
+        from tools.transform import derive_moves
+        old = (
+            'import {\n'
+            '  to = module.zia_cloud_app_control_rule.zia_cloud_app_control_rule.this["streaming_media_old"]\n'
+            '  id = "STREAMING_MEDIA:55"\n'
+            '}\n'
+        )
+        new = old.replace("streaming_media_old", "streaming_media_new")
+        self.assertEqual(
+            derive_moves(old, new),
+            [("streaming_media_old", "streaming_media_new")],
+        )
+
+    def test_render_moves_addresses(self):
+        from tools.transform import render_moves
+        out = render_moves("zia_rule_labels", [("a", "b")])
+        self.assertIn('from = module.zia_rule_labels.zia_rule_labels.this["a"]', out)
+        self.assertIn('to   = module.zia_rule_labels.zia_rule_labels.this["b"]', out)
+        self.assertTrue(out.startswith("moved {"))
+
+
+class MovedBlocksEndToEndTest(unittest.TestCase):
+    TENANT = "tmpmovestest"
+
+    def test_rename_between_transforms_stages_moves_file(self):
+        import shutil
+        import tempfile
+        from tools.transform import main as transform_main
+
+        self.addCleanup(shutil.rmtree, os.path.join("config", self.TENANT), True)
+        self.addCleanup(shutil.rmtree, os.path.join("imports", self.TENANT), True)
+        with tempfile.TemporaryDirectory() as td:
+            src = os.path.join(td, "in.json")
+            with open(src, "w") as f:
+                json.dump([{"id": 7, "name": "Original Name"}], f)
+            self.assertEqual(
+                transform_main(["zia_rule_labels", src, self.TENANT]), 0)
+            moves_path = os.path.join(
+                "imports", self.TENANT, "zia_rule_labels_moves.tf")
+            self.assertFalse(os.path.exists(moves_path), "no rename yet")
+            # the console rename: same id, new name -> new derived key
+            with open(src, "w") as f:
+                json.dump([{"id": 7, "name": "Renamed Thing"}], f)
+            self.assertEqual(
+                transform_main(["zia_rule_labels", src, self.TENANT]), 0)
+            self.assertTrue(os.path.exists(moves_path))
+            with open(moves_path) as f:
+                body = f.read()
+            self.assertIn('from = module.zia_rule_labels.zia_rule_labels.this["original_name"]', body)
+            self.assertIn('to   = module.zia_rule_labels.zia_rule_labels.this["renamed_thing"]', body)
+
+
 class AcknowledgedDropsTest(unittest.TestCase):
     def test_acknowledged_drops_suppressed_from_report(self):
         raw = [{"id": "1", "name": "A", "config_space": "X", "creation_time": "9"}]

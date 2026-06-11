@@ -425,6 +425,54 @@ def render_imports(resource_type, originals, override):
     return "\n".join(blocks)
 
 
+_IMPORT_PAIR_RE = re.compile(
+    r'to = module\.[\w]+\.[\w]+\.this\["(.+?)"\]\s*\n\s*id = "(.+?)"'
+)
+
+
+def parse_import_pairs(imports_text):
+    """{key: import_id} from a rendered imports file."""
+    return dict(_IMPORT_PAIR_RE.findall(imports_text))
+
+
+def derive_moves(old_imports_text, new_imports_text):
+    """Detect console renames: same import id under a different config key.
+
+    A rename in the console changes the derived map key, which terraform
+    sees as destroy-old-address + create-new-address — a destroy/create
+    of a LIVE object. The import id is identity (unique per resource), so
+    same-id-different-key pairs become `moved` blocks instead, making the
+    rename a pure state-address change. Returns sorted (old_key, new_key)
+    pairs.
+    """
+    old_pairs = parse_import_pairs(old_imports_text)
+    new_pairs = parse_import_pairs(new_imports_text)
+    old_by_id = {}
+    for key, import_id in old_pairs.items():
+        old_by_id.setdefault(import_id, key)
+    moves = []
+    for new_key, import_id in new_pairs.items():
+        old_key = old_by_id.get(import_id)
+        if old_key is not None and old_key != new_key and old_key not in new_pairs:
+            moves.append((old_key, new_key))
+    return sorted(moves)
+
+
+def render_moves(resource_type, moves):
+    blocks = []
+    for old_key, new_key in moves:
+        blocks.append(
+            "moved {\n"
+            '  from = module.%s.%s.this["%s"]\n'
+            '  to   = module.%s.%s.this["%s"]\n'
+            "}\n" % (
+                resource_type, resource_type, old_key,
+                resource_type, resource_type, new_key,
+            )
+        )
+    return "\n".join(blocks)
+
+
 def _warn_if_slim(raw_items, block, resource_type):
     cls = classify_attributes(block)
     expected = len(cls["required"]) + len(cls["optional"])
@@ -458,10 +506,29 @@ def main(argv=None):
     os.makedirs(imports_dir, exist_ok=True)
     tfvars_path = os.path.join(config_dir, resource_type + ".auto.tfvars.json")
     imports_path = os.path.join(imports_dir, resource_type + "_imports.tf")
+    moves_path = os.path.join(imports_dir, resource_type + "_moves.tf")
+    new_imports = render_imports(resource_type, originals, override)
+    # Console renames: compare the previously committed imports (key->id)
+    # with the fresh ones; same id under a new key becomes a moved block so
+    # the rename is a state-address change, not destroy+create of a live
+    # object. The moves file is staged ONLY when renames exist; copy it
+    # into the env root alongside the imports file and delete after apply.
+    if os.path.exists(imports_path):
+        with open(imports_path) as f:
+            moves = derive_moves(f.read(), new_imports)
+        if moves:
+            with open(moves_path, "w") as f:
+                f.write(render_moves(resource_type, moves))
+            sys.stderr.write(
+                "RENAME(S) DETECTED: %d item(s) re-keyed — moved blocks "
+                "staged in %s; copy into the env root alongside the imports "
+                "file before plan/apply (RUNBOOK: Drift)\n"
+                % (len(moves), moves_path)
+            )
     with open(tfvars_path, "w") as f:
         f.write(render_tfvars(items))
     with open(imports_path, "w") as f:
-        f.write(render_imports(resource_type, originals, override))
+        f.write(new_imports)
     # drops contains only unacknowledged paths; acknowledged_drops in the override
     # suppress known-unmanageable metadata from this report (fields still removed).
     for path in drops:
