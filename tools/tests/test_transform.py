@@ -106,6 +106,20 @@ class CoerceTest(unittest.TestCase):
             coerce_item(item, fake_block), {"group_id": 7, "label_ids": [1, 2]}
         )
 
+    def test_int_flags_coerce_to_bool(self):
+        # ZCC returns flags as 0/1 integers where the schema wants bool
+        fake_block = {
+            "attributes": {
+                "active": {"type": "bool", "optional": True},
+                "enabled": {"type": "bool", "optional": True},
+                "count": {"type": "number", "optional": True},
+            }
+        }
+        out = coerce_item({"active": 1, "enabled": 0, "count": 1}, fake_block)
+        self.assertIs(out["active"], True)
+        self.assertIs(out["enabled"], False)
+        self.assertEqual(out["count"], 1)  # numbers untouched
+
     def test_blocks_recurse(self):
         rs = load_resource("zpa_segment_group")
         item = {"applications": [{"id": 123}]}

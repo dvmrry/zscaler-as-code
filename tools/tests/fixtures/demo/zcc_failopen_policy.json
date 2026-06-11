@@ -1,14 +1,14 @@
 [
   {
-    "id": "policy-001",
-    "active": true,
-    "companyId": "company-123",
-    "enableFailOpen": true,
-    "enableCaptivePortalDetection": true,
+    "active": 1,
     "captivePortalWebSecDisableMinutes": 5,
-    "enableWebSecOnProxyUnreachable": true,
-    "enableWebSecOnTunnelFailure": true,
-    "enableStrictEnforcementPrompt": false,
+    "companyId": "company-123",
+    "enableCaptivePortalDetection": 1,
+    "enableFailOpen": 1,
+    "enableStrictEnforcementPrompt": 0,
+    "enableWebSecOnProxyUnreachable": 1,
+    "enableWebSecOnTunnelFailure": 1,
+    "id": "policy-001",
     "strictEnforcementPromptDelayMinutes": 0,
     "strictEnforcementPromptMessage": "",
     "tunnelFailureRetryCount": 3

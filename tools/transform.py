@@ -90,11 +90,16 @@ def _coerce_primitive(value, prim):
                     return value
         return value
     if prim == "bool":
+        if isinstance(value, bool):
+            return value
         if isinstance(value, str):
             if value.lower() in ("true", "1"):
                 return True
             if value.lower() in ("false", "0"):
                 return False
+        if isinstance(value, int) and value in (0, 1):
+            # ZCC returns flags as 0/1 integers
+            return value == 1
         return value  # "yes"/"no" style strings pass through; terraform reports the type error
     return value
 
