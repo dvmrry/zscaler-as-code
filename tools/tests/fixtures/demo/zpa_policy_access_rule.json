@@ -1,0 +1,174 @@
+[
+  {
+    "action": "ALLOW",
+    "appConnectorGroups": [
+      {
+        "cityCountry": "San Jose, US",
+        "connectorGroupType": "APP",
+        "countryCode": "US",
+        "creationTime": "1773369859",
+        "description": "Test Connector Group",
+        "dnsQueryType": "IPV4_IPV6",
+        "enabled": true,
+        "id": "216196257331404629",
+        "location": "San Jose, CA, USA",
+        "lssAppConnectorGroup": false,
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1773369859",
+        "name": "tests-apr1-vcr0001",
+        "overrideVersionProfile": true,
+        "praEnabled": true,
+        "tcpQuickAckApp": true,
+        "tcpQuickAckAssistant": true,
+        "tcpQuickAckReadAssistant": true,
+        "useInDrMode": false,
+        "versionProfileId": "0",
+        "wafDisabled": false
+      }
+    ],
+    "conditions": [
+      {
+        "creationTime": "1773369860",
+        "id": "46277407",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1773369860",
+        "negated": false,
+        "operands": [
+          {
+            "conditionId": "46277407",
+            "creationTime": "1773369860",
+            "id": "46277408",
+            "idpId": "216196257331285825",
+            "idpName": "BD_Okta_Users",
+            "lhs": "216196257331285825",
+            "modifiedBy": "216196257331372705",
+            "modifiedTime": "1773369860",
+            "objectType": "SCIM_GROUP",
+            "rhs": "3251059"
+          },
+          {
+            "conditionId": "46277407",
+            "creationTime": "1773369860",
+            "id": "46277409",
+            "idpId": "216196257331285825",
+            "idpName": "BD_Okta_Users",
+            "lhs": "216196257331285825",
+            "modifiedBy": "216196257331372705",
+            "modifiedTime": "1773369860",
+            "objectType": "SCIM_GROUP",
+            "rhs": "3251058"
+          }
+        ],
+        "operator": "OR",
+        "ruleGid": "216196257331404630"
+      }
+    ],
+    "creationTime": "1773369860",
+    "defaultRule": false,
+    "description": "Access rule with SCIM group conditions",
+    "devicePostureFailureNotificationEnabled": false,
+    "disabled": "0",
+    "extranetEnabled": false,
+    "id": "216196257331404630",
+    "modifiedBy": "216196257331372705",
+    "modifiedTime": "1773369860",
+    "name": "tests-apr1-vcr0002",
+    "operator": "AND",
+    "policySetId": "216196257331281925",
+    "policyType": "1",
+    "priority": "1",
+    "readOnly": false,
+    "ruleOrder": "1",
+    "zscalerManaged": false
+  },
+  {
+    "action": "ALLOW",
+    "conditions": [
+      {
+        "creationTime": "1773369863",
+        "id": "46277413",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1773369863",
+        "negated": false,
+        "operands": [
+          {
+            "conditionId": "46277413",
+            "creationTime": "1773369863",
+            "id": "46277414",
+            "lhs": "id",
+            "modifiedBy": "216196257331372705",
+            "modifiedTime": "1773369863",
+            "name": "zpn_client_type_exporter",
+            "objectType": "CLIENT_TYPE",
+            "rhs": "zpn_client_type_exporter"
+          },
+          {
+            "conditionId": "46277413",
+            "creationTime": "1773369863",
+            "id": "46277415",
+            "lhs": "id",
+            "modifiedBy": "216196257331372705",
+            "modifiedTime": "1773369863",
+            "name": "zpn_client_type_zapp",
+            "objectType": "CLIENT_TYPE",
+            "rhs": "zpn_client_type_zapp"
+          }
+        ],
+        "operator": "OR",
+        "ruleGid": "216196257331404631"
+      },
+      {
+        "creationTime": "1773369863",
+        "id": "46277416",
+        "modifiedBy": "216196257331372705",
+        "modifiedTime": "1773369863",
+        "negated": false,
+        "operands": [
+          {
+            "conditionId": "46277416",
+            "creationTime": "1773369863",
+            "id": "46277417",
+            "idpId": "216196257331285825",
+            "idpName": "BD_Okta_Users",
+            "lhs": "216196257331285825",
+            "modifiedBy": "216196257331372705",
+            "modifiedTime": "1773369863",
+            "objectType": "SCIM_GROUP",
+            "rhs": "3251059"
+          },
+          {
+            "conditionId": "46277416",
+            "creationTime": "1773369863",
+            "id": "46277418",
+            "idpId": "216196257331285825",
+            "idpName": "BD_Okta_Users",
+            "lhs": "216196257331285825",
+            "modifiedBy": "216196257331372705",
+            "modifiedTime": "1773369863",
+            "objectType": "SCIM_GROUP",
+            "rhs": "3251058"
+          }
+        ],
+        "operator": "OR",
+        "ruleGid": "216196257331404631"
+      }
+    ],
+    "creationTime": "1773369863",
+    "defaultRule": false,
+    "description": "Integration test Access Rule V2",
+    "devicePostureFailureNotificationEnabled": false,
+    "disabled": "0",
+    "extranetEnabled": false,
+    "id": "216196257331404631",
+    "modifiedBy": "216196257331372705",
+    "modifiedTime": "1773369863",
+    "name": "tests-apr2-vcr0001",
+    "operator": "AND",
+    "policySetId": "216196257331281925",
+    "policyType": "1",
+    "priority": "1",
+    "readOnly": false,
+    "ruleOrder": "1",
+    "zscalerManaged": false
+  }
+]

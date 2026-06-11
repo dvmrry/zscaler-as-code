@@ -231,6 +231,8 @@ class GoldenTest(unittest.TestCase):
         ("zpa_app_connector_group", "main.tf", "render_main"),
         ("zpa_application_server", "variables.tf", "render_variables"),
         ("zpa_application_server", "main.tf", "render_main"),
+        ("zpa_policy_access_rule", "variables.tf", "render_variables"),
+        ("zpa_policy_access_rule", "main.tf", "render_main"),
     ]
 
     def test_rendered_output_matches_blessed_goldens(self):

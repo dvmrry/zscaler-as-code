@@ -18,6 +18,7 @@ class RegistryTest(unittest.TestCase):
                 "zpa_app_connector_group",
                 "zpa_application_segment",
                 "zpa_application_server",
+                "zpa_policy_access_rule",
                 "zpa_segment_group",
                 "zpa_server_group",
             ],
