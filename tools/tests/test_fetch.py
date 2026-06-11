@@ -1,6 +1,8 @@
 """Tests for tools/fetch.py. All canned responses are fictional."""
 import io
 import json
+import os
+import sys
 import unittest
 
 from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, paginate_single, paginate_zcc_v2, build_headers, compose_url, fetch_resource, acquire_token, products_in_manifest, auth_mode_from_env, _zslogin_host, _legacy_zcc_base, ca_bundle_path, connection_hint, diag_hosts, expand_paths
@@ -194,6 +196,54 @@ class FetchResourceTest(unittest.TestCase):
 class ProductsTest(unittest.TestCase):
     def test_products_in_manifest(self):
         self.assertEqual(products_in_manifest(), ["zcc", "zia", "zpa"])
+
+
+class FetchAllResilienceTest(unittest.TestCase):
+    def test_one_resource_failure_does_not_block_others(self):
+        import tempfile
+        from tools.fetch import fetch_all, load_manifest, compose_url
+
+        env = {
+            "ZSCALER_VANITY_DOMAIN": "acme", "ZSCALER_CLOUD": "",
+            "ZSCALER_CLIENT_ID": "cid", "ZSCALER_CLIENT_SECRET": "sec",
+        }
+        ctx = {"cloud": "", "customer_id": "C", "zcc_cloud": ""}
+        pages = {
+            "https://acme.zslogin.net/oauth2/v1/token": [
+                (200, {"access_token": "TOK", "expires_in": "3600"})
+            ] * 3,
+        }
+        # every registered resource answers one page per expanded path;
+        # the FIRST zcc resource 404s
+        broken = None
+        for rt, entry in sorted(load_manifest().items()):
+            for path in expand_paths(entry):
+                url = compose_url("oneapi", entry["product"], path, ctx)
+                if entry["product"] == "zcc" and (broken is None or broken == rt):
+                    pages[url] = [(404, {"error": "not mounted"})]
+                    broken = rt
+                elif entry["product"] == "zpa":
+                    pages[url] = [(200, {"list": [{"id": "1", "name": "x"}], "totalPages": "1"})]
+                else:
+                    pages[url] = [(200, [{"id": "1", "name": "x"}])]
+        opener = FakeOpener(pages)
+        old = sys.stderr
+        sys.stderr = io.StringIO()
+        try:
+            with tempfile.TemporaryDirectory() as td:
+                rc = fetch_all("oneapi", env, ctx, opener, td)
+                written = sorted(
+                    f[:-len(".json")] for f in os.listdir(td) if f.endswith(".json")
+                )
+            err = sys.stderr.getvalue()
+        finally:
+            sys.stderr = old
+        self.assertEqual(rc, 1)
+        self.assertNotIn(broken, written)
+        # everything except the broken resource was still written
+        self.assertEqual(len(written), len(load_manifest()) - 1)
+        self.assertIn("FAILED", err)
+        self.assertIn(broken, err)
 
 
 class AcquireTokenTest(unittest.TestCase):
