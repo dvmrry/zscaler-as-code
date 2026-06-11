@@ -84,6 +84,13 @@ def render_summary(tenant, per_resource):
         "PR should show **0 to add/change/destroy** (imports allowed). "
         "A non-zero plan means the tenant moved again — re-run drift."
     )
+    lines.append("")
+    lines.append(
+        "> If this PR appears to UNDO a recently merged change, and the "
+        "audit table shows no matching console change, the likely cause "
+        "is that the change was merged but never APPLIED — check the "
+        "delivery pipeline's apply stage before merging this."
+    )
     return "\n".join(lines) + "\n"
 
 
