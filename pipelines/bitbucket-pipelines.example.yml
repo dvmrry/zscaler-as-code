@@ -1,0 +1,50 @@
+# Example Bitbucket Pipelines config — reference material, not working config.
+# Copy to bitbucket-pipelines.yml and fill the FILL- markers. Keep pipelines
+# thin shells over make — all logic lives in the Makefile (AGENTS.md rule 9).
+#
+# Notes:
+# - Repository/deployment variables hold the ZSCALER_* credentials; use a
+#   deployment environment with admin-restricted approval for the apply step.
+# - clone depth full: plan-changed diffs against the merge-base.
+# - terraform must be on the image; hashicorp/terraform images work, or
+#   install in a step.
+
+image: FILL-image-with-python3-make-terraform
+
+clone:
+  depth: full
+
+pipelines:
+  pull-requests:
+    "**":
+      - step:
+          name: Validate (no creds, no state)
+          script:
+            - make test
+            - make validate
+            - make typecheck TENANT=FILL-tenant-label
+            - make test-envs TENANT=FILL-tenant-label
+
+  branches:
+    main:
+      - step:
+          name: Plan changed roots
+          script:
+            - make plan-changed BASE=origin/main~1 SAVE=1 BACKEND_CONFIG=backend.conf
+          artifacts:
+            - envs/**/tfplan # plans can contain sensitive values
+      - step:
+          name: Apply saved plans
+          deployment: FILL-deployment-environment # approval gate lives here
+          trigger: manual
+          script:
+            # Applies ONLY the saved plans; refuses destroys without ALLOW_DESTROY=1
+            - make apply BACKEND_CONFIG=backend.conf
+
+  custom:
+    drift: # schedule this pipeline daily in repo settings
+      - step:
+          name: Drift detection (read-only creds)
+          script:
+            - make drift TENANT=FILL-tenant-label
+            # exit 3 = drift; the git diff is the report — open a PR with it

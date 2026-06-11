@@ -141,12 +141,17 @@ plan-changed: ## Plan only the (tenant, resource) pairs changed vs BASE (default
 	done < .plan-changed.tmp; \
 	rm -f .plan-changed.tmp
 
-apply: ## Apply ONLY saved plans from 'make plan SAVE=1' ([TENANT=<label>] [RESOURCE=<type>] [BACKEND_CONFIG=<file>])
+apply: ## Apply ONLY saved plans from 'make plan SAVE=1' ([TENANT=<label>] [RESOURCE=<type>] [BACKEND_CONFIG=<file>] [ALLOW_DESTROY=1])
 	@set -e; applied=0; for d in envs/$(or $(TENANT),*)/$(or $(RESOURCE),*)/; do \
 		test -f "$$d/tfplan" || continue; \
 		rt=$$(basename $$d); t=$$(basename $$(dirname $$d)); \
 		echo "== apply $$t/$$rt"; \
 		$(TF) -chdir=$$d init -input=false $(if $(BACKEND_CONFIG),-reconfigure -backend-config="$(abspath $(BACKEND_CONFIG))" -backend-config="key=$$t/$$rt.tfstate") > /dev/null; \
+		destroys=$$($(TF) -chdir=$$d show -json tfplan | $(PYTHON) -c "import json,sys; p=json.load(sys.stdin); print(sum(1 for rc in p.get('resource_changes') or [] if 'delete' in ((rc.get('change') or {}).get('actions') or [])))"); \
+		if [ "$$destroys" != "0" ] && [ -z "$(ALLOW_DESTROY)" ]; then \
+			echo "error: $$t/$$rt saved plan destroys (or replaces) $$destroys resource(s) — refused."; \
+			echo "Review that plan; if the destroys are intended, re-run with ALLOW_DESTROY=1."; \
+			exit 1; fi; \
 		$(TF) -chdir=$$d apply -input=false tfplan; \
 		rm -f "$$d/tfplan"; \
 		applied=$$((applied+1)); \

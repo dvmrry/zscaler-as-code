@@ -221,7 +221,7 @@ Reading the diff:
 
 After addressing drift, run `make plan TENANT=<label>` for the state-side
 check. Suggested cadence: scheduled daily (see the commented examples in
-`azure-pipelines.example.yml`).
+`pipelines/azure-pipelines.example.yml`).
 
 ---
 
