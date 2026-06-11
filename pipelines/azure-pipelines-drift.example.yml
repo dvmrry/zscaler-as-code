@@ -1,11 +1,20 @@
-# Example scheduled drift/plan pipeline — reference material, not a working
-# config. Copy or point a pipeline at this file and adapt: schedule, pool,
-# variable group names, tenant labels. Keep it a thin shell over make
-# (AGENTS.md rule 9). The CI pipeline example (azure-pipelines.example.yml, same folder)
-# covers tests/validation; this one is the recurring tenant-sync job.
+# Example scheduled drift -> backfill-PR pipeline — reference material, not
+# a working config. Copy or point a pipeline at this file and adapt:
+# schedules, pool, variable group names, tenant labels. Keep it a thin
+# shell over make (AGENTS.md rule 9). The CI pipeline example
+# (azure-pipelines.example.yml, same folder) covers tests/validation.
+#
+# Two cadences via two schedules: ADO schedules cannot carry parameters,
+# so the hot-path scope is derived from Build.CronSchedule.DisplayName.
 schedules:
-  - cron: "0 6 * * *"
-    displayName: Daily drift detection
+  - cron: "0 * * * *"
+    displayName: hourly-hot-path
+    branches:
+      include:
+        - main
+    always: true
+  - cron: "0 6 * * 0"
+    displayName: weekly-broad
     branches:
       include:
         - main
@@ -18,19 +27,60 @@ pool:
 
 variables:
   # Adapt: a variable group holding ZSCALER_*/ZIA_*/ZPA_*/ZCC_* credentials
-  # (secret variables) and REQUESTS_CA_BUNDLE if TLS inspection applies.
+  # (secret variables; read-only API creds suffice for drift) and
+  # REQUESTS_CA_BUNDLE if TLS inspection applies.
   - group: zscaler-credentials
   - name: TENANT
     value: replace-with-your-label
+  - name: HOT_RESOURCE
+    value: zia_url_categories # the resource admins edit with no warning
 
 steps:
-  - script: make env
-    displayName: Toolchain versions
-  # Exit 3 = drift detected (tenant differs from committed config) — the
-  # git status/diff in the log is the report. Treat as a failed run and
-  # review; adopt new objects via the freshly emitted import blocks.
-  - script: make drift TENANT=$(TENANT)
-    displayName: Fetch + transform + diff
-  # Config-vs-state check; needs provider credentials (read-only works).
-  - script: make plan TENANT=$(TENANT)
-    displayName: Terraform plan
+  - checkout: self
+    persistCredentials: true # the backfill branch push uses the build token
+  - script: |
+      if [ "$(Build.CronSchedule.DisplayName)" = "hourly-hot-path" ]; then
+        echo "##vso[task.setvariable variable=SCOPE]RESOURCE=$(HOT_RESOURCE)"
+      else
+        echo "##vso[task.setvariable variable=SCOPE]"
+      fi
+    displayName: Scope by schedule
+  - script: |
+      set +e
+      make drift TENANT=$(TENANT) $(SCOPE)
+      rc=$?
+      set -e
+      if [ "$rc" = "3" ]; then
+        echo "##vso[task.setvariable variable=DRIFTED]true"
+      elif [ "$rc" != "0" ]; then
+        exit "$rc"
+      fi
+    displayName: Detect drift (exit 3 = drift)
+  - script: |
+      branch="drift/$(TENANT)/$(date -u +%Y%m%dT%H%M)"
+      python3 -m tools.drift_summary $(TENANT) > /tmp/pr-body.md
+      python3 -m tools.audit $(TENANT) 24 >> /tmp/pr-body.md  # advisory; never fails
+      git checkout -b "$branch"
+      git add config/$(TENANT) imports/$(TENANT)
+      git -c user.name=drift-bot -c user.email=drift-bot@invalid \
+        commit -m "Backfill drift: $(TENANT)"
+      git push -u origin "$branch"
+      # Requires: az devops CLI on the agent + build service granted
+      # "Contribute to pull requests". Auto-complete merges once policies
+      # (the validation build + the drift-PR plan gate) pass.
+      az repos pr create --source-branch "$branch" --target-branch main \
+        --title "Drift backfill: $(TENANT)" --description "$(cat /tmp/pr-body.md)" \
+        --auto-complete true
+    displayName: Open backfill PR
+    condition: eq(variables.DRIFTED, 'true')
+    env:
+      AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
+
+# The auto-merge safety gate lives in the PR build policy: a pipeline that
+# runs on drift/* PR branches with REAL creds and asserts the plan is pure
+# no-op/imports before auto-complete can fire:
+#   - script: make plan-changed BASE=origin/main SAVE=1 BACKEND_CONFIG=backend.conf
+#   - script: make assert-clean
+# Backfill means config now MATCHES the tenant — any non-import change
+# means the tenant moved again (or a transform gap): the policy fails,
+# auto-complete holds, a human reviews.

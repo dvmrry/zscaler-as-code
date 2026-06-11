@@ -523,10 +523,21 @@ def main(argv=None):
     argv = argv if argv is not None else sys.argv[1:]
     if argv == ["--diag"]:
         return run_diag(os.environ)
-    if len(argv) != 1:
-        sys.stderr.write("usage: python -m tools.fetch <tenant> | --diag\n")
+    if len(argv) < 1:
+        sys.stderr.write(
+            "usage: python -m tools.fetch <tenant> [resource_type ...] | --diag\n"
+        )
         return 2
     tenant = argv[0]
+    only = set(argv[1:]) or None
+    if only:
+        unknown = only - set(load_manifest())
+        if unknown:
+            sys.stderr.write(
+                "error: unknown resource type(s): %s\nvalid: %s\n"
+                % (", ".join(sorted(unknown)), ", ".join(sorted(load_manifest())))
+            )
+            return 2
     env = os.environ
     auth_mode = auth_mode_from_env(env)
     opener = real_opener()
@@ -536,10 +547,10 @@ def main(argv=None):
         "zcc_cloud": env.get("ZCC_CLOUD", ""),
     }
     out_dir = os.path.join("pulls", tenant)
-    return fetch_all(auth_mode, env, ctx, opener, out_dir)
+    return fetch_all(auth_mode, env, ctx, opener, out_dir, only=only)
 
 
-def fetch_all(auth_mode, env, ctx, opener, out_dir):
+def fetch_all(auth_mode, env, ctx, opener, out_dir, only=None):
     """Fetch every registered resource, completing what it can.
 
     One product's failure (missing entitlement, wrong path, outage) must
@@ -547,17 +558,25 @@ def fetch_all(auth_mode, env, ctx, opener, out_dir):
     end, and the exit code is non-zero when anything failed. Learned the
     hard way: zcc sorts first, so a single 404 used to abort all the
     healthy pulls behind it.
+
+    only: optional set of resource types to fetch (scoped drift — e.g.
+    an hourly URL-categories check shouldn't pull all 16 resources).
+    Tokens are acquired only for products actually needed.
     """
+    wanted = sorted(only) if only else sorted(load_manifest())
+    needed_products = set(manifest_entry(rt)["product"] for rt in wanted)
     tokens = {}
     failed_products = {}
     for product in products_in_manifest():
+        if product not in needed_products:
+            continue
         try:
             tokens[product] = acquire_token(auth_mode, product, env, ctx, opener)
         except SystemExit as e:
             failed_products[product] = str(e)
     os.makedirs(out_dir, exist_ok=True)
     failures = {}
-    for resource_type in sorted(load_manifest()):
+    for resource_type in wanted:
         product = manifest_entry(resource_type)["product"]
         if product in failed_products:
             failures[resource_type] = "auth failed: %s" % failed_products[product]

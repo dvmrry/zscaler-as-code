@@ -237,8 +237,29 @@ Reading the diff:
   follow steps 6–7 to adopt them.
 
 After addressing drift, run `make plan TENANT=<label>` for the state-side
-check. Suggested cadence: scheduled daily (see the commented examples in
-`pipelines/azure-pipelines.example.yml`).
+check.
+
+### Automated backfill PRs
+
+For tenants where admins make console/API changes without warning, the
+drift pipeline can open the backfill PR itself (full reference flows in
+`pipelines/azure-pipelines-drift.example.yml` and the GitHub example):
+
+1. **Scheduled, two cadences** — hourly scoped to the hot-path resource
+   (`make drift TENANT=<label> RESOURCE=<type>` fetches just that one),
+   weekly for the broad sweep.
+2. **Drift (exit 3) → branch → PR.** The PR body is
+   `tools/drift_summary` (item-level: added / removed / changed-with-
+   fields) plus `tools/audit` — the ZIA audit trail for the window,
+   answering WHO made the change. Attribution is strictly advisory: any
+   audit failure degrades to a one-line note, never blocks the PR.
+3. **Auto-merge gate**: the PR's plan job runs
+   `make plan-changed SAVE=1 ... && make assert-clean`. Backfill means
+   config now MATCHES the tenant, so every saved plan must be pure
+   no-op (imports of new objects allowed). Clean → auto-merge. Anything
+   else means the tenant moved again or transform disagrees → the gate
+   fails and a human reviews. Merging never touches the tenant; new
+   objects enter state via the delivery pipeline's import apply.
 
 ---
 

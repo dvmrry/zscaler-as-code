@@ -93,6 +93,29 @@ class ApplyChainTest(unittest.TestCase):
         self.assertNotEqual(rc, 0)
         self.assertIn("no saved plans", out)
 
+    def test_assert_clean_passes_on_noop_and_import_only_plans(self):
+        self._plan_save()
+        rc, out = _run(
+            ["make", "assert-clean", "TENANT=" + TENANT, "TF=" + FAKE_TF])
+        self.assertEqual(rc, 0, out)
+        self.assertIn("clean", out)
+
+    def test_assert_clean_fails_on_real_changes(self):
+        # the drift-PR auto-merge gate: tenant moved between fetch and plan
+        self._plan_save()
+        rc, out = _run(
+            ["make", "assert-clean", "TENANT=" + TENANT, "TF=" + FAKE_TF],
+            {"FAKE_TF_UPDATES": "1"},
+        )
+        self.assertNotEqual(rc, 0)
+        self.assertIn("NOT CLEAN", out)
+
+    def test_assert_clean_without_plans_fails_loudly(self):
+        rc, out = _run(
+            ["make", "assert-clean", "TENANT=" + TENANT, "TF=" + FAKE_TF])
+        self.assertNotEqual(rc, 0)
+        self.assertIn("no saved plans", out)
+
 
 if __name__ == "__main__":
     unittest.main()
