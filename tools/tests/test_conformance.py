@@ -135,6 +135,38 @@ class ConformanceCatchesRegressionsTest(unittest.TestCase):
         self.assertIn("single block", detail)
 
 
+class RefObjectMemberConformanceTest(unittest.TestCase):
+    """Close the synthesis gap: _syn_object_list_attr never emits a {id,name}
+    reference object as an object-list MEMBER, so the _coerce_object_members
+    ref-unwrap path (transform.py) is real code conformance never covers. A
+    regression there would pass the gate. Patch synthesis to inject one ref
+    member and verify the full pipeline still conforms."""
+
+    def test_ref_object_as_object_list_member_conforms(self):
+        import tools.conformance as conformance_mod
+
+        real = conformance_mod.synthesize_item
+
+        def with_ref_member(resource_type, seed):
+            item = real(resource_type, seed)
+            ports = item.get("tcpPortRange")
+            if isinstance(ports, list) and ports and isinstance(ports[0], dict):
+                # Replace the 'from' member with a {id,name} ref object whose
+                # id is a numeric string — coerce must unwrap to "8080".
+                ports[0]["from"] = {"id": "8080", "name": "x"}
+            return item
+
+        conformance_mod.synthesize_item = with_ref_member
+        try:
+            ok, detail = conformance_check("zpa_application_segment")
+        finally:
+            conformance_mod.synthesize_item = real
+
+        self.assertTrue(
+            ok, "ref-object object-list member broke conformance:\n%s" % detail
+        )
+
+
 class SynthesisIsAdversarialTest(unittest.TestCase):
     """Guard against a regression that quietly makes synthesis trivial: the
     raw items must actually contain the quirky shapes the harness exists to

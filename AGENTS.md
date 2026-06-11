@@ -36,6 +36,6 @@ instead of being clever.
    If a behavior cannot be pinned by a fixture, do not ship it.
 9. All entry points are `make` targets. Extend the Makefile rather than
    inventing new invocation paths; CI pipelines stay thin shells over
-   `make` (see `pipelines/azure-pipelines.example.yml`).
+   `make` (see `pipelines/`).
 
 Prefer boring, explicit code.

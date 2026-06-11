@@ -26,10 +26,11 @@ class ManifestTest(unittest.TestCase):
 
 class ObfuscateTest(unittest.TestCase):
     def test_known_vector(self):
-        # Fictional key/timestamp; output computed from the published algorithm.
+        # Fictional key/timestamp; output is a hardcoded oracle (not derived
+        # from a mirror of the implementation): high="000000" picks key[0]
+        # six times ("a"), low="000000" picks key[0+2] six times ("c").
         self.assertEqual(
-            obfuscate_api_key("abcdefghijklmnop", "1700000000"),
-            _expected_obfuscation("abcdefghijklmnop", "1700000000"),
+            obfuscate_api_key("abcdefghijklmnop", "1700000000"), "aaaaaacccccc"
         )
 
     def test_rejects_short_inputs(self):
@@ -42,20 +43,6 @@ class ObfuscateTest(unittest.TestCase):
         self.assertEqual(
             obfuscate_api_key("abcdefghijklmnop", "1699987654"), "jihgfeglfkej"
         )
-
-
-def _expected_obfuscation(api_key, ts):
-    # Reference re-implementation, identical to obfuscate_api_key, used to
-    # pin behavior without embedding a magic string. The live dev tenant is
-    # the real confirmation (see plan Task 6).
-    high = ts[-6:]
-    low = "%06d" % (int(high) >> 1)
-    out = ""
-    for ch in high:
-        out += api_key[int(ch)]
-    for ch in low:
-        out += api_key[int(ch) + 2]
-    return out
 
 
 class FakeOpener:
@@ -275,6 +262,115 @@ class FetchAllResilienceTest(unittest.TestCase):
         self.assertIn(broken, err)
 
 
+class FetchAllAuthIsolationTest(unittest.TestCase):
+    def test_one_product_auth_failure_does_not_block_others(self):
+        # zcc token acquisition fails (HTTP 500) while zia/zpa succeed: zcc
+        # resources are marked auth-failed but every zia/zpa resource is
+        # still fetched and written. fetch_all's safety contract.
+        import tempfile
+        from tools.fetch import fetch_all, load_manifest
+
+        env = {
+            "ZSCALER_VANITY_DOMAIN": "acme", "ZSCALER_CLOUD": "",
+            "ZSCALER_CLIENT_ID": "cid", "ZSCALER_CLIENT_SECRET": "sec",
+        }
+        ctx = {"cloud": "", "customer_id": "C", "zcc_cloud": ""}
+        # products acquire in order zcc, zia, zpa against one token URL;
+        # fail the first (zcc) call only.
+        pages = {
+            "https://acme.zslogin.net/oauth2/v1/token": [
+                (500, {"error": "server"}),
+                (200, {"access_token": "TOK", "expires_in": "3600"}),
+                (200, {"access_token": "TOK", "expires_in": "3600"}),
+            ],
+        }
+        zcc_resources = set()
+        for rt, entry in sorted(load_manifest().items()):
+            for path in expand_paths(entry):
+                url = compose_url("oneapi", entry["product"], path, ctx)
+                if entry["product"] == "zcc":
+                    zcc_resources.add(rt)
+                elif entry["product"] == "zpa":
+                    pages[url] = [(200, {"list": [{"id": "1"}], "totalPages": "1"})]
+                else:
+                    pages[url] = [(200, [{"id": "1"}])]
+        opener = FakeOpener(pages)
+        old = sys.stderr
+        sys.stderr = io.StringIO()
+        try:
+            with tempfile.TemporaryDirectory() as td:
+                rc = fetch_all("oneapi", env, ctx, opener, td)
+                written = set(
+                    f[:-len(".json")] for f in os.listdir(td) if f.endswith(".json")
+                )
+            err = sys.stderr.getvalue()
+        finally:
+            sys.stderr = old
+        self.assertEqual(rc, 1)
+        # no zcc resource was written; all of them are reported auth-failed
+        self.assertEqual(written & zcc_resources, set())
+        for rt in zcc_resources:
+            self.assertIn(rt, err)
+        self.assertIn("auth failed", err)
+        # every non-zcc resource was written successfully
+        non_zcc = set(load_manifest()) - zcc_resources
+        self.assertEqual(written, non_zcc)
+
+
+class MainZpaCustomerIdTest(unittest.TestCase):
+    """ZPA_CUSTOMER_ID is required only when ZPA is in scope, so scoped
+    ZIA/ZCC fetches do not demand ZPA credentials they never use."""
+
+    def _run_main(self, argv, env):
+        # Patch real_opener (no network) and fetch_all (we assert on ctx only)
+        # so main() runs its env/ctx-building logic hermetically.
+        import tools.fetch as F
+        captured = {}
+
+        def fake_fetch_all(auth_mode, env, ctx, opener, out_dir, only=None):
+            captured["ctx"] = ctx
+            captured["only"] = only
+            return 0
+
+        old_opener = F.real_opener
+        old_fetch_all = F.fetch_all
+        old_environ = os.environ
+        F.real_opener = lambda: (lambda *a, **k: (200, b"{}"))
+        F.fetch_all = fake_fetch_all
+        os.environ = env
+        try:
+            rc = F.main(argv)
+        finally:
+            F.real_opener = old_opener
+            F.fetch_all = old_fetch_all
+            os.environ = old_environ
+        return rc, captured
+
+    def test_zia_only_scope_does_not_require_zpa_customer_id(self):
+        env = {"ZIA_CLOUD": "zscalertwo"}  # no ZPA_CUSTOMER_ID
+        rc, captured = self._run_main(["t", "zia_url_categories"], env)
+        self.assertEqual(rc, 0)
+        self.assertEqual(captured["ctx"]["customer_id"], "")
+
+    def test_zpa_in_scope_requires_zpa_customer_id(self):
+        env = {"ZIA_CLOUD": "zscalertwo"}  # ZPA scoped but no customer id
+        with self.assertRaises(SystemExit) as cm:
+            self._run_main(["t", "zpa_app_connector_group"], env)
+        self.assertIn("ZPA_CUSTOMER_ID", str(cm.exception))
+
+    def test_unscoped_still_requires_zpa_customer_id(self):
+        env = {"ZIA_CLOUD": "zscalertwo"}  # full fetch includes zpa
+        with self.assertRaises(SystemExit) as cm:
+            self._run_main(["t"], env)
+        self.assertIn("ZPA_CUSTOMER_ID", str(cm.exception))
+
+    def test_zpa_scope_passes_customer_id_through(self):
+        env = {"ZIA_CLOUD": "zscalertwo", "ZPA_CUSTOMER_ID": "C42"}
+        rc, captured = self._run_main(["t", "zpa_app_connector_group"], env)
+        self.assertEqual(rc, 0)
+        self.assertEqual(captured["ctx"]["customer_id"], "C42")
+
+
 class AcquireTokenTest(unittest.TestCase):
     def test_oneapi_posts_client_credentials(self):
         opener = FakeOpener({
@@ -377,6 +473,60 @@ class ConnectionHintTest(unittest.TestCase):
 
     def test_unknown_points_at_docs(self):
         self.assertIn("FETCH.md", connection_hint("weird failure"))
+
+
+class FailureHintsTest(unittest.TestCase):
+    def test_auth_failure_emits_credential_hint_not_404(self):
+        from tools.fetch import failure_hints
+        hints = " ".join(failure_hints(
+            ["auth failed: missing required env var ZIA_API_KEY"]
+        ))
+        self.assertIn("auth FAILED", hints)
+        self.assertNotIn("not mounted", hints)
+
+    def test_401_emits_token_scope_hint_not_404(self):
+        from tools.fetch import failure_hints
+        hints = " ".join(failure_hints(
+            ["GET https://api.zsapi.net/zia/api/v1/urlCategories returned HTTP 401"]
+        ))
+        self.assertIn("401/403", hints)
+        self.assertNotIn("not mounted", hints)
+
+    def test_404_emits_path_or_entitlement_hint(self):
+        from tools.fetch import failure_hints
+        hints = " ".join(failure_hints(["GET https://x/y returned HTTP 404"]))
+        self.assertIn("not mounted", hints)
+
+    def test_404_scoped_appends_unscoped_note(self):
+        from tools.fetch import failure_hints
+        hints = " ".join(failure_hints(
+            ["GET https://x/y returned HTTP 404"], scoped=True
+        ))
+        self.assertIn("unscoped fetch", hints)
+
+    def test_404_unscoped_has_no_unscoped_note(self):
+        from tools.fetch import failure_hints
+        hints = " ".join(failure_hints(["GET https://x/y returned HTTP 404"]))
+        self.assertNotIn("unscoped fetch", hints)
+
+    def test_5xx_emits_transient_hint(self):
+        from tools.fetch import failure_hints
+        hints = " ".join(failure_hints(["GET https://x/y returned HTTP 503"]))
+        self.assertIn("transient", hints)
+
+    def test_mixed_failures_emit_all_relevant_hints(self):
+        from tools.fetch import failure_hints
+        hints = " ".join(failure_hints([
+            "auth failed: missing required env var ZIA_API_KEY",
+            "GET https://x/y returned HTTP 404",
+        ]))
+        self.assertIn("auth FAILED", hints)
+        self.assertIn("not mounted", hints)
+
+    def test_always_reassures_about_successful_pulls(self):
+        from tools.fetch import failure_hints
+        hints = failure_hints(["GET https://x/y returned HTTP 404"])
+        self.assertTrue(any("Successful pulls above" in h for h in hints))
 
 
 class DiagHostsTest(unittest.TestCase):
@@ -514,11 +664,22 @@ class ComposeUrlZccTest(unittest.TestCase):
         )
 
     def test_legacy_zcc(self):
+        # The registry's gateway-only "zcc/papi/" prefix is stripped for the
+        # legacy mobile-portal base (which already ends in /papi), so /papi/
+        # appears exactly once.
         self.assertEqual(
             compose_url("legacy", "zcc",
                         "zcc/papi/public/v1/webForwardingProfile/listByCompany",
                         {"zcc_cloud": "zscalertwo"}),
-            "https://api-mobile.zscalertwo.net/papi/zcc/papi/public/v1/webForwardingProfile/listByCompany",
+            "https://api-mobile.zscalertwo.net/papi/public/v1/webForwardingProfile/listByCompany",
+        )
+
+    def test_legacy_zcc_path_without_prefix_unchanged(self):
+        # A path that does not carry the gateway prefix is appended as-is.
+        self.assertEqual(
+            compose_url("legacy", "zcc", "papi/public/v1/x",
+                        {"zcc_cloud": "zscalertwo"}),
+            "https://api-mobile.zscalertwo.net/papi/papi/public/v1/x",
         )
 
     def test_legacy_zcc_base_helper(self):

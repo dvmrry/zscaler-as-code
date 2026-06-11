@@ -232,15 +232,21 @@ def coerce_item(item, block):
 
 def _coerce_object_members(obj, members):
     """Coerce each member of an object-typed-list element by its declared
-    primitive type, unwrapping {id,...} reference objects first. Unknown keys
-    (schema filter already pruned attribute objects only structurally) pass
-    through untouched."""
+    primitive type, unwrapping {id,...} reference objects first.
+
+    Keys absent from the declared members are DROPPED, not passed through:
+    the generated HCL type is a strict object({...}), so an undeclared key
+    fails `terraform plan`. filter_item strips API-extra keys from block
+    values; structurally-identical object-list attribute values get the same
+    treatment here (filter_item leaves attribute values untouched). Declared
+    members with non-primitive encodings (none exist in the current dumps)
+    pass through uncoerced rather than being silently lost."""
     out = {}
     for k in sorted(obj):
         enc = members.get(k)
         if isinstance(enc, str):
             out[k] = _coerce_primitive(_unwrap_ref(obj[k]), enc)
-        else:
+        elif enc is not None:
             out[k] = obj[k]
     return out
 
@@ -253,7 +259,16 @@ def load_override(resource_type):
     if not os.path.exists(path):
         return {}
     with open(path) as f:
-        return json.load(f)
+        data = json.load(f)
+    # Validate authoring-side once at load (not per item): a 0 divisor would
+    # raise a bare ZeroDivisionError deep in apply_overrides with no clue
+    # which override file is wrong. Name the field and the file instead.
+    for field, divisor in (data.get("divide") or {}).items():
+        if divisor == 0:
+            raise ValueError(
+                "divide divisor for %r in %s must be non-zero" % (field, path)
+            )
+    return data
 
 
 def apply_overrides(item, override):
@@ -296,7 +311,20 @@ def apply_overrides(item, override):
                 continue
             out[field] = value // divisor
     for field, default in sorted((override.get("drop_if_default") or {}).items()):
-        if field in out and out[field] == default:
+        # Compare against the default after the same string-int coercion the
+        # divide step does, so an API number-as-string (quirk 5) like
+        # time_quota:'0' still matches an int default 0 even when the field
+        # is not divided. bool is an int subclass, so guard it out.
+        if field not in out:
+            continue
+        val = out[field]
+        if (isinstance(default, int) and not isinstance(default, bool)
+                and isinstance(val, str)):
+            try:
+                val = int(val)
+            except ValueError:
+                pass
+        if val == default:
             del out[field]
     return out
 
@@ -326,7 +354,22 @@ def derive_key(item, override):
                 "override map" % f
             )
         parts.append(str(item[f]))
-    return slugify(" ".join(parts))
+    slug = slugify(" ".join(parts))
+    if slug == "":
+        # The name(s) had no ASCII-alphanumerics (e.g. CJK or other
+        # non-Latin scripts), so slugify stripped everything. Fall back to a
+        # stable, unique, human-recognizable key derived from the id so two
+        # distinct non-ASCII-named items never collide on '' and no
+        # this[""] address is ever emitted.
+        ident = item.get("id")
+        if ident is None:
+            raise ValueError(
+                "derived key is empty for %s (name(s) %r have no ASCII "
+                "letters/digits) and item has no 'id' to fall back on; set "
+                "key_field in the override map" % (fields, parts)
+            )
+        slug = "id_%s" % slugify(str(ident))
+    return slug
 
 
 def transform_items(raw_items, resource_type, override):

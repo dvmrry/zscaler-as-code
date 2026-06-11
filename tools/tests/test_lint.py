@@ -5,6 +5,10 @@ one category that is more specific than an entry in another category
 silently pulls that traffic out of the policies matching the broader
 entry (the SSL-bypass scenario). All checks offline and deterministic.
 """
+import io
+import os
+import shutil
+import sys
 import unittest
 
 from tools.lint import (
@@ -19,6 +23,7 @@ from tools.lint import (
     check_string,
     check_url_entry,
 )
+from tools.transform import render_tfvars
 
 
 def report():
@@ -210,6 +215,41 @@ class DemoCleanGateTest(unittest.TestCase):
 
         rc = main(["demo"])
         self.assertEqual(rc, 0, "demo tenant must lint clean")
+
+
+class MainExitCodeTest(unittest.TestCase):
+    """Pin the CLI gate contract end-to-end: an error-bearing run must
+    return exit 1, not silently downgrade to a warning/clean pass."""
+
+    def test_error_bearing_tenant_exits_1(self):
+        from tools.lint import main
+
+        # A throwaway tenant dir under config/ so lint's
+        # os.path.join("config", tenant) resolves to it. The file is
+        # written in canonical form (no spurious canonical-form error) so
+        # the ONLY error is the URL scheme — that one error must gate.
+        tenant = "_linttest_tmp_xyzzy"
+        config_dir = os.path.join("config", tenant)
+        os.makedirs(config_dir)
+        try:
+            items = {"test": {"urls": ["https://example.com"]}}
+            path = os.path.join(
+                config_dir, "zia_url_categories.auto.tfvars.json")
+            with open(path, "w") as f:
+                f.write(render_tfvars(items))
+
+            old = sys.stdout
+            sys.stdout = io.StringIO()
+            try:
+                rc = main([tenant])
+                out = sys.stdout.getvalue()
+            finally:
+                sys.stdout = old
+        finally:
+            shutil.rmtree(config_dir)
+
+        self.assertEqual(rc, 1, "an error-bearing config must exit 1")
+        self.assertIn("scheme", out)
 
 
 if __name__ == "__main__":

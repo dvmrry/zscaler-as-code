@@ -15,6 +15,15 @@ backend.conf
 envs/**/tfplan
 .plan-changed.tmp
 
+# validate-imports fixture copy — staged into env roots, removed after;
+# ignored as a safety net for interrupted runs (never committed)
+envs/**/imports_check.tf
+
+# Apply-chain test throwaway tenant (tools/tests/test_apply_chain.py) —
+# created/removed in setUp/teardown; ignored so a hard kill can't leak it
+envs/tmpchaintest/
+config/tmpchaintest/
+
 # make install-tf output
 bin/
 

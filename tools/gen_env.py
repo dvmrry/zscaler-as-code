@@ -2,9 +2,10 @@
 
 One root per (tenant, resource): envs/<tenant>/<resource>/. Each calls a
 single module, keeping state blast-radius per resource (user's choice). The
-tenant label is opaque (any string); API targeting comes from env vars at
-plan time, never from the label. Authoring-side; output committed; never
-hand-edited. Stdlib-only, Python 3.6-floor — see AGENTS.md rules 5-7.
+tenant label is an opaque filesystem-safe identifier ([A-Za-z0-9_.-]+); the
+Makefile gates enforce this. API targeting comes from env vars at plan time,
+never from the label. Authoring-side; output committed; never hand-edited.
+Stdlib-only, Python 3.6-floor — see AGENTS.md rules 5-7.
 """
 import os
 import subprocess

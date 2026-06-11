@@ -4,6 +4,10 @@
 # shell over make (AGENTS.md rule 9). The CI pipeline example
 # (azure-pipelines.example.yml, same folder) covers tests/validation.
 #
+# PRIVATE REPOS ONLY: the drift PR body carries live admin identities
+# (audit attribution) and tenant-derived values — never run this in a
+# public template/fork, or the PR would leak admin PII.
+#
 # Two cadences via two schedules: ADO schedules cannot carry parameters,
 # so the hot-path scope is derived from Build.CronSchedule.DisplayName.
 schedules:
@@ -74,12 +78,27 @@ steps:
       git -c user.name=drift-bot -c user.email=drift-bot@invalid \
         commit -m "Backfill drift: $(TENANT)"
       git push -u origin "$branch"
-      # Requires: az devops CLI on the agent + build service granted
-      # "Contribute to pull requests". A HUMAN merges — the PR carries
-      # the diff summary + audit attribution, and the plan build policy
-      # shows merge-readiness; review is read-and-click, not investigate.
+      # Requires: az devops CLI on the agent + the build service identity
+      # granted, on this repository:
+      #   - "Contribute" -- needed by `git push -u origin "$branch"` to create
+      #     the backfill branch (without it the push fails 403/TF401027 and no
+      #     PR is created). NOTE: "Contribute" alone also suffices for
+      #     `az repos pr create`.
+      #   - "Contribute to pull requests" -- the narrower PR permission; list
+      #     it only if you scope the identity down and rely on it for the
+      #     PR-create step.
+      # A HUMAN merges -- the PR carries the diff summary + audit attribution,
+      # and the plan build policy shows merge-readiness; review is
+      # read-and-click, not investigate.
+      # Truncate the description to stay under the ADO 4,000-character server
+      # limit; append a pointer to the full published artifact.
+      _desc="$(head -c 3800 reports/$(TENANT)/drift.md)"
+      _desc="${_desc}
+
+_Full report in pipeline artifact: drift-report_"
       az repos pr create --source-branch "$branch" --target-branch main \
-        --title "Drift backfill: $(TENANT)" --description "$(cat reports/$(TENANT)/drift.md)"
+        --title "Drift backfill: $(TENANT)" \
+        --description "$_desc"
     displayName: Open backfill PR
     condition: eq(variables.DRIFTED, 'true')
     env:

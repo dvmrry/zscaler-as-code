@@ -24,6 +24,13 @@ case "$cmd" in
     [ "$saved" = yes ] && echo "fake-plan" > "$chdir/tfplan"
     exit 0 ;;
   show)
+    # Parseable JSON lacking resource_changes — simulates a skewed
+    # terraform/provider whose show prints an old-format document. The
+    # gates must reject this, not read it as "0 changes".
+    if [ -n "$FAKE_TF_NORC" ]; then
+      printf '{"format_version":"0.1"}'
+      exit 0
+    fi
     n="${FAKE_TF_DESTROYS:-0}"
     u="${FAKE_TF_UPDATES:-0}"
     printf '{"resource_changes": [{"change":{"actions":["no-op"]}}'

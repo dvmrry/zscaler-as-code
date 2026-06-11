@@ -1,10 +1,10 @@
 PYTHON ?= python3
 TF     ?= terraform
 
-.PHONY: help env test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan drift check-envs validate-config demo check-demo typecheck conformance
+.PHONY: help env install-tf test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck conformance
 
 help: ## List available targets
-	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
+	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
 
 env: ## Print toolchain versions (diagnostic)
 	@uname -sm
@@ -15,7 +15,7 @@ env: ## Print toolchain versions (diagnostic)
 
 install-tf: ## Download+checksum-verify a pinned terraform (VERSION=<v> [DEST=bin]); then PATH it or pass TF=bin/terraform
 	@test -n "$(VERSION)" || { echo "usage: make install-tf VERSION=1.15.4 [DEST=bin]"; exit 2; }
-	$(PYTHON) -m tools.install_tf "$(VERSION)" $(or $(DEST),bin)
+	$(PYTHON) -m tools.install_tf "$(VERSION)" "$(or $(DEST),bin)"
 
 test: ## Run Python unit tests with the local interpreter
 	$(PYTHON) -m unittest discover -s tools/tests -t . -v
@@ -63,10 +63,12 @@ endif
 
 gen-env: ## Generate env roots for a tenant (TENANT=<label> [BACKEND=azurerm])
 	@test -n "$(TENANT)" || { echo "usage: make gen-env TENANT=<label> [BACKEND=azurerm]"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
 	$(PYTHON) -m tools.gen_env "$(TENANT)" $(BACKEND)
 
 transform: ## Transform pulled API JSON into tfvars + imports (IN=<dir> TENANT=<name> [RESOURCE=<type>])
 	@test -n "$(IN)" -a -n "$(TENANT)" || { echo "usage: make transform IN=pulls/<tenant> TENANT=<tenant> [RESOURCE=<type>]"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
 	@failed=""; for rt in $$($(PYTHON) -c "from tools.registry import generated_types; print('\n'.join(generated_types()))"); do \
 		if [ -n "$(RESOURCE)" ] && [ "$$rt" != "$(RESOURCE)" ]; then continue; fi; \
 		if [ -f "$(IN)/$$rt.json" ]; then \
@@ -95,6 +97,7 @@ test-modules: ## Run mock-provider terraform tests across all generated modules
 
 test-envs: ## Run mock-provider smoke tests across a tenant's env roots (TENANT=<label>)
 	@test -n "$(TENANT)" || { echo "usage: make test-envs TENANT=<label>"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
 	@set -e; for d in envs/$(TENANT)/*/; do \
 		echo "== $$d"; \
 		$(TF) -chdir=$$d init -backend=false -input=false > /dev/null; \
@@ -103,6 +106,7 @@ test-envs: ## Run mock-provider smoke tests across a tenant's env roots (TENANT=
 
 validate-imports: ## Validate fixture import addresses against a tenant's roots (TENANT=<label>)
 	@test -n "$(TENANT)" || { echo "usage: make validate-imports TENANT=<label>"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
 	@set -e; for d in envs/$(TENANT)/*/; do \
 		rt=$$(basename $$d); \
 		fix="tools/tests/fixtures/transform/$$rt/expected_imports.tf"; \
@@ -111,8 +115,7 @@ validate-imports: ## Validate fixture import addresses against a tenant's roots 
 		fi; \
 		if [ -f "$$fix" ]; then \
 			cp "$$fix" "$$d/imports_check.tf"; \
-			$(TF) -chdir=$$d init -backend=false -input=false > /dev/null; \
-			$(TF) -chdir=$$d validate || { rm -f "$$d/imports_check.tf"; exit 1; }; \
+			{ $(TF) -chdir=$$d init -backend=false -input=false > /dev/null && $(TF) -chdir=$$d validate; } || { rm -f "$$d/imports_check.tf"; exit 1; }; \
 			rm -f "$$d/imports_check.tf"; \
 			echo "imports ok: $$rt"; \
 		else \
@@ -122,6 +125,7 @@ validate-imports: ## Validate fixture import addresses against a tenant's roots 
 
 plan: ## Terraform plan for a tenant's roots (TENANT=<label> [RESOURCE=<type>] [BACKEND_CONFIG=<file>]; real creds via env)
 	@test -n "$(TENANT)" || { echo "usage: make plan TENANT=<label> [RESOURCE=<type>] [BACKEND_CONFIG=<file>]"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
 	@set -e; planned=0; for d in envs/$(TENANT)/$(or $(RESOURCE),*)/; do \
 		test -d "$$d" || continue; \
 		rt=$$(basename $$d); \
@@ -148,6 +152,7 @@ plan-changed: ## Plan only the (tenant, resource) pairs changed vs BASE (default
 
 drift-report: ## Render the drift summary + audit attribution to reports/<tenant>/drift.md (TENANT=<label> [AUDIT_HOURS=24]) — the PR body and the publishable artifact
 	@test -n "$(TENANT)" || { echo "usage: make drift-report TENANT=<label> [AUDIT_HOURS=24]"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
 	@mkdir -p reports/$(TENANT)
 	@$(PYTHON) -m tools.drift_summary "$(TENANT)" > reports/$(TENANT)/drift.md
 	@$(PYTHON) -m tools.audit "$(TENANT)" $(or $(AUDIT_HOURS),24) >> reports/$(TENANT)/drift.md
@@ -158,7 +163,8 @@ assert-clean: ## Exit 0 only when every saved plan is no-op (imports allowed) �
 		test -f "$$d/tfplan" || continue; \
 		rt=$$(basename $$d); t=$$(basename $$(dirname $$d)); \
 		checked=$$((checked+1)); \
-		changes=$$($(TF) -chdir=$$d show -json tfplan | $(PYTHON) -c "import json,sys; p=json.load(sys.stdin); print(sum(1 for rc in p.get('resource_changes') or [] if set((rc.get('change') or {}).get('actions') or []) - set(['no-op'])))"); \
+		raw=$$($(TF) -chdir=$$d show -json tfplan); \
+		changes=$$(printf '%s' "$$raw" | $(PYTHON) -c "import json,sys; p=json.load(sys.stdin); rc=p.get('resource_changes'); sys.exit(1) if rc is None else print(sum(1 for r in rc if set((r.get('change') or {}).get('actions') or []) - set(['no-op'])))"); \
 		if [ "$$changes" != "0" ]; then \
 			echo "NOT CLEAN: $$t/$$rt plan contains $$changes change(s) beyond imports"; \
 			dirty=$$((dirty+1)); fi; \
@@ -172,8 +178,13 @@ apply: ## Apply ONLY saved plans from 'make plan SAVE=1' ([TENANT=<label>] [RESO
 		test -f "$$d/tfplan" || continue; \
 		rt=$$(basename $$d); t=$$(basename $$(dirname $$d)); \
 		echo "== apply $$t/$$rt"; \
+		if grep -q '^  backend "' "$$d/main.tf" && [ -z "$(BACKEND_CONFIG)" ]; then \
+			echo "error: $$rt declares a remote backend; run with BACKEND_CONFIG=<file>"; \
+			echo "(copy backend.conf.example, fill the values, pass BACKEND_CONFIG=backend.conf)"; \
+			exit 1; fi; \
 		$(TF) -chdir=$$d init -input=false $(if $(BACKEND_CONFIG),-reconfigure -backend-config="$(abspath $(BACKEND_CONFIG))" -backend-config="key=$$t/$$rt.tfstate") > /dev/null; \
-		destroys=$$($(TF) -chdir=$$d show -json tfplan | $(PYTHON) -c "import json,sys; p=json.load(sys.stdin); print(sum(1 for rc in p.get('resource_changes') or [] if 'delete' in ((rc.get('change') or {}).get('actions') or [])))"); \
+		raw=$$($(TF) -chdir=$$d show -json tfplan); \
+		destroys=$$(printf '%s' "$$raw" | $(PYTHON) -c "import json,sys; p=json.load(sys.stdin); rc=p.get('resource_changes'); sys.exit(1) if rc is None else print(sum(1 for r in rc if 'delete' in ((r.get('change') or {}).get('actions') or [])))"); \
 		if [ "$$destroys" != "0" ] && [ -z "$(ALLOW_DESTROY)" ]; then \
 			echo "error: $$t/$$rt saved plan destroys (or replaces) $$destroys resource(s) — refused."; \
 			echo "Review that plan; if the destroys are intended, re-run with ALLOW_DESTROY=1."; \
@@ -186,6 +197,7 @@ apply: ## Apply ONLY saved plans from 'make plan SAVE=1' ([TENANT=<label>] [RESO
 
 drift: ## Fetch + transform + report config diff (TENANT=<label> [RESOURCE=<type>]; real creds via env)
 	@test -n "$(TENANT)" || { echo "usage: make drift TENANT=<label> [RESOURCE=<type>]"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
 	$(MAKE) fetch TENANT=$(TENANT) $(if $(RESOURCE),RESOURCE=$(RESOURCE))
 	$(MAKE) transform IN=pulls/$(TENANT) TENANT=$(TENANT) $(if $(RESOURCE),RESOURCE=$(RESOURCE))
 	@if [ -n "$$(git status --porcelain config/$(TENANT) imports/$(TENANT) 2>/dev/null)" ]; then \
@@ -198,18 +210,26 @@ drift: ## Fetch + transform + report config diff (TENANT=<label> [RESOURCE=<type
 	fi
 
 check-envs: ## Regenerate committed tenants' env roots and fail on drift
-	@set -e; for t in $$(ls envs); do $(PYTHON) -m tools.gen_env "$$t" > /dev/null; done
+	@set -e; regenerated=0; for d in envs/*/; do \
+		test -d "$$d" || continue; \
+		t=$$(basename "$$d"); \
+		$(PYTHON) -m tools.gen_env "$$t" > /dev/null; \
+		regenerated=$$((regenerated+1)); \
+	done; \
+	test $$regenerated -gt 0 || { echo "error: no tenants regenerated — envs/ is empty or missing; nothing to check (expected committed tenant roots under envs/)"; exit 1; }
 	@test -z "$$(git status --porcelain -- envs)" || { \
 		echo ""; echo "envs/ drifted from the generator output:"; \
 		git status --porcelain -- envs; \
 		echo "Run make gen-env for each tenant and commit."; exit 1; }
 
 demo: ## Materialize the demo tenant from the public demo dataset (config/demo + imports/demo)
-	@set -e; for rt in $$($(PYTHON) -c "from tools.registry import generated_types; print('\n'.join(generated_types()))"); do \
+	@set -e; materialized=0; for rt in $$($(PYTHON) -c "from tools.registry import generated_types; print('\n'.join(generated_types()))"); do \
 		f="tools/tests/fixtures/demo/$$rt.json"; \
 		test -f "$$f" || { echo "missing $$f"; exit 1; }; \
 		$(PYTHON) -m tools.transform "$$rt" "$$f" demo; \
-	done
+		materialized=$$((materialized+1)); \
+	done; \
+	test $$materialized -gt 0 || { echo "error: no resources materialized — generated_types() returned nothing (registry parse error?); fix tools/registry.json"; exit 1; }
 
 check-demo: ## Fail if the committed demo tenant drifts from the pipeline output
 	$(MAKE) demo > /dev/null 2>&1
@@ -220,14 +240,17 @@ check-demo: ## Fail if the committed demo tenant drifts from the pipeline output
 
 lint: ## Semantic config lint — pasted chars, URL/IP syntax, set duplicates, order collisions, category shadowing (TENANT=<label>)
 	@test -n "$(TENANT)" || { echo "usage: make lint TENANT=<label>"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
 	$(PYTHON) -m tools.lint "$(TENANT)"
 
 fmt-config: ## Rewrite a tenant's config files in canonical transform form (TENANT=<label>)
 	@test -n "$(TENANT)" || { echo "usage: make fmt-config TENANT=<label>"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
 	$(PYTHON) -m tools.fmt_config "$(TENANT)"
 
 typecheck: ## Type-check a tenant's config against the provider schemas (stdlib; TENANT=<label>)
 	@test -n "$(TENANT)" || { echo "usage: make typecheck TENANT=<label>"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
 	$(PYTHON) -m tools.typecheck "$(TENANT)"
 
 conformance: ## Schema-driven adversarial conformance report (synthesize -> transform -> typecheck) for every registry resource
@@ -246,40 +269,12 @@ validate-config: ## Validate config/ against generated JSON Schemas (dev-only; j
 update-goldens: ## Re-bless generator golden fixtures from current output
 	$(PYTHON) -m tools.gen_module
 	rm -rf tools/tests/fixtures/gen
-	mkdir -p tools/tests/fixtures/gen/zpa_segment_group
-	cp modules/zpa_segment_group/variables.tf modules/zpa_segment_group/main.tf \
-		modules/zpa_segment_group/outputs.tf modules/zpa_segment_group/versions.tf \
-		tools/tests/fixtures/gen/zpa_segment_group/
-	mkdir -p tools/tests/fixtures/gen/zia_url_categories
-	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zia_url_categories'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zia_url_categories/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"
-	mkdir -p tools/tests/fixtures/gen/zpa_server_group
-	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zpa_server_group'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zpa_server_group/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"
-	mkdir -p tools/tests/fixtures/gen/zpa_application_segment
-	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zpa_application_segment'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zpa_application_segment/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"
-	mkdir -p tools/tests/fixtures/gen/zia_location_management
-	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zia_location_management'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zia_location_management/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"
-	mkdir -p tools/tests/fixtures/gen/zia_ssl_inspection_rules
-	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zia_ssl_inspection_rules'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zia_ssl_inspection_rules/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"
-	mkdir -p tools/tests/fixtures/gen/zia_cloud_app_control_rule
-	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zia_cloud_app_control_rule'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zia_cloud_app_control_rule/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"
-	mkdir -p tools/tests/fixtures/gen/zia_url_filtering_rules
-	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zia_url_filtering_rules'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zia_url_filtering_rules/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"
-	mkdir -p tools/tests/fixtures/gen/zia_rule_labels
-	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zia_rule_labels'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zia_rule_labels/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"
-	mkdir -p tools/tests/fixtures/gen/zpa_app_connector_group
-	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zpa_app_connector_group'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zpa_app_connector_group/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"
-	mkdir -p tools/tests/fixtures/gen/zpa_application_server
-	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zpa_application_server'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zpa_application_server/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"
-	mkdir -p tools/tests/fixtures/gen/zpa_policy_access_rule
-	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zpa_policy_access_rule'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zpa_policy_access_rule/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"
-	mkdir -p tools/tests/fixtures/gen/zcc_failopen_policy
-	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zcc_failopen_policy'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zcc_failopen_policy/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"
-	mkdir -p tools/tests/fixtures/gen/zcc_forwarding_profile
-	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zcc_forwarding_profile'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zcc_forwarding_profile/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"
-	mkdir -p tools/tests/fixtures/gen/zcc_trusted_network
-	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zcc_trusted_network'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zcc_trusted_network/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"
-	mkdir -p tools/tests/fixtures/gen/zcc_web_privacy
-	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zcc_web_privacy'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zcc_web_privacy/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"
+	@set -e; for d in modules/*/; do \
+		rt=$$(basename "$$d"); \
+		mkdir -p "tools/tests/fixtures/gen/$$rt"; \
+		cp "$$d/variables.tf" "$$d/main.tf" "$$d/outputs.tf" "$$d/versions.tf" \
+			"tools/tests/fixtures/gen/$$rt/"; \
+	done
 
 update-demo-goldens: ## Re-bless demo-expected fixtures from the current pipeline output
 	@mkdir -p tools/tests/fixtures/demo-expected

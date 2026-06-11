@@ -25,6 +25,7 @@ pipelines:
             - make typecheck TENANT=FILL-tenant-label
             - make lint TENANT=FILL-tenant-label
             - make test-envs TENANT=FILL-tenant-label
+            - make validate-imports TENANT=FILL-tenant-label
 
   branches:
     main:
@@ -45,13 +46,41 @@ pipelines:
   custom:
     drift: # schedule this pipeline in repo settings (hourly/weekly variants)
       - step:
-          name: Drift detection (read-only creds)
+          name: Drift detection + backfill PR (read-only fetch creds; push via repo token)
           script:
-            # exit 3 = drift. On drift: render the report, commit the
-            # backfill branch, open a PR via the Bitbucket API with the
-            # report as description. Bitbucket has no run-summary pane —
-            # the report ships as a downloadable artifact instead.
-            - make drift TENANT=FILL-tenant-label || test $? -eq 3
+            # Capture exit code: 3 = drift, 0 = clean, anything else = real failure.
+            # The || guard is intentionally absent — we need the rc to branch on.
+            - set +e; make drift TENANT=FILL-tenant-label; rc=$?; set -e
+            - if [ "$rc" != "0" ] && [ "$rc" != "3" ]; then exit "$rc"; fi
+            # No drift: nothing to render, commit, or PR.
+            - test "$rc" = "3" || { echo "no drift -- nothing to backfill"; exit 0; }
+            # Render the report (summary + audit attribution).
+            # Bitbucket has no run-summary pane; report ships as artifact below.
             - make drift-report TENANT=FILL-tenant-label
+            # Commit the backfill branch.
+            - branch="drift/FILL-tenant-label/$(date -u +%Y%m%dT%H%M)"
+            - git checkout -b "$branch"
+            - git add config/FILL-tenant-label imports/FILL-tenant-label
+            - git -c user.name=drift-bot -c user.email=drift-bot@invalid
+              commit -m "Backfill drift: FILL-tenant-label"
+            # Bitbucket Pipelines provides push credentials for the cloned repo.
+            - git push origin "$branch"
+            # Open a PR via the Bitbucket REST API.
+            # BITBUCKET_PR_TOKEN: supply an App password or Workspace/Repository
+            # Access Token as a secured repository variable. The built-in
+            # $BITBUCKET_STEP_OIDC_TOKEN does NOT grant PR-create scope.
+            # Use python3 to JSON-encode the report body so that quotes and
+            # newlines in the markdown are escaped safely (no jq dependency).
+            - >-
+              python3 -c 'import json,sys;
+              body=open("reports/FILL-tenant-label/drift.md").read();
+              print(json.dumps({"title":"Drift backfill: FILL-tenant-label",
+              "source":{"branch":{"name":sys.argv[1]}},
+              "destination":{"branch":{"name":"main"}},
+              "description":body}))' "$branch" > /tmp/pr.json
+            - curl -sf -X POST -H "Content-Type: application/json"
+              -H "Authorization: Bearer $BITBUCKET_PR_TOKEN"
+              "https://api.bitbucket.org/2.0/repositories/FILL-workspace/FILL-repo-slug/pullrequests"
+              -d @/tmp/pr.json
           artifacts:
             - reports/** # the delta/attribution report, downloadable per run

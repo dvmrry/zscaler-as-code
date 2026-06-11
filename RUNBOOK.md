@@ -155,7 +155,7 @@ For each resource type in `imports/<label>/`:
 
 ```
 cp imports/<label>/<type>_imports.tf envs/<label>/<type>/
-make plan TENANT=<label> RESOURCE=<type>
+make plan TENANT=<label> RESOURCE=<type> SAVE=1
 ```
 
 Expected result: **N imports, 0 changes.** Terraform will import the
@@ -185,7 +185,7 @@ make gen-env TENANT=<label> BACKEND=azurerm
 3. From here on, pass the config to every plan/apply init:
 
 ```
-make plan TENANT=<label> BACKEND_CONFIG=backend.conf
+make plan TENANT=<label> RESOURCE=<type> SAVE=1 BACKEND_CONFIG=backend.conf
 ```
 
 Authentication is environment-only (pipeline service connection,
@@ -197,8 +197,18 @@ If a root was already applied with LOCAL state, migrate once with
 
 ### 8. Apply and remove import blocks
 
-Apply using your Terraform invocation or CI pipeline. After state is
-populated, remove the import blocks file:
+Apply the saved plan with:
+
+```
+make apply TENANT=<label> RESOURCE=<type> [BACKEND_CONFIG=backend.conf]
+```
+
+`make apply` applies only saved tfplan artifacts and refuses destroys or
+replacements without `ALLOW_DESTROY=1`. If the import plan shows unexpected
+destroys, do not proceed until you understand the cause — pass
+`ALLOW_DESTROY=1` only after confirming the change is intentional.
+
+After apply succeeds, remove the import blocks file:
 
 ```
 rm envs/<label>/<type>/<type>_imports.tf
@@ -209,7 +219,7 @@ Import blocks error once resources are already managed. Removal is required.
 ### 9. Commit config
 
 ```
-git add config/<label>/ imports/<label>/
+git add config/<label>/ imports/<label>/ envs/<label>/
 git commit -m "Adopt <label> tenant"
 ```
 
@@ -244,6 +254,11 @@ check.
 For tenants where admins make console/API changes without warning, the
 drift pipeline can open the backfill PR itself (full reference flows in
 `pipelines/azure-pipelines-drift.example.yml` and the GitHub example):
+
+> The drift report carries live admin identities (email addresses) and
+> tenant-derived values, so the drift pipeline must run in the operator's
+> PRIVATE deployment repo — never the public template/fork, where the PR
+> body would leak admin PII.
 
 1. **Scheduled, two cadences** — hourly scoped to the hot-path resource
    (`make drift TENANT=<label> RESOURCE=<type>` fetches just that one),
@@ -317,6 +332,8 @@ modes are supported; the fetcher resolves mode from
 | Plan shows phantom diffs after adoption | Add field to `drop_if_default` in `tools/overrides/<type>.json`; re-transform |
 | CHECK gate failure in CI | Run `make generate` and commit; never hand-edit `modules/` or `schemas/tfvars/` |
 | `import blocks error: resource already managed` | Delete `_imports.tf` from the env root after first apply |
+| DNS error on `make fetch` token request | Verify `ZSCALER_VANITY_DOMAIN` is your vanity subdomain (not the cloud name); the token endpoint is constructed as `<vanity>.zslogin[<cloud>].net` — a typo causes an immediate DNS resolution failure that the fetch error output attributes to proxy/egress (it is not) |
+| `missing required env var <ZIA_API_KEY\|ZIA_USERNAME\|ZIA_PASSWORD\|ZIA_CLOUD\|ZPA_CLIENT_ID\|ZPA_CLIENT_SECRET\|ZCC_CLIENT_ID\|ZCC_CLIENT_SECRET\|ZCC_CLOUD>` after setting `ZSCALER_USE_LEGACY_CLIENT` | Legacy mode needs a separate full credential set — see `tools/FETCH.md` **Legacy** section. Switching from OneAPI requires re-exporting all nine vars; only the first missing one is named in the error |
 | Plan rejects a predefined/system object (e.g. order -1) | Add a `skip_if` matcher to `tools/overrides/<type>.json` (e.g. `"skip_if": [{"default_rule": true}]`); run `make transform` — the item is excluded from config and imports with a stderr note |
 | `Too many <field> blocks` at plan/test | Stale config from before the max_items merge — `git pull && make transform`; max_items=1 blocks are ONE object with list members (e.g. `departments: {"id": [..]}`) |
 | Plan rejects a value the schema allows (e.g. `size_quota`) | Provider runtime validator (not in the schema dump). If the API uses 0/empty for "not set", add the field to `drop_if_default`; otherwise relay the one-line error |

@@ -6,8 +6,11 @@ changes must fan out only to tenants that actually carry config, and
 shared-machinery changes must select everything — over-planning is
 safe (plans are read-only), under-planning is not.
 """
+import io
+import sys
 import unittest
 
+from tools import changed
 from tools.changed import pairs_from_paths
 
 PAIRS = {
@@ -89,7 +92,29 @@ class DiscoverConfigPairsTest(unittest.TestCase):
 
         pairs = discover_config_pairs()
         self.assertIn(("demo", "zia_rule_labels"), pairs)
-        self.assertTrue(all(t == "demo" or t for t, _ in pairs))
+        self.assertTrue(
+            all(t == "demo" for t, _ in pairs),
+            "unexpected tenant in config_pairs",
+        )
+
+
+class MainEmptyDiffTest(unittest.TestCase):
+    def test_docs_only_diff_exits_0(self):
+        # Contract: an empty plan-target set (docs-only diff) is success,
+        # not failure — a PR pipeline must treat exit 0 / no output as
+        # "nothing plannable", not as an error.
+        orig = changed.changed_paths
+        old_out, old_err = sys.stdout, sys.stderr
+        sys.stdout, sys.stderr = io.StringIO(), io.StringIO()
+        changed.changed_paths = lambda base_ref: ["README.md", "docs/x.md"]
+        try:
+            rc = changed.main(["HEAD~1"])
+            out = sys.stdout.getvalue()
+        finally:
+            changed.changed_paths = orig
+            sys.stdout, sys.stderr = old_out, old_err
+        self.assertEqual(rc, 0)
+        self.assertEqual(out, "")
 
 
 if __name__ == "__main__":

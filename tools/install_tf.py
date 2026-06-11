@@ -61,7 +61,11 @@ def _fetch(url):
 
     bundle = os.environ.get("REQUESTS_CA_BUNDLE") or os.environ.get("SSL_CERT_FILE")
     ctx = ssl.create_default_context(cafile=bundle) if bundle else None
-    with urllib.request.urlopen(url, context=ctx) as resp:
+    # timeout so a stalled connection (wedged proxy, dead mirror) fails fast
+    # into main()'s "install failed" handler instead of hanging CI forever.
+    # 60s suits a full ~20MB binary transfer (fetch.py's 15s TLS probe is
+    # too tight here).
+    with urllib.request.urlopen(url, context=ctx, timeout=60) as resp:
         return resp.read()
 
 
