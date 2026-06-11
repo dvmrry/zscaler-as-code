@@ -1,0 +1,108 @@
+# Example BOOTSTRAP pipeline — reference material, not a working config.
+# For environments where users have NO direct blob-storage access: the
+# first apply (state-only import adoption) must run on a pipeline agent,
+# because plan/apply with the azurerm backend needs the state container.
+#
+# Everything stateless still happens on a workstation per the RUNBOOK
+# (fetch -> transform -> typecheck/lint -> commit config/imports/envs to
+# the private repo); this pipeline does ONLY the state-touching half:
+#   stage imports -> plan -> PROVE imports-only -> human approval -> apply
+#
+# assert-clean runs BEFORE the approval gate: the adoption signature is
+# "N to import, 0 to add/change/destroy", and anything else stops the run
+# red — the RUNBOOK's "do not apply until you understand the difference",
+# mechanized. Manual trigger only; run per tenant (and optionally per
+# resource — e.g. RESOURCE=zia_* product waves while ZCC stays disabled).
+# Keep pipelines thin shells over make (AGENTS.md rule 9).
+
+parameters:
+  - name: tenant
+    displayName: Tenant label
+    type: string
+  - name: resource
+    # NOTE: default "all" (a sentinel), not "" — ADO's Run Pipeline UI
+    # renders empty-default string parameters as REQUIRED, which invites
+    # operators to type something wrong. "all" is visible and obvious.
+    displayName: Resource scope ("all", one type, or a glob like zia_*)
+    type: string
+    default: all
+
+trigger: none
+pr: none
+
+variables:
+  # Variable group: tenant-prefixed ZSCALER creds (resolve via cred_env)
+  # + ARM_SAS_TOKEN for the state container (SAS mode; see
+  # backend.conf.example — resource_group_name omitted).
+  - group: zscaler-credentials
+  # Compile-time scope: parameters resolve before the run starts, so the
+  # sentinel never reaches the shell.
+  - name: SCOPE
+    ${{ if ne(parameters.resource, 'all') }}:
+      value: RESOURCE=${{ parameters.resource }}
+    ${{ if eq(parameters.resource, 'all') }}:
+      value: ""
+
+stages:
+  - stage: plan
+    jobs:
+      - job: plan
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+          - script: |
+              eval "$(python3 -m tools.cred_env ${{ parameters.tenant }})"
+              make stage-imports TENANT=${{ parameters.tenant }} $(SCOPE)
+              make plan TENANT=${{ parameters.tenant }} SAVE=1 BACKEND_CONFIG=backend.conf $(SCOPE)
+              # The adoption gate: every saved plan must be imports/no-op
+              # ONLY. Real changes mean transform and the tenant disagree —
+              # fix overrides and re-run; never approve past this red.
+              make assert-clean
+              make plan-report
+            displayName: Stage imports, plan, prove imports-only
+            env:
+              ARM_SAS_TOKEN: $(ARM_SAS_TOKEN)
+          - script: echo "##vso[task.uploadsummary]$(System.DefaultWorkingDirectory)/reports/plan.md"
+            displayName: Plan in the run Summary tab
+          - publish: envs
+            artifact: tfplans # plans can contain sensitive values; restrict retention
+          - publish: reports
+            artifact: plan-report
+
+  - stage: apply
+    dependsOn: plan
+    jobs:
+      - deployment: apply
+        pool:
+          vmImage: ubuntu-latest
+        # Approvals + exclusive lock live on this environment. The reviewer
+        # reads the plan summary from the plan stage: expect
+        # "N to import, 0 to add, 0 to change, 0 to destroy".
+        environment: FILL-protected-environment-name
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - script: |
+                    # Reproduce the EXACT plan-time worktree: a saved plan
+                    # is only valid against identical configuration, so the
+                    # import blocks must be staged here too.
+                    make stage-imports TENANT=${{ parameters.tenant }} $(SCOPE)
+                  displayName: Re-stage imports (config parity for saved plans)
+                - download: current
+                  artifact: tfplans
+                - script: cp -R "$(Pipeline.Workspace)/tfplans/"* envs/
+                  displayName: Restore saved plans
+                - script: |
+                    eval "$(python3 -m tools.cred_env ${{ parameters.tenant }})"
+                    # Imports only mutate STATE, never the tenant; the
+                    # destroy guard still applies (nothing to allow here).
+                    make apply BACKEND_CONFIG=backend.conf
+                  displayName: Apply (state-only import adoption)
+                  env:
+                    ARM_SAS_TOKEN: $(ARM_SAS_TOKEN)
+# After a successful bootstrap: the staged import copies lived only in
+# this agent's workspace — nothing to clean up in git. Subsequent changes
+# ride the normal delivery pipeline; drift goes green-by-construction.

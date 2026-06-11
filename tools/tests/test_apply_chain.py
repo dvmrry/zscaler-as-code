@@ -144,6 +144,29 @@ class ApplyChainTest(unittest.TestCase):
         self.assertNotEqual(rc, 0)
         self.assertIn("no saved plans", out)
 
+    def test_stage_imports_roundtrip(self):
+        os.makedirs(os.path.join("imports", TENANT), exist_ok=True)
+        self.addCleanup(shutil.rmtree, os.path.join("imports", TENANT), True)
+        with open(os.path.join("imports", TENANT, "fake_rt_imports.tf"),
+                  "w", encoding="utf-8") as f:
+            f.write('import {\n  to = module.fake_rt.fake_rt.this["a"]\n  id = "1"\n}\n')
+        with open(os.path.join("imports", TENANT, "fake_rt_moves.tf"),
+                  "w", encoding="utf-8") as f:
+            f.write('moved {\n  from = module.fake_rt.fake_rt.this["a"]\n  to   = module.fake_rt.fake_rt.this["b"]\n}\n')
+        rc, out = _run(["make", "stage-imports", "TENANT=" + TENANT])
+        self.assertEqual(rc, 0, out)
+        self.assertTrue(os.path.exists(os.path.join(self.root, "fake_rt_imports.tf")))
+        self.assertTrue(os.path.exists(os.path.join(self.root, "fake_rt_moves.tf")))
+        rc, out = _run(["make", "unstage-imports", "TENANT=" + TENANT])
+        self.assertEqual(rc, 0, out)
+        self.assertFalse(os.path.exists(os.path.join(self.root, "fake_rt_imports.tf")))
+        self.assertFalse(os.path.exists(os.path.join(self.root, "fake_rt_moves.tf")))
+
+    def test_stage_imports_nothing_to_stage_fails_loudly(self):
+        rc, out = _run(["make", "stage-imports", "TENANT=" + TENANT])
+        self.assertNotEqual(rc, 0)
+        self.assertIn("nothing to stage", out)
+
     def test_assert_clean_without_plans_fails_loudly(self):
         rc, out = _run(
             ["make", "assert-clean", "TENANT=" + TENANT, "TF=" + FAKE_TF])
