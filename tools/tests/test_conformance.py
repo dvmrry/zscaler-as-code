@@ -84,6 +84,57 @@ class CamelInversionTest(unittest.TestCase):
             walk(load_resource(rt)["block"])
 
 
+class ConformanceCatchesRegressionsTest(unittest.TestCase):
+    """Pin that the gate goes RED when the single-block contract regresses.
+
+    If a future transform change re-emits single-mode blocks as one-element
+    lists (the old broken shape that reached terraform as a tuple), the
+    conformance check must fail — otherwise a refactor could quietly make the
+    harness vacuous and a green run would prove nothing.
+    """
+
+    def test_relisted_single_blocks_fail_conformance(self):
+        import tools.transform as transform_mod
+
+        block = load_resource("zcc_forwarding_profile")["block"]
+
+        def relist_single_blocks(item, blk):
+            # Reintroduce the regression: every single-mode block dict
+            # becomes a one-element list, recursing through list blocks.
+            for bname, bt in (blk.get("block_types") or {}).items():
+                value = item.get(bname)
+                if value is None:
+                    continue
+                inner = bt["block"]
+                if bt["nesting_mode"] == "single":
+                    if isinstance(value, dict):
+                        relist_single_blocks(value, inner)
+                        item[bname] = [value]
+                elif isinstance(value, list):
+                    for elem in value:
+                        if isinstance(elem, dict):
+                            relist_single_blocks(elem, inner)
+
+        real = transform_mod.transform_items
+
+        def broken(raw, resource_type, override):
+            items, originals, drops = real(raw, resource_type, override)
+            for it in items.values():
+                relist_single_blocks(it, block)
+            return items, originals, drops
+
+        transform_mod.transform_items = broken
+        try:
+            ok, detail = conformance_check("zcc_forwarding_profile")
+        finally:
+            transform_mod.transform_items = real
+
+        self.assertFalse(
+            ok, "conformance stayed green despite re-listed single blocks"
+        )
+        self.assertIn("single block", detail)
+
+
 class SynthesisIsAdversarialTest(unittest.TestCase):
     """Guard against a regression that quietly makes synthesis trivial: the
     raw items must actually contain the quirky shapes the harness exists to
