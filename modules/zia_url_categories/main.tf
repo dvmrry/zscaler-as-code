@@ -30,14 +30,14 @@ resource "zia_url_categories" "this" {
       type = scopes.value.type
 
       dynamic "scope_entities" {
-        for_each = scopes.value.scope_entities == null ? [] : scopes.value.scope_entities
+        for_each = scopes.value.scope_entities == null ? [] : [scopes.value.scope_entities]
         content {
           id = scope_entities.value.id
         }
       }
 
       dynamic "scope_group_member_entities" {
-        for_each = scopes.value.scope_group_member_entities == null ? [] : scopes.value.scope_group_member_entities
+        for_each = scopes.value.scope_group_member_entities == null ? [] : [scopes.value.scope_group_member_entities]
         content {
           id = scope_group_member_entities.value.id
         }
@@ -46,7 +46,7 @@ resource "zia_url_categories" "this" {
   }
 
   dynamic "url_keyword_counts" {
-    for_each = each.value.url_keyword_counts == null ? [] : each.value.url_keyword_counts
+    for_each = each.value.url_keyword_counts == null ? [] : [each.value.url_keyword_counts]
     content {
       retain_parent_keyword_count = url_keyword_counts.value.retain_parent_keyword_count
       retain_parent_url_count     = url_keyword_counts.value.retain_parent_url_count

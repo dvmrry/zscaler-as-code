@@ -3,10 +3,12 @@
 For every resource type in the registry, synthesize raw API-style items that
 deliberately exercise the full quirk catalog (camelCase keys, bool-as-int /
 bool-as-string, numbers-as-strings, CSV-joined lists, {id,name} reference
-objects, single-dict-for-list blocks, single-mode object blocks, etc.), push
-them through the REAL transform pipeline with the REAL override map, then
-verify the output structurally against the provider schema with the REAL
-typecheck. Zero mismatches is the contract.
+objects, single-dict-for-list blocks, single-mode object blocks,
+multi-element lists for max_items=1 blocks — the ZIA ID-group pattern the
+transform merges into one object — etc.), push them through the REAL
+transform pipeline with the REAL override map, then verify the output
+structurally against the provider schema with the REAL typecheck. Zero
+mismatches is the contract.
 
 This makes future modules deterministic: a new registry entry is automatically
 synthesized and conformance-tested against every quirk before any tenant
@@ -21,7 +23,7 @@ import json
 import sys
 
 from tools.registry import generated_types
-from tools.tfschema import classify_attributes, load_resource
+from tools.tfschema import block_is_single, classify_attributes, load_resource
 from tools.transform import snake
 
 
@@ -230,6 +232,19 @@ def _syn_block_object(block, seed, ctr, csv_fields, rename_targets):
             # single-mode: a bare dict, OR a one-element list to exercise the
             # legacy-list unwrap tolerance (quirk: single block from odd API).
             out[camel(bname)] = child if v == 0 else [child]
+        elif block_is_single(bt):
+            # max_items=1 list/set block: a bare dict, a one-element list,
+            # OR the multi-element API shape (quirk 14 — the ZIA ID-group
+            # pattern: N {id, ...} elements the transform must merge into
+            # ONE object with unioned list members).
+            v = _variant(seed, ctr.next(), bname, 3)
+            if v == 0:
+                out[camel(bname)] = child
+            elif v == 1:
+                out[camel(bname)] = [child]
+            else:
+                child2 = _syn_block_object(inner, seed + 1, ctr, set(), {})
+                out[camel(bname)] = [child, child2]
         else:
             v = _variant(seed, ctr.next(), bname, 2)
             # list/set block: a list of dicts, OR a single bare dict to

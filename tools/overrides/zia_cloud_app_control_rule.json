@@ -1,4 +1,8 @@
 {
+  "drop_if_default": {
+    "size_quota": 0,
+    "time_quota": 0
+  },
   "import_id": "{type}:{id}",
   "key_field": [
     "type",

@@ -25,18 +25,18 @@ variable "items" {
     urls_retaining_parent_category_count      = optional(number)
     scopes = optional(set(object({
       type = optional(string)
-      scope_entities = optional(set(object({
+      scope_entities = optional(object({
         id = optional(list(number))
-      })))
-      scope_group_member_entities = optional(set(object({
+      }))
+      scope_group_member_entities = optional(object({
         id = optional(list(number))
-      })))
+      }))
     })))
-    url_keyword_counts = optional(list(object({
+    url_keyword_counts = optional(object({
       retain_parent_keyword_count = optional(number)
       retain_parent_url_count     = optional(number)
       total_keyword_count         = optional(number)
       total_url_count             = optional(number)
-    })))
+    }))
   }))
 }

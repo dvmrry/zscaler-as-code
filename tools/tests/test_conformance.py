@@ -181,6 +181,28 @@ class SynthesisIsAdversarialTest(unittest.TestCase):
         for it in items.values():
             self.assertIsInstance(it.get("dns_server_ips", []), list)
 
+    def test_max_items_one_block_emits_multi_element_and_merges(self):
+        # zia_cloud_app_control_rule's ID-group blocks (departments etc.)
+        # are max_items=1: synthesis must emit the multi-element API shape
+        # at some seed (quirk 14), and the transform must merge it into ONE
+        # object — the pre-fix pipeline emitted N blocks and terraform core
+        # rejected them with "Too many departments blocks".
+        from tools.transform import load_override, transform_items
+
+        raws = [synthesize_item("zia_cloud_app_control_rule", s) for s in range(6)]
+        multi = [
+            r for r in raws
+            if isinstance(r.get("departments"), list) and len(r["departments"]) > 1
+        ]
+        self.assertTrue(
+            multi, "no multi-element list emitted for a max_items=1 block"
+        )
+        ov = load_override("zia_cloud_app_control_rule")
+        items, _, _ = transform_items(raws, "zia_cloud_app_control_rule", ov)
+        for it in items.values():
+            if it.get("departments") is not None:
+                self.assertIsInstance(it["departments"], dict)
+
     def test_list_block_emitted_as_bare_dict_at_some_seed(self):
         # The single-dict-for-list-block wrap (quirk 13) must be exercised:
         # across seeds, forwardingProfileActions appears at least once as a

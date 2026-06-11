@@ -72,21 +72,21 @@ resource "zia_location_management" "this" {
   }
 
   dynamic "static_location_groups" {
-    for_each = each.value.static_location_groups == null ? [] : each.value.static_location_groups
+    for_each = each.value.static_location_groups == null ? [] : [each.value.static_location_groups]
     content {
       id = static_location_groups.value.id
     }
   }
 
   dynamic "virtual_zen_clusters" {
-    for_each = each.value.virtual_zen_clusters == null ? [] : each.value.virtual_zen_clusters
+    for_each = each.value.virtual_zen_clusters == null ? [] : [each.value.virtual_zen_clusters]
     content {
       id = virtual_zen_clusters.value.id
     }
   }
 
   dynamic "virtual_zens" {
-    for_each = each.value.virtual_zens == null ? [] : each.value.virtual_zens
+    for_each = each.value.virtual_zens == null ? [] : [each.value.virtual_zens]
     content {
       id = virtual_zens.value.id
     }

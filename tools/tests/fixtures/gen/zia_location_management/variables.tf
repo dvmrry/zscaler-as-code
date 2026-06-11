@@ -58,15 +58,15 @@ variable "items" {
     extranet_ip_pool = optional(set(object({
       id = optional(number)
     })))
-    static_location_groups = optional(set(object({
+    static_location_groups = optional(object({
       id = optional(set(number))
-    })))
-    virtual_zen_clusters = optional(set(object({
+    }))
+    virtual_zen_clusters = optional(object({
       id = optional(set(number))
-    })))
-    virtual_zens = optional(set(object({
+    }))
+    virtual_zens = optional(object({
       id = optional(set(number))
-    })))
+    }))
     vpn_credentials = optional(list(object({
       fqdn           = optional(string)
       id             = optional(number)

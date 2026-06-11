@@ -39,77 +39,77 @@ resource "zia_url_filtering_rules" "this" {
   }
 
   dynamic "departments" {
-    for_each = each.value.departments == null ? [] : each.value.departments
+    for_each = each.value.departments == null ? [] : [each.value.departments]
     content {
       id = departments.value.id
     }
   }
 
   dynamic "device_groups" {
-    for_each = each.value.device_groups == null ? [] : each.value.device_groups
+    for_each = each.value.device_groups == null ? [] : [each.value.device_groups]
     content {
       id = device_groups.value.id
     }
   }
 
   dynamic "devices" {
-    for_each = each.value.devices == null ? [] : each.value.devices
+    for_each = each.value.devices == null ? [] : [each.value.devices]
     content {
       id = devices.value.id
     }
   }
 
   dynamic "groups" {
-    for_each = each.value.groups == null ? [] : each.value.groups
+    for_each = each.value.groups == null ? [] : [each.value.groups]
     content {
       id = groups.value.id
     }
   }
 
   dynamic "labels" {
-    for_each = each.value.labels == null ? [] : each.value.labels
+    for_each = each.value.labels == null ? [] : [each.value.labels]
     content {
       id = labels.value.id
     }
   }
 
   dynamic "location_groups" {
-    for_each = each.value.location_groups == null ? [] : each.value.location_groups
+    for_each = each.value.location_groups == null ? [] : [each.value.location_groups]
     content {
       id = location_groups.value.id
     }
   }
 
   dynamic "locations" {
-    for_each = each.value.locations == null ? [] : each.value.locations
+    for_each = each.value.locations == null ? [] : [each.value.locations]
     content {
       id = locations.value.id
     }
   }
 
   dynamic "override_groups" {
-    for_each = each.value.override_groups == null ? [] : each.value.override_groups
+    for_each = each.value.override_groups == null ? [] : [each.value.override_groups]
     content {
       id = override_groups.value.id
     }
   }
 
   dynamic "override_users" {
-    for_each = each.value.override_users == null ? [] : each.value.override_users
+    for_each = each.value.override_users == null ? [] : [each.value.override_users]
     content {
       id = override_users.value.id
     }
   }
 
   dynamic "source_ip_groups" {
-    for_each = each.value.source_ip_groups == null ? [] : each.value.source_ip_groups
+    for_each = each.value.source_ip_groups == null ? [] : [each.value.source_ip_groups]
     content {
       id = source_ip_groups.value.id
     }
   }
 
   dynamic "time_windows" {
-    for_each = each.value.time_windows == null ? [] : each.value.time_windows
+    for_each = each.value.time_windows == null ? [] : [each.value.time_windows]
     content {
       id = time_windows.value.id
     }
@@ -124,7 +124,7 @@ resource "zia_url_filtering_rules" "this" {
   }
 
   dynamic "users" {
-    for_each = each.value.users == null ? [] : each.value.users
+    for_each = each.value.users == null ? [] : [each.value.users]
     content {
       id = users.value.id
     }

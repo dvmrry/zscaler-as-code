@@ -9,7 +9,7 @@ import os
 import subprocess
 import sys
 from tools.registry import generated_types
-from tools.tfschema import classify_attributes, hcl_type, load_resource
+from tools.tfschema import block_is_single, classify_attributes, hcl_type, load_resource
 
 
 def _header(resource_type, provider):
@@ -79,7 +79,9 @@ def _block_input_type(block_type, indent, name="<unknown>"):
     _check_block_has_inputs(name, block_type["block"])
     inner = _block_object_type(block_type["block"], indent)
     mode = block_type["nesting_mode"]
-    if mode == "single":
+    if block_is_single(block_type):
+        # One instance max (nesting "single" or max_items=1): typed as a
+        # bare object; main.tf wraps [x] in the dynamic block's for_each.
         return inner
     if mode in ("list", "set"):
         return "%s(%s)" % (mode, inner)
@@ -100,7 +102,7 @@ def _render_block_body(block, ref, indent):
     for name, bt in sorted((block.get("block_types") or {}).items()):
         _check_block_has_inputs(name, bt["block"])
         source = "%s.%s" % (ref, name)
-        if bt["nesting_mode"] == "single":
+        if block_is_single(bt):
             iterable = "%s == null ? [] : [%s]" % (source, source)
         else:
             iterable = "%s == null ? [] : %s" % (source, source)

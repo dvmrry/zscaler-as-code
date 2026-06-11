@@ -10,7 +10,7 @@ import os
 import sys
 
 from tools.registry import generated_types
-from tools.tfschema import classify_attributes, json_schema_type, load_resource
+from tools.tfschema import block_is_single, classify_attributes, json_schema_type, load_resource
 
 OUT_DIR = os.path.join("schemas", "tfvars")
 
@@ -22,7 +22,7 @@ def _block_schema(block):
         props[name] = json_schema_type(block["attributes"][name]["type"])
     for name, bt in sorted((block.get("block_types") or {}).items()):
         inner = _block_schema(bt["block"])
-        if bt["nesting_mode"] == "single":
+        if block_is_single(bt):
             props[name] = inner
         elif bt["nesting_mode"] == "set":
             props[name] = {"type": "array", "items": inner, "uniqueItems": True}

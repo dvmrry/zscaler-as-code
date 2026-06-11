@@ -156,21 +156,17 @@
             "type": "string"
           },
           "static_location_groups": {
-            "items": {
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "items": {
-                    "type": "number"
-                  },
-                  "type": "array",
-                  "uniqueItems": true
-                }
-              },
-              "type": "object"
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
             },
-            "type": "array",
-            "uniqueItems": true
+            "type": "object"
           },
           "sub_loc_acc_ids": {
             "items": {
@@ -208,38 +204,30 @@
             "type": "number"
           },
           "virtual_zen_clusters": {
-            "items": {
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "items": {
-                    "type": "number"
-                  },
-                  "type": "array",
-                  "uniqueItems": true
-                }
-              },
-              "type": "object"
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
             },
-            "type": "array",
-            "uniqueItems": true
+            "type": "object"
           },
           "virtual_zens": {
-            "items": {
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "items": {
-                    "type": "number"
-                  },
-                  "type": "array",
-                  "uniqueItems": true
-                }
-              },
-              "type": "object"
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
             },
-            "type": "array",
-            "uniqueItems": true
+            "type": "object"
           },
           "vpn_credentials": {
             "items": {
