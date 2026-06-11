@@ -287,6 +287,44 @@ drift pipeline can open the backfill PR itself (full reference flows in
 
 ---
 
+## Editing Config by Hand
+
+Post-adoption changes are JSON edits to `config/<label>/`. Wire editor
+autocomplete + inline validation from the same schemas CI uses: merge
+`schemas/tfvars/vscode.settings.example.json` (generated; one mapping per
+resource type) into your `.vscode/settings.json`. After editing, the
+usual gates apply: `make fmt-config TENANT=<label>` (canonical form),
+`make lint TENANT=<label>`, `make typecheck TENANT=<label>` — then PR,
+and the plan lands as a PR comment.
+
+---
+
+## Rolling Back a Merged Change
+
+Config is git, so rollback is the same flow in reverse:
+
+1. `git revert <merge-commit>` on a branch; open the PR. The plan
+   comment shows the inverse change — review it like any other.
+2. If the revert removes objects (you are reverting an addition), the
+   apply will contain destroys and `make apply` refuses them without
+   `ALLOW_DESTROY=1` — that is the design: destroys are a per-run human
+   decision, including during rollbacks.
+3. Merge → apply. Never roll back by clicking in the console: drift
+   would just open a PR re-importing the console state, and you would
+   be fighting your own pipeline.
+
+## Break-Glass: Console First, Reconcile After
+
+When a change cannot wait for a PR (incident response), make it in the
+console. Reconciliation is automatic: the next drift run (hourly for
+the hot-path resource) opens a backfill PR carrying the change AND the
+audit-trail attribution of who made it. Merge it like any drift PR —
+the live tenant already has the change, so the plan is no-op/imports
+and `assert-clean` shows green. Never hand-edit `config/` to
+"pre-record" a console change; let drift codify reality.
+
+---
+
 ## Adding a Resource Type
 
 1. Add one entry to `tools/registry.json` (plus `tools/overrides/<type>.json`
