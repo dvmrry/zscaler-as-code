@@ -10,7 +10,9 @@ file, and delete the override (then regenerate) when upstream fixes land.
 
 `tools/overrides/<resource_type>.json` configures the transform for that
 resource (all keys optional): `key_field` (map key source, default
-`name`), `renames` (post-snake-case API→schema names), `drops` (fields
+`name`; may be a LIST of fields joined into one slug for composite keys —
+e.g. `["type", "name"]` where names are only unique within a type),
+`renames` (post-snake-case API→schema names), `drops` (fields
 always removed), `references` (force `{id,...}` unwrapping),
 `drop_if_default` (remove a field when it equals the given value —
 perma-diff suppression), `split_csv` (list of post-rename fields whose
