@@ -1,58 +1,119 @@
 {
-  "zpa_application_segment": {
-    "product": "zpa",
+  "zia_cloud_app_control_rule": {
+    "fetch": {
+      "expand": {
+        "rule_type": [
+          "AI_ML",
+          "BUSINESS_PRODUCTIVITY",
+          "CONSUMER",
+          "DNS_OVER_HTTPS",
+          "ENTERPRISE_COLLABORATION",
+          "FILE_SHARE",
+          "FINANCE",
+          "HOSTING_PROVIDER",
+          "INSTANT_MESSAGING",
+          "IT_SERVICES",
+          "SOCIAL_NETWORKING",
+          "STREAMING_MEDIA",
+          "SYSTEM_AND_DEVELOPMENT",
+          "WEBMAIL"
+        ]
+      },
+      "pagination": "zia",
+      "path": "webApplicationRules/{rule_type}"
+    },
     "generate": true,
-    "fetch": {"path": "application", "pagination": "zpa"}
-  },
-  "zpa_segment_group": {
-    "product": "zpa",
-    "generate": true,
-    "fetch": {"path": "segmentGroup", "pagination": "zpa"}
-  },
-  "zpa_server_group": {
-    "product": "zpa",
-    "generate": true,
-    "fetch": {"path": "serverGroup", "pagination": "zpa"}
-  },
-  "zia_url_categories": {
-    "product": "zia",
-    "generate": true,
-    "fetch": {"path": "urlCategories", "pagination": "zia", "query": {"customOnly": "true"}}
+    "product": "zia"
   },
   "zia_location_management": {
-    "product": "zia", "generate": true,
-    "fetch": {"path": "locations", "pagination": "zia"}
-  },
-  "zia_ssl_inspection_rules": {
-    "product": "zia", "generate": true,
-    "fetch": {"path": "sslInspectionRules", "pagination": "zia"}
-  },
-  "zia_cloud_app_control_rule": {
-    "product": "zia", "generate": true,
     "fetch": {
-      "path": "webApplicationRules/{rule_type}", "pagination": "zia",
-      "expand": {"rule_type": [
-        "AI_ML", "BUSINESS_PRODUCTIVITY", "CONSUMER", "DNS_OVER_HTTPS",
-        "ENTERPRISE_COLLABORATION", "FILE_SHARE", "FINANCE", "HOSTING_PROVIDER",
-        "INSTANT_MESSAGING", "IT_SERVICES", "SOCIAL_NETWORKING",
-        "STREAMING_MEDIA", "SYSTEM_AND_DEVELOPMENT", "WEBMAIL"
-      ]}
-    }
-  },
-  "zia_url_filtering_rules": {
-    "product": "zia", "generate": true,
-    "fetch": {"path": "urlFilteringRules", "pagination": "zia"}
+      "pagination": "zia",
+      "path": "locations"
+    },
+    "generate": true,
+    "product": "zia"
   },
   "zia_rule_labels": {
-    "product": "zia", "generate": true,
-    "fetch": {"path": "ruleLabels", "pagination": "zia"}
+    "fetch": {
+      "pagination": "zia",
+      "path": "ruleLabels"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_ssl_inspection_rules": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "sslInspectionRules"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_url_categories": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "urlCategories",
+      "query": {
+        "customOnly": "true"
+      }
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_url_filtering_rules": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "urlFilteringRules"
+    },
+    "generate": true,
+    "product": "zia"
   },
   "zpa_app_connector_group": {
-    "product": "zpa", "generate": true,
-    "fetch": {"path": "appConnectorGroup", "pagination": "zpa"}
+    "fetch": {
+      "pagination": "zpa",
+      "path": "appConnectorGroup"
+    },
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_application_segment": {
+    "fetch": {
+      "pagination": "zpa",
+      "path": "application"
+    },
+    "generate": true,
+    "product": "zpa"
   },
   "zpa_application_server": {
-    "product": "zpa", "generate": true,
-    "fetch": {"path": "server", "pagination": "zpa"}
+    "fetch": {
+      "pagination": "zpa",
+      "path": "server"
+    },
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_policy_access_rule": {
+    "fetch": {
+      "pagination": "zpa",
+      "path": "policySet/rules/policyType/ACCESS_POLICY"
+    },
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_segment_group": {
+    "fetch": {
+      "pagination": "zpa",
+      "path": "segmentGroup"
+    },
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_server_group": {
+    "fetch": {
+      "pagination": "zpa",
+      "path": "serverGroup"
+    },
+    "generate": true,
+    "product": "zpa"
   }
 }
