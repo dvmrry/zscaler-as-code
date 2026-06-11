@@ -128,10 +128,30 @@ plan: ## Terraform plan for a tenant's roots (TENANT=<label> [RESOURCE=<type>] [
 			exit 1; fi; \
 		echo "== plan $$rt"; \
 		$(TF) -chdir=$$d init -input=false $(if $(BACKEND_CONFIG),-reconfigure -backend-config="$(abspath $(BACKEND_CONFIG))" -backend-config="key=$(TENANT)/$$rt.tfstate") > /dev/null; \
-		$(TF) -chdir=$$d plan -input=false -var-file="$$vf"; \
+		$(TF) -chdir=$$d plan -input=false -var-file="$$vf" $(if $(SAVE),-out=tfplan); \
 		planned=$$((planned+1)); \
 	done; \
 	test $$planned -gt 0 || { echo "error: no roots planned for TENANT=$(TENANT) (typo? missing config/?)"; exit 1; }
+
+plan-changed: ## Plan only the (tenant, resource) pairs changed vs BASE (default origin/main); SAVE/BACKEND_CONFIG pass through
+	@set -e; $(PYTHON) -m tools.changed "$(or $(BASE),origin/main)" > .plan-changed.tmp; \
+	if ! [ -s .plan-changed.tmp ]; then rm -f .plan-changed.tmp; echo "nothing to plan — no plannable changes vs $(or $(BASE),origin/main)"; exit 0; fi; \
+	while read t rt; do \
+		$(MAKE) plan TENANT=$$t RESOURCE=$$rt $(if $(SAVE),SAVE=1) $(if $(BACKEND_CONFIG),BACKEND_CONFIG=$(BACKEND_CONFIG)) || { rm -f .plan-changed.tmp; exit 1; }; \
+	done < .plan-changed.tmp; \
+	rm -f .plan-changed.tmp
+
+apply: ## Apply ONLY saved plans from 'make plan SAVE=1' ([TENANT=<label>] [RESOURCE=<type>] [BACKEND_CONFIG=<file>])
+	@set -e; applied=0; for d in envs/$(or $(TENANT),*)/$(or $(RESOURCE),*)/; do \
+		test -f "$$d/tfplan" || continue; \
+		rt=$$(basename $$d); t=$$(basename $$(dirname $$d)); \
+		echo "== apply $$t/$$rt"; \
+		$(TF) -chdir=$$d init -input=false $(if $(BACKEND_CONFIG),-reconfigure -backend-config="$(abspath $(BACKEND_CONFIG))" -backend-config="key=$$t/$$rt.tfstate") > /dev/null; \
+		$(TF) -chdir=$$d apply -input=false tfplan; \
+		rm -f "$$d/tfplan"; \
+		applied=$$((applied+1)); \
+	done; \
+	test $$applied -gt 0 || { echo "error: no saved plans found — run 'make plan SAVE=1 ...' (or plan-changed SAVE=1) first; apply's scope IS the saved plans"; exit 1; }
 
 drift: ## Fetch + transform + report config diff for a tenant (TENANT=<label>; real creds via env)
 	@test -n "$(TENANT)" || { echo "usage: make drift TENANT=<label>"; exit 2; }

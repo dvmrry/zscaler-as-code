@@ -10,6 +10,11 @@ crash.*.log
 # Remote-state settings — work-specific values, never committed here
 backend.conf
 
+# Saved plan artifacts (make plan SAVE=1) — pipeline artifacts, may
+# contain sensitive values; never committed
+envs/**/tfplan
+.plan-changed.tmp
+
 # Python
 __pycache__/
 *.py[cod]
