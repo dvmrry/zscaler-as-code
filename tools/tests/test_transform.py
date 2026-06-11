@@ -70,13 +70,88 @@ class FilterTest(unittest.TestCase):
             ],
         )
 
-    def test_single_block_dict_passthrough(self):
+    def test_list_block_passthrough(self):
+        # url_keyword_counts is nesting_mode=list per schema; a list value
+        # is kept as a list of filtered dicts.
         rs = load_resource("zia_url_categories")
         item = {"url_keyword_counts": [{"total_url_count": 5}]}
         drops = []
         out = filter_item(item, rs["block"], "", drops)
         self.assertEqual(out, {"url_keyword_counts": [{"total_url_count": 5}]})
         self.assertEqual(drops, [])
+
+    def test_single_block_dict_stays_object(self):
+        # system_proxy_data is nesting_mode=single, nested inside the
+        # list-mode forwarding_profile_actions. Its dict value must stay a
+        # bare object end-to-end (the generator wraps [x] at plan time), so
+        # filter_item must NOT wrap it in a one-element list.
+        rs = load_resource("zcc_forwarding_profile")
+        item = {
+            "forwarding_profile_actions": [
+                {
+                    "action_type": 1,
+                    "system_proxy_data": {
+                        "enable_proxy_server": True,
+                        "proxy_server_address": "10.0.0.1",
+                        "internal_noise": "drop me",
+                    },
+                }
+            ]
+        }
+        drops = []
+        out = filter_item(item, rs["block"], "", drops)
+        self.assertEqual(
+            out,
+            {
+                "forwarding_profile_actions": [
+                    {
+                        "action_type": 1,
+                        "system_proxy_data": {
+                            "enable_proxy_server": True,
+                            "proxy_server_address": "10.0.0.1",
+                        },
+                    }
+                ]
+            },
+        )
+        # computed-only inner key dropped under a single-mode (no [] suffix) path
+        self.assertEqual(
+            drops,
+            ["forwarding_profile_actions[].system_proxy_data.internal_noise"],
+        )
+
+    def test_single_block_legacy_list_unwrapped(self):
+        # A one-element list for a single-mode block (odd/legacy API shape)
+        # is unwrapped to the bare object.
+        rs = load_resource("zcc_forwarding_profile")
+        item = {
+            "forwarding_profile_actions": [
+                {"system_proxy_data": [{"enable_proxy_server": True}]}
+            ]
+        }
+        drops = []
+        out = filter_item(item, rs["block"], "", drops)
+        self.assertEqual(
+            out["forwarding_profile_actions"][0]["system_proxy_data"],
+            {"enable_proxy_server": True},
+        )
+        self.assertEqual(drops, [])
+
+    def test_single_block_multi_element_list_dropped(self):
+        # More than one element for a single-mode block is ambiguous —
+        # report-drop rather than silently pick one.
+        rs = load_resource("zcc_forwarding_profile")
+        item = {
+            "forwarding_profile_actions": [
+                {"system_proxy_data": [{"enable_pac": True}, {"enable_pac": False}]}
+            ]
+        }
+        drops = []
+        out = filter_item(item, rs["block"], "", drops)
+        self.assertNotIn("system_proxy_data", out["forwarding_profile_actions"][0])
+        self.assertIn(
+            "forwarding_profile_actions[].system_proxy_data", drops
+        )
 
 
 class CoerceTest(unittest.TestCase):
@@ -131,6 +206,31 @@ class CoerceTest(unittest.TestCase):
         item = {"applications": [{"id": 123}]}
         out = coerce_item(item, rs["block"])
         self.assertEqual(out["applications"], [{"id": "123"}])
+
+    def test_single_block_dict_coerces_in_place(self):
+        # A single-mode block's value is a dict; coercion must recurse INTO
+        # it (not pass it through), so int flags like the ZCC tri-state
+        # coerce to bool inside the nested object.
+        rs = load_resource("zcc_forwarding_profile")
+        item = {
+            "forwarding_profile_actions": [
+                {
+                    "action_type": 1,
+                    "system_proxy_data": {
+                        "enable_proxy_server": 2,  # tri-state int -> True
+                        "enable_pac": 0,           # -> False
+                        "proxy_server_port": 8080,  # schema string -> "8080"
+                    },
+                }
+            ]
+        }
+        out = coerce_item(item, rs["block"])
+        spd = out["forwarding_profile_actions"][0]["system_proxy_data"]
+        self.assertIsInstance(spd, dict)
+        self.assertIs(spd["enable_proxy_server"], True)
+        self.assertIs(spd["enable_pac"], False)
+        # proxy_server_port is schema type string; recursion coerces 8080 -> "8080"
+        self.assertEqual(spd["proxy_server_port"], "8080")
 
     def test_scalar_upgraded_to_collection(self):
         fake_block = {

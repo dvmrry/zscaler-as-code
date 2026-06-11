@@ -42,8 +42,10 @@ def filter_item(item, block, path, drops):
     """Keep only schema-input attrs and blocks, recursively.
 
     Computed-only and unknown keys are dropped and their paths recorded in
-    drops (the provider-coverage-gap report). Block values may be a list
-    of dicts (list/set nesting) or a single dict (single nesting).
+    drops (the provider-coverage-gap report). Block handling branches on
+    nesting_mode: single-mode blocks carry a single dict (kept as a bare
+    object, NOT wrapped in a list — the generator wraps [x] at plan time);
+    list/set-mode blocks carry a list of dicts.
     """
     cls = classify_attributes(block)
     keep_attrs = set(cls["required"] + cls["optional"])
@@ -56,17 +58,33 @@ def filter_item(item, block, path, drops):
             out[key] = value
         elif key in block_types:
             inner_block = block_types[key]["block"]
-            inner_path = child_path + "[]"
-            if isinstance(value, list):
-                out[key] = [
-                    filter_item(v, inner_block, inner_path, drops)
-                    for v in value
-                    if isinstance(v, dict)
-                ]
-            elif isinstance(value, dict):
-                out[key] = [filter_item(value, inner_block, inner_path, drops)]
+            if block_types[key]["nesting_mode"] == "single":
+                # single-mode: value is an object. Recurse the dict in
+                # place (no [] path suffix, no list wrap). Tolerate a
+                # one-element list from odd/legacy API shapes by unwrapping.
+                single = value
+                if isinstance(single, list):
+                    if len(single) == 1 and isinstance(single[0], dict):
+                        single = single[0]
+                    else:
+                        drops.append(child_path)
+                        continue
+                if isinstance(single, dict):
+                    out[key] = filter_item(single, inner_block, child_path, drops)
+                else:
+                    drops.append(child_path)
             else:
-                drops.append(child_path)
+                inner_path = child_path + "[]"
+                if isinstance(value, list):
+                    out[key] = [
+                        filter_item(v, inner_block, inner_path, drops)
+                        for v in value
+                        if isinstance(v, dict)
+                    ]
+                elif isinstance(value, dict):
+                    out[key] = [filter_item(value, inner_block, inner_path, drops)]
+                else:
+                    drops.append(child_path)
         else:
             drops.append(child_path)
     return out
@@ -117,8 +135,9 @@ def coerce_item(item, block):
 
     When the schema expects a primitive (or collection of primitives) and
     the API handed us reference objects, unwrap to ids before coercing.
-    Block values recurse with their inner schema.
-    Expects block values already normalised to lists by filter_item.
+    Block values recurse with their inner schema, branching on nesting_mode:
+    single-mode blocks are a single dict (recurse into it directly);
+    list/set-mode blocks are lists of dicts (filter_item ran first).
     """
     attrs = block.get("attributes") or {}
     block_types = block.get("block_types") or {}
@@ -127,7 +146,10 @@ def coerce_item(item, block):
         value = item[key]
         if key in block_types:
             inner = block_types[key]["block"]
-            out[key] = [coerce_item(v, inner) for v in value] if isinstance(value, list) else value
+            if block_types[key]["nesting_mode"] == "single":
+                out[key] = coerce_item(value, inner) if isinstance(value, dict) else value
+            else:
+                out[key] = [coerce_item(v, inner) for v in value] if isinstance(value, list) else value
             continue
         enc = attrs.get(key, {}).get("type")
         if isinstance(enc, str):
@@ -218,8 +240,9 @@ def derive_key(item, override):
 def transform_items(raw_items, resource_type, override):
     """Full per-item pipeline. Returns (items_map, originals_map, drops).
 
-    Stage order matters: filter_item runs before coerce_item because
-    coerce_item expects block values already normalised to lists.
+    Stage order matters: filter_item runs first so coerce_item sees block
+    values already shaped by nesting_mode (single -> dict, list/set -> list
+    of dicts).
     """
     rs = load_resource(resource_type)
     block = rs["block"]

@@ -165,6 +165,116 @@ class CheckItemTest(unittest.TestCase):
         self.assertEqual(check_item(item, self.FAKE_BLOCK), [])
 
 
+class CheckItemBlockNestingTest(unittest.TestCase):
+    """check_item branches on nesting_mode: single -> dict, list/set -> list."""
+
+    SINGLE_BLOCK = {
+        "attributes": {"name": {"type": "string", "required": True}},
+        "block_types": {
+            "timeouts": {
+                "nesting_mode": "single",
+                "block": {
+                    "attributes": {
+                        "create": {"type": "string", "optional": True},
+                        "update": {"type": "string", "optional": True},
+                    },
+                    "block_types": {},
+                },
+            }
+        },
+    }
+
+    LIST_BLOCK = {
+        "attributes": {"name": {"type": "string", "required": True}},
+        "block_types": {
+            "rules": {
+                "nesting_mode": "list",
+                "block": {
+                    "attributes": {"id": {"type": "string", "optional": True}},
+                    "block_types": {},
+                },
+            }
+        },
+    }
+
+    def test_single_block_dict_ok(self):
+        item = {"name": "x", "timeouts": {"create": "10m", "update": "5m"}}
+        self.assertEqual(check_item(item, self.SINGLE_BLOCK), [])
+
+    def test_single_block_list_flagged(self):
+        # the broken (pre-fix) tfvars shape: single-mode value wrapped in a list
+        item = {"name": "x", "timeouts": [{"create": "10m"}]}
+        result = check_item(item, self.SINGLE_BLOCK)
+        self.assertEqual(len(result), 1)
+        _, field_path, expected, got = result[0]
+        self.assertEqual(field_path, "timeouts")
+        self.assertIn("single block", expected)
+        self.assertIn("list", got)
+
+    def test_single_block_inner_mismatch_flagged(self):
+        # recurse into the dict; inner type errors surface with a dotted path
+        item = {"name": "x", "timeouts": {"create": 10}}  # string expected
+        result = check_item(item, self.SINGLE_BLOCK)
+        self.assertEqual(len(result), 1)
+        _, field_path, expected, got = result[0]
+        self.assertEqual(field_path, "timeouts.create")
+        self.assertEqual(expected, "string")
+        self.assertIn("int", got)
+
+    def test_single_block_none_ok(self):
+        item = {"name": "x", "timeouts": None}
+        self.assertEqual(check_item(item, self.SINGLE_BLOCK), [])
+
+    def test_list_block_list_ok(self):
+        item = {"name": "x", "rules": [{"id": "a"}, {"id": "b"}]}
+        self.assertEqual(check_item(item, self.LIST_BLOCK), [])
+
+    def test_list_block_dict_flagged(self):
+        # a bare dict for a list-mode block is the mismatch in that direction
+        item = {"name": "x", "rules": {"id": "a"}}
+        result = check_item(item, self.LIST_BLOCK)
+        self.assertEqual(len(result), 1)
+        _, field_path, expected, got = result[0]
+        self.assertEqual(field_path, "rules")
+        self.assertIn("list of blocks", expected)
+        self.assertIn("dict", got)
+
+    def test_single_block_real_schema_dict_ok(self):
+        # zcc_forwarding_profile: list-mode action carrying a single-mode
+        # system_proxy_data object must type-check clean.
+        from tools.tfschema import load_resource
+        rs = load_resource("zcc_forwarding_profile")
+        item = {
+            "name": "P",
+            "forwarding_profile_actions": [
+                {
+                    "action_type": 1,
+                    "system_proxy_data": {"enable_proxy_server": True},
+                }
+            ],
+        }
+        self.assertEqual(check_item(item, rs["block"]), [])
+
+    def test_single_block_real_schema_list_flagged(self):
+        # the exact field bug: system_proxy_data wrapped in a list
+        from tools.tfschema import load_resource
+        rs = load_resource("zcc_forwarding_profile")
+        item = {
+            "name": "P",
+            "forwarding_profile_actions": [
+                {
+                    "action_type": 1,
+                    "system_proxy_data": [{"enable_proxy_server": True}],
+                }
+            ],
+        }
+        result = check_item(item, rs["block"])
+        flagged = [r[1] for r in result]
+        self.assertIn(
+            "forwarding_profile_actions[0].system_proxy_data", flagged
+        )
+
+
 class CheckItemWithRealSchemaTest(unittest.TestCase):
     """Typecheck on a RAW-ish dict with int flags for zcc_failopen_policy.
 
@@ -244,6 +354,11 @@ class SuggestTest(unittest.TestCase):
     def test_unknown_key(self):
         msg = suggest("not an input", "str", "stale")
         self.assertIn("regenerate", msg.lower())
+
+    def test_single_block_got_list(self):
+        msg = suggest("object (single block)", "list", "system_proxy_data")
+        self.assertIn("transform", msg.lower())
+        self.assertIn("single", msg.lower())
 
     def test_fallback(self):
         msg = suggest("string", "dict", "weird")

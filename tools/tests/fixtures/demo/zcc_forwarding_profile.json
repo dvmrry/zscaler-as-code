@@ -18,7 +18,17 @@
         "dropIpv6Traffic": 1,
         "dtlsTimeout": 60,
         "networkType": 1,
-        "systemProxy": 2
+        "systemProxy": 2,
+        "systemProxyData": {
+          "bypassProxyForPrivateIp": 1,
+          "enableAutoDetect": 0,
+          "enablePac": 0,
+          "enableProxyServer": 1,
+          "performGpUpdate": 0,
+          "proxyAction": 1,
+          "proxyServerAddress": "proxy.example.com",
+          "proxyServerPort": "8080"
+        }
       }
     ],
     "hostname": "",
