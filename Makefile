@@ -1,7 +1,7 @@
 PYTHON ?= python3
 TF     ?= terraform
 
-.PHONY: help env test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan drift check-envs validate-config demo check-demo
+.PHONY: help env test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan drift check-envs validate-config demo check-demo typecheck
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
@@ -162,6 +162,10 @@ check-demo: ## Fail if the committed demo tenant drifts from the pipeline output
 		echo ""; echo "demo tenant drifted from pipeline output over the demo dataset:"; \
 		git status --porcelain -- config/demo imports/demo; \
 		echo "Run 'make demo' and commit (or fix the regression it reveals)."; exit 1; }
+
+typecheck: ## Type-check a tenant's config against the provider schemas (stdlib; TENANT=<label>)
+	@test -n "$(TENANT)" || { echo "usage: make typecheck TENANT=<label>"; exit 2; }
+	$(PYTHON) -m tools.typecheck "$(TENANT)"
 
 validate-config: ## Validate config/ against generated JSON Schemas (dev-only; jsonschema via python or uv)
 	@if $(PYTHON) -c "import jsonschema" 2>/dev/null; then \

@@ -83,7 +83,23 @@ Produces:
 A drop report is printed listing fields the provider cannot manage. Review
 it before continuing.
 
-### 3. Acknowledge drops (one-time, per field)
+### 3. Type-check the generated config
+
+```
+make typecheck TENANT=<label>
+```
+
+Reports every field whose value does not fit the provider schema, with a
+suggested fix on each line. Each suggestion is self-contained — follow it
+without asking for clarification. Only lines whose suggestion says "relay the
+field" require a human decision; all others are mechanical fixes (re-run
+`make transform`, or add the field to `split_csv` in
+`tools/overrides/<type>.json`).
+
+Exit 0 means all config files type-check clean; exit 1 means mismatches were
+found. Fix and re-run `make transform` until this step exits 0.
+
+### 4. Acknowledge drops (one-time, per field)
 
 For each reported field, add it to `acknowledged_drops` in
 `tools/overrides/<type>.json`:
@@ -98,7 +114,7 @@ Create the file if it does not exist. Once acknowledged, the report stays
 quiet for that field; only new drops surface on future runs. Re-run
 `make transform` to confirm the report is clean.
 
-### 4. Review the generated config
+### 5. Review the generated config
 
 ```
 git diff config/<label>/
@@ -108,7 +124,7 @@ This is the tenant as typed config. If anything looks wrong, fix the
 transform or an override map. Never hand-edit `config/<label>/` directly —
 it is overwritten on the next `make transform`.
 
-### 5. Generate env roots
+### 6. Generate env roots
 
 ```
 make gen-env TENANT=<label>
@@ -116,7 +132,7 @@ make gen-env TENANT=<label>
 
 Creates `envs/<label>/<type>/` root modules. Safe to re-run.
 
-### 6. Plan each resource type (expect N imports, 0 changes)
+### 7. Plan each resource type (expect N imports, 0 changes)
 
 For each resource type in `imports/<label>/`:
 
@@ -134,7 +150,7 @@ not apply until you understand the difference. Common fixes: add a
 `tools/overrides/<type>.json`, then re-run `make transform` and re-check.
 Never hand-edit `config/<label>/` to force the plan clean.
 
-### 7. Apply and remove import blocks
+### 8. Apply and remove import blocks
 
 Apply using your Terraform invocation or CI pipeline. After state is
 populated, remove the import blocks file:
@@ -145,7 +161,7 @@ rm envs/<label>/<type>/<type>_imports.tf
 
 Import blocks error once resources are already managed. Removal is required.
 
-### 8. Commit config
+### 9. Commit config
 
 ```
 git add config/<label>/ imports/<label>/
