@@ -1,8 +1,16 @@
 # zscaler-as-code
 
-Schema-driven Terraform boilerplate for managing Zscaler (ZIA + ZPA + ZCC) where
-all configuration lives in typed JSON (`.auto.tfvars.json`) and module code
-is generated from the provider schema rather than hand-curated.
+Continuous Terraform reconciliation for Zscaler (ZIA + ZPA + ZCC):
+module code is generated from the provider schemas, all configuration
+lives in typed JSON (`.auto.tfvars.json`), existing tenants are adopted
+via import blocks, and scheduled drift detection opens backfill PRs with
+item-level diffs and audit-trail attribution.
+
+**How this differs from [zscaler-terraformer](https://github.com/zscaler/zscaler-terraformer):**
+the official tool is a one-shot exporter — it snapshots a tenant into
+static hand-maintained HCL. This is a living pipeline: config stays
+typed data, modules regenerate from schema dumps, and the tenant and
+the repo are continuously reconciled through gated PRs.
 
 This is a template: it ships with fictional sample data and contains no
 credentials or tenant-specific values. Bring your own tfvars in a private
