@@ -46,8 +46,10 @@ steps:
 # Delivery pipeline (separate yaml in practice): plan -> approval -> apply.
 # Scope is derived from the merge diff (make plan-changed) and apply is
 # bounded to the saved-plan artifacts — there is no apply-all to misfire.
-# Needs: variable group with ZSCALER_* creds, a service connection (or
-# ARM_* vars) for the azurerm state backend, backend.conf in the repo,
+# Needs: variable group with ZSCALER_* creds, state-backend auth via
+# ARM_SAS_TOKEN secret variable (SAS mode) or a service connection /
+# ARM_* vars (Entra ID mode) — see backend.conf.example — plus
+# backend.conf in the repo,
 # and an ADO environment with approvals + exclusive lock for the apply.
 # Set fetchDepth: 0 on checkout — plan-changed diffs against the merge-base.
 #
