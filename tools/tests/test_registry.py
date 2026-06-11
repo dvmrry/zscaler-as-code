@@ -9,6 +9,10 @@ class RegistryTest(unittest.TestCase):
         self.assertEqual(
             generated_types(),
             [
+                "zcc_failopen_policy",
+                "zcc_forwarding_profile",
+                "zcc_trusted_network",
+                "zcc_web_privacy",
                 "zia_cloud_app_control_rule",
                 "zia_location_management",
                 "zia_rule_labels",
@@ -36,13 +40,13 @@ class RegistryTest(unittest.TestCase):
 
     def test_every_entry_has_product(self):
         for rt, e in load_registry().items():
-            self.assertIn(e["product"], ("zia", "zpa"), rt)
+            self.assertIn(e["product"], ("zcc", "zia", "zpa"), rt)
 
     def test_generators_and_fetch_consume_registry(self):
         import tools.fetch as fetch
         for rt in generated_types():
             self.assertIn(rt, load_registry())
-        self.assertEqual(sorted(fetch.products_in_manifest()), ["zia", "zpa"])
+        self.assertEqual(sorted(fetch.products_in_manifest()), ["zcc", "zia", "zpa"])
 
     def test_reload_registry(self):
         reg = reload_registry()

@@ -47,6 +47,13 @@ certificate — attempts to call it fail TLS verification on any network.
     ZPA_CLIENT_SECRET
     ZPA_CUSTOMER_ID
 
+    ZCC_CLIENT_ID            ZCC API key (posted as apiKey)
+    ZCC_CLIENT_SECRET        ZCC secret key (posted as secretKey)
+    ZCC_CLOUD                ZCC cloud suffix (e.g. zscalertwo); resolves
+                             the legacy host api-mobile.<cloud>.net
+
+ZCC only supports legacy auth; it does not use the OneAPI gateway.
+
 Credentials are read from the environment at runtime only. They are never
 written to disk, never logged, and never enter `pulls/` output. Real pulls
 under `pulls/<tenant>/` are gitignored and must never be committed.

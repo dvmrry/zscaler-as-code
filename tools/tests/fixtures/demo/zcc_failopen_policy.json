@@ -1,0 +1,16 @@
+[
+  {
+    "id": "policy-001",
+    "active": true,
+    "companyId": "company-123",
+    "enableFailOpen": true,
+    "enableCaptivePortalDetection": true,
+    "captivePortalWebSecDisableMinutes": 5,
+    "enableWebSecOnProxyUnreachable": true,
+    "enableWebSecOnTunnelFailure": true,
+    "enableStrictEnforcementPrompt": false,
+    "strictEnforcementPromptDelayMinutes": 0,
+    "strictEnforcementPromptMessage": "",
+    "tunnelFailureRetryCount": 3
+  }
+]

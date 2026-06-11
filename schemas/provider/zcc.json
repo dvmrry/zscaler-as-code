@@ -1,0 +1,5091 @@
+{
+  "data_source_schemas": {
+    "zcc_admin_roles": {
+      "block": {
+        "attributes": {
+          "admin_management": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "administrator_group": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "android_profile": {
+            "computed": true,
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "app_bypass": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "app_profile_group": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "audit_logs": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "auth_setting": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "client_connector_app_store": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "client_connector_idp": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "client_connector_notifications": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "client_connector_support": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "company_id": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "created_by": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "dashboard": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "ddil_configuration": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "dedicated_proxy_ports": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "device_groups": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "device_overview": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "device_posture": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "enrolled_devices_group": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "forwarding_profile": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "id": {
+            "description": "The unique identifier of the admin role.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "ios_profile": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "is_editable": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "linux_profile": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "mac_profile": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "machine_tunnel": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "obfuscate_data": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "partner_device_overview": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "public_api": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "role_name": {
+            "description": "The name of the admin role.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "trusted_network": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "updated_by": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "user_agent": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "windows_profile": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "zpa_partner_login": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "zscaler_deception": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "zscaler_entitlement": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          }
+        },
+        "description": "Retrieves a ZCC admin role by ID or role name.",
+        "description_kind": "plain"
+      },
+      "version": 0
+    },
+    "zcc_admin_user": {
+      "block": {
+        "attributes": {
+          "account_enabled": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "admin_management": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "administrator_group": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "android_profile": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "app_bypass": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "app_profile_group": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "audit_logs": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "auth_setting": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "client_connector_app_store": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "client_connector_idp": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "client_connector_notifications": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "client_connector_support": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "company_id": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "dashboard": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "ddil_configuration": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "dedicated_proxy_ports": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "device_groups": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "device_overview": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "device_posture": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "edit_enabled": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "enrolled_devices_group": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "forwarding_profile": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "id": {
+            "description": "The unique identifier of the admin user.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "number"
+          },
+          "ios_profile": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "is_default_admin": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "is_editable": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "linux_profile": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "mac_profile": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "machine_tunnel": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "obfuscate_data": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "partner_device_overview": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "public_api": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "role_name": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "service_type": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "trusted_network": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "updated_by": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "user_agent": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "user_name": {
+            "description": "The user name of the admin user.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "user_type": {
+            "description": "Service the admin login is provisioned under. The upstream `/getAdminUsers` API requires this query parameter as a numeric value 1-4 (`1=ZIA`, `2=ZPA`, `3=ZID`, `4=ZDX`); for convenience this attribute also accepts the case-insensitive names `ZIA`, `ZPA`, `ZID`, `ZDX`. Defaults to `ZIA` when omitted.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "windows_profile": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "zpa_partner_login": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "zscaler_deception": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "zscaler_entitlement": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          }
+        },
+        "description": "Retrieves a ZCC admin user by ID or user name.",
+        "description_kind": "plain"
+      },
+      "version": 0
+    },
+    "zcc_company_info": {
+      "block": {
+        "attributes": {
+          "activation_copy": {
+            "computed": true,
+            "description": "Email cc list for activation notifications.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "activation_recipient": {
+            "computed": true,
+            "description": "Email recipient for activation notifications.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "add_app_bypass_to_vpn_gateway": {
+            "computed": true,
+            "description": "Whether to add app bypass entries to the VPN gateway.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "auto_fill_using_login_hint": {
+            "computed": true,
+            "description": "Whether autofill uses the login hint.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "business_contact_number": {
+            "computed": true,
+            "description": "Primary business contact phone number.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "business_name": {
+            "computed": true,
+            "description": "Business display name.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "clear_mup_cache": {
+            "computed": true,
+            "description": "Whether to clear the MUP cache.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "compute_device_groups_for_zad": {
+            "computed": true,
+            "description": "Whether device groups are computed for ZAD.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "compute_device_groups_for_zdx": {
+            "computed": true,
+            "description": "Whether device groups are computed for ZDX.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "compute_device_groups_for_zia": {
+            "computed": true,
+            "description": "Whether device groups are computed for ZIA.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "compute_device_groups_for_zpa": {
+            "computed": true,
+            "description": "Whether device groups are computed for ZPA.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "configure_tunnel2_fallback_for_zia": {
+            "computed": true,
+            "description": "Whether to configure Tunnel 2.0 fallback for ZIA.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "dc_service_read_only": {
+            "computed": true,
+            "description": "Whether the DC service is read-only.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "default_auth_type": {
+            "computed": true,
+            "description": "Default authentication type.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "dest_include_exclude_char_limit": {
+            "computed": true,
+            "description": "Character limit for destination include/exclude lists.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "dest_include_exclude_char_limit_for_ipv6": {
+            "computed": true,
+            "description": "Character limit for destination include/exclude lists for IPv6.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "device_groups_count": {
+            "computed": true,
+            "description": "Number of configured device groups.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "device_posture_frequency": {
+            "computed": true,
+            "description": "Per-platform posture evaluation frequency overrides.",
+            "description_kind": "plain",
+            "nested_type": {
+              "attributes": {
+                "android_value": {
+                  "computed": true,
+                  "description": "Android evaluation interval.",
+                  "description_kind": "plain",
+                  "type": "number"
+                },
+                "default_value": {
+                  "computed": true,
+                  "description": "Default evaluation interval.",
+                  "description_kind": "plain",
+                  "type": "number"
+                },
+                "ios_value": {
+                  "computed": true,
+                  "description": "iOS evaluation interval.",
+                  "description_kind": "plain",
+                  "type": "number"
+                },
+                "linux_value": {
+                  "computed": true,
+                  "description": "Linux evaluation interval.",
+                  "description_kind": "plain",
+                  "type": "number"
+                },
+                "mac_value": {
+                  "computed": true,
+                  "description": "macOS evaluation interval.",
+                  "description_kind": "plain",
+                  "type": "number"
+                },
+                "posture_id": {
+                  "computed": true,
+                  "description": "Posture identifier.",
+                  "description_kind": "plain",
+                  "type": "number"
+                },
+                "posture_name": {
+                  "computed": true,
+                  "description": "Posture name.",
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "windows_value": {
+                  "computed": true,
+                  "description": "Windows evaluation interval.",
+                  "description_kind": "plain",
+                  "type": "number"
+                }
+              },
+              "nesting_mode": "list"
+            }
+          },
+          "disable_dns_route_exclusion": {
+            "computed": true,
+            "description": "Whether DNS route exclusion is disabled.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "disable_logging_controls": {
+            "computed": true,
+            "description": "Whether logging controls are disabled.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "disable_parallel_ipv4_and_ipv6": {
+            "computed": true,
+            "description": "Whether parallel IPv4/IPv6 resolution is disabled.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "disable_reason_visibility": {
+            "computed": true,
+            "description": "Whether the disable-reason field is visible to end users.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "disaster_recovery": {
+            "computed": true,
+            "description": "Disaster recovery setting.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "dlp_enabled": {
+            "computed": true,
+            "description": "Whether DLP is enabled.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "dlp_notification": {
+            "computed": true,
+            "description": "DLP notification setting.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "dns_cache_ttl_android": {
+            "computed": true,
+            "description": "DNS cache TTL on Android in seconds.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "dns_cache_ttl_ios": {
+            "computed": true,
+            "description": "DNS cache TTL on iOS in seconds.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "dns_cache_ttl_linux": {
+            "computed": true,
+            "description": "DNS cache TTL on Linux in seconds.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "dns_cache_ttl_mac": {
+            "computed": true,
+            "description": "DNS cache TTL on macOS in seconds.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "dns_cache_ttl_windows": {
+            "computed": true,
+            "description": "DNS cache TTL on Windows in seconds.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "dns_priority_ordering_for_trusted_dns_criteria": {
+            "computed": true,
+            "description": "DNS priority ordering for trusted DNS criteria evaluation.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "enable_anti_tampering": {
+            "computed": true,
+            "description": "Whether anti-tampering is enabled.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "enable_autofill_username": {
+            "computed": true,
+            "description": "Whether autofill username is enabled.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "enable_browser_auth": {
+            "computed": true,
+            "description": "Whether browser-based authentication is enabled.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "enable_custom_proxy_ports": {
+            "computed": true,
+            "description": "Whether custom proxy ports are enabled.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "enable_deception_for_all": {
+            "computed": true,
+            "description": "Whether deception is enabled for all users.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "enable_dtls_for_zpa": {
+            "computed": true,
+            "description": "Whether DTLS is enabled for ZPA.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "enable_flow_logger": {
+            "computed": true,
+            "description": "Whether flow logging is enabled.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "enable_global_zcc_telemetry": {
+            "computed": true,
+            "description": "Whether global ZCC telemetry is enabled.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "enable_install_webview2": {
+            "computed": true,
+            "description": "Whether WebView2 installation is enabled.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "enable_minimum_device_cleanup_as_one": {
+            "computed": true,
+            "description": "Whether to enforce a one-day minimum device cleanup window.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "enable_one_id_admin": {
+            "computed": true,
+            "description": "Whether OneID is enabled for admins.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "enable_one_id_user": {
+            "computed": true,
+            "description": "Whether OneID is enabled for users.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "enable_port_based_zpa_filter": {
+            "computed": true,
+            "description": "Whether to enable port-based ZPA filtering.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "enable_posture_based_profile": {
+            "computed": true,
+            "description": "Whether posture-based profiles are enabled.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "enable_public_api": {
+            "computed": true,
+            "description": "Whether the public API is enabled.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "enable_react_ui": {
+            "computed": true,
+            "description": "Whether the React UI is enabled.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "enable_rectify_utils": {
+            "computed": true,
+            "description": "Whether rectify utilities are enabled.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "enable_set_proxy_on_vpn_adapters": {
+            "computed": true,
+            "description": "Whether to set proxy on VPN adapters.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "enable_tunnel_zapp_traffic_toggle": {
+            "computed": true,
+            "description": "Whether tunneling of ZApp traffic toggle is enabled.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "enable_udp_transport_selection": {
+            "computed": true,
+            "description": "Whether UDP transport selection is enabled.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "enable_zia_user_department_sync": {
+            "computed": true,
+            "description": "Whether ZIA user/department sync is enabled.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "enable_zpa_auth_user_name": {
+            "computed": true,
+            "description": "Whether to use the ZPA auth user name.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "enable_zscaler_firewall": {
+            "computed": true,
+            "description": "Whether the Zscaler Firewall is enabled.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "execute_gpo_update": {
+            "computed": true,
+            "description": "Whether to execute Group Policy update.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "fetch_logs_for_admins_enabled": {
+            "computed": true,
+            "description": "Whether admins can fetch logs.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "flow_logging_buffer_limit": {
+            "computed": true,
+            "description": "Flow logging buffer size limit.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "flow_logging_time_interval": {
+            "computed": true,
+            "description": "Flow logging time interval in seconds.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "follow_routing_table": {
+            "computed": true,
+            "description": "Whether to follow the system routing table.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "id": {
+            "computed": true,
+            "description": "Synthetic identifier for the data source (mirrors org_id when present).",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "intercept_zia_traffic_all_adapters": {
+            "computed": true,
+            "description": "Whether to intercept ZIA traffic across all adapters.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "ipv6_support_for_tunnel2": {
+            "computed": true,
+            "description": "IPv6 support flag for Tunnel 2.0.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "launch_react_ui_by_default": {
+            "computed": true,
+            "description": "Whether the React UI launches by default.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "linux_visibility": {
+            "computed": true,
+            "description": "Linux visibility setting.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "ma_cloud_name": {
+            "computed": true,
+            "description": "Mobile Admin cloud name.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "machine_idp_auth": {
+            "computed": true,
+            "description": "Machine IdP authentication setting.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "machine_tunnel_posture": {
+            "computed": true,
+            "description": "Machine tunnel posture setting.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "master_customer_id": {
+            "computed": true,
+            "description": "Master customer identifier.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "mdm_status": {
+            "computed": true,
+            "description": "MDM status flag.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "name": {
+            "computed": true,
+            "description": "Internal name of the organization.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "org_id": {
+            "computed": true,
+            "description": "Organization identifier returned by the API.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "persistent_zscaler_firewall": {
+            "computed": true,
+            "description": "Whether the Zscaler Firewall is persistent.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "policy_activation_required": {
+            "computed": true,
+            "description": "Whether policy activation is required.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "posture_based_service": {
+            "computed": true,
+            "description": "Whether posture-based service is enabled.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "proxy_enabled": {
+            "computed": true,
+            "description": "Whether proxy mode is enabled.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "proxy_port": {
+            "computed": true,
+            "description": "Local proxy listening port.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "registry_path_for_pac": {
+            "computed": true,
+            "description": "Windows registry path used to source PAC URLs.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "restrict_admin_access": {
+            "computed": true,
+            "description": "Whether admin access is restricted.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "secure_agent_advanced": {
+            "computed": true,
+            "description": "Secure agent advanced flag.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "secure_agent_basic": {
+            "computed": true,
+            "description": "Secure agent basic flag.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "send_64bit_build": {
+            "computed": true,
+            "description": "Whether to send the 64-bit build.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "send_email": {
+            "computed": true,
+            "description": "Whether activation emails are sent.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "show_vpn_tun_notification": {
+            "computed": true,
+            "description": "Whether to show VPN tunnel notifications.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "support_admin_email": {
+            "computed": true,
+            "description": "Support administrator email address.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "support_enabled": {
+            "computed": true,
+            "description": "Whether support access is enabled.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "support_ticket_enabled": {
+            "computed": true,
+            "description": "Whether support ticket creation is enabled.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "swagger_link": {
+            "computed": true,
+            "description": "Swagger documentation link.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "telemetry_default": {
+            "computed": true,
+            "description": "Default telemetry setting.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "tunnel_protocol_type": {
+            "computed": true,
+            "description": "Tunnel protocol type.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "upm_enabled": {
+            "computed": true,
+            "description": "Whether UPM is enabled.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "use_add_ifscope_route": {
+            "computed": true,
+            "description": "Whether to use 'add ifscope' route on macOS.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "use_clear_arp_cache": {
+            "computed": true,
+            "description": "Whether to clear the ARP cache on network changes.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "use_default_adapter_for_dns": {
+            "computed": true,
+            "description": "Whether to use the default adapter for DNS.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "use_dns_priority_ordering": {
+            "computed": true,
+            "description": "Whether to use DNS priority ordering.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "use_pollset_for_socket_reactor": {
+            "computed": true,
+            "description": "Whether to use pollset for the socket reactor.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "use_tunnel2_sme_for_tunnel1": {
+            "computed": true,
+            "description": "Whether to use Tunnel 2.0 SME for Tunnel 1.0.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "use_v8_js_engine": {
+            "computed": true,
+            "description": "Whether the V8 JS engine is enabled for PAC evaluation.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "version": {
+            "computed": true,
+            "description": "Configuration version.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "vpn_bypass_refresh_interval": {
+            "computed": true,
+            "description": "VPN bypass refresh interval in seconds.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "vpn_gateway_char_limit": {
+            "computed": true,
+            "description": "Maximum length of the VPN gateway field.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "web_app_config": {
+            "computed": true,
+            "description": "Web/UI feature visibility configuration. All values are returned by the API as strings (typically \"0\"/\"1\" or feature codes).",
+            "description_kind": "plain",
+            "nested_type": {
+              "attributes": {
+                "activate_policy": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "add_zdx_service_entitlement": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "admin_management_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "all_inbound_traffic_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "allow_webview2_ignore_client_cert_errors": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "allow_webview2_to_follow_sp_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "anti_tampering_otp_support_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "anti_tampering_status_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "antivirus_posture_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "app_notification_config_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "app_profile_fail_open_policy_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "application_bypass_info": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "auto_fill_using_login_hint_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "automatic_capture_duration": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "azure_ad_posture_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "block_unreachable_domains_traffic_flag": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "browser_auth_flag_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "cache_system_proxy": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "captive_portal_detection_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "cli_password_expiry_minutes": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "client_certificate_template_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "collect_zdx_location_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "crl_check_visibility_flag": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "crowd_strike_zta_os_score_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "crowd_strike_zta_score_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "crowd_strike_zta_sensor_config_score_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "custom_based_application_bypass_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "custom_mtu_for_zpa_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "custom_proxy_ports_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "data_protection_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "ddil_config_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "dedicated_proxy_ports_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "default_protocol_for_zpa": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "delete_dhcp_option_121_routes_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "device_cleanup": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "device_group_in_profile_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "device_group_multiple_postures_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "device_group_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "device_posture_frequency_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "device_posture_os_version_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "device_trust_level_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "disable_reason_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "disaster_recovery_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "dns_server_route_exclusion_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "domain_inclusion_exclusion_for_dns_request_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "domain_profile_detection_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "drop_ipv6_traffic_in_ipv6_network_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "drop_ipv6_traffic_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "drop_non_zscaler_packets_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "drop_quic_traffic_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "dynamic_zpa_service_edge_assignmentt_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "enable_64bit_feature": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "enable_anti_tampering_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "enable_application_based_bypass_for_mac_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "enable_auto_log_snippet_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "enable_cli_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "enable_fips_mode": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "enable_ipv6_resolution_for_zscaler_domains_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "enable_one_id_admin_migration_changes": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "enable_one_id_phase_2_changes": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "enable_partner_config_in_primary_policy": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "enable_posture_failure_dashboard": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "enable_postures_for_partner": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "enable_separate_otp_for_device": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "enable_serial_number_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "enable_set_proxy_on_vpn_adapters_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "enable_verbose_log": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "enable_zcc_fail_close_settings_for_se_mode": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "enable_zcc_password_settings": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "enable_zcc_slow_rollout_by_default": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "enforce_split_dns_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "evaluate_trusted_network_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "exit_password_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "export_logs_for_non_admin_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "external_device_id_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "fallback_to_gateway_domain": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "fetch_log_configuration_option_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "flow_logger_direct_type_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "flow_logger_intranet_traffic_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "flow_logger_loopback_type_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "flow_logger_vpn_tunnel_type_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "flow_logger_vpn_type_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "flow_logger_zcc_blocked_traffic_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "flow_logger_zpa_type_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "follow_routing_table_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "force_location_refresh_sccm": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "force_zcc_revert_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "force_zpa_auth_expire_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "grant_access_to_zscaler_log_folder_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "help_banner_data_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "hide_audit_logs": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "hide_dtls_support_settings": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "hide_non_fed_settings": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "inactive_device_cleanup": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "install_activity_based_monitoring_driver_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "install_webview2_flag_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "install_windows_firewall_inbound_rule": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "ios_ipv6_mode_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "ipv6_support_for_tunnel2": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "latency_based_zen_enablement_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "lbb_threshold_rank_to_percent_mapping": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "lbz_threshold_rank_to_percent_mapping": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "linux_rpm_build_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "mac_cache_system_proxy_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "machine_token": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "machine_tunnel": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "ms_defender_posture_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "notification_for_zpa_reauth_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "override_at_cmd_by_policy_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "override_t2_protocol_setting": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "ownership_variable_posture": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "path_mtu_discovery": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "perform_crl_check_server_posture_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "posture_crowd_strike_zta_score_visibility_for_linux": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "posture_disc_encryption_visibility_for_linux": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "posture_jamf_detection_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "posture_jamf_device_risk_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "posture_ms_defender_visibility_for_linux": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "posture_os_version_visibility_for_linux": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "prioritize_dns_exclusions_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "prioritize_ipv4_over_ipv6": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "process_based_application_bypass_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "process_postures": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "purge_kerberos_preferred_dc_cache_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "redirect_web_traffic_to_zcc_listening_proxy_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "remote_fetch_logs": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "remove_exempted_containers_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "remove_zscaler_ssl_cert_url": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "resize_window_to_fit_to_page_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "restrict_remote_packet_capture_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "retry_after_in_seconds": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "sccm_config_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "send_default_policy_for_invalid_policy_token": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "server_cert_posture_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "show_m365_services_in_app_bypasses": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "show_registry_option_in_enforce_and_none": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "skip_trusted_criteria_match_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "slow_rollout_zcc": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "source_port_based_bypasses_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "splash_screen_url": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "splash_screen_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "split_vpn_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "sso_using_windows_primary_account": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "strict_enforcement_notification_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "strict_enforcement_status_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "support_multiple_pwl_postures": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "supported_zcc_version_chart_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "sync_time_hours": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "system_proxy_on_any_network_change_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "t2_fallback_block_all_traffic_and_tls_fallback": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "truncate_large_udp_dns_response_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "trusted_egress_ips_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "trusted_network": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "trusted_network_range_criteria_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "tunnel_two_for_android_devices": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "tunnel_two_for_ios_devices": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "uninstall_password_for_profile_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "update_dns_search_order": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "use_custom_dns": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "use_default_adapter_for_dns_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "use_v8_js_engine_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "use_wsa_poll_for_zpa": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "use_zcdn": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "use_zscaler_notification_framework": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "use_ztunnel_2_0_for_proxied_web_traffic_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "vpn_adapters_configuration_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "vpn_services_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "windows_ap_captive_portal_detection_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "windows_ap_enable_fail_open_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "zad_disable_password_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "zcc_revert_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "zcc_synthetic_ip_range_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "zcc_tunnel_version_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "zcc_user_type_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "zdx_disable_password_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "zdx_rollout_control_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "zia_device_posture_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "zpa_advance_reauth_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "zpa_auth_exp_on_win_logon_session": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "zpa_auth_exp_on_win_session_lock_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "zpa_auth_username": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "zpa_auto_reauth_timeout_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "zpa_disable_password_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "zpa_only_device_cleanup_visibility": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "zpa_reauth": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                }
+              },
+              "nesting_mode": "single"
+            }
+          },
+          "win_zdx_lite_enabled": {
+            "computed": true,
+            "description": "Whether Windows ZDX Lite is enabled.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "zad_enabled": {
+            "computed": true,
+            "description": "Whether Zscaler Active Defense is enabled.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "zdx_manual_rollout": {
+            "computed": true,
+            "description": "Whether ZDX manual rollout is enabled.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "zia_cloud_name": {
+            "computed": true,
+            "description": "ZIA cloud name.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "zia_global_db_url_for_dr": {
+            "computed": true,
+            "description": "ZIA global database URL for disaster recovery.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "zpa_auto_reauth_timeout": {
+            "computed": true,
+            "description": "ZPA automatic re-authentication timeout in minutes.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "zpa_client_cert_exp_in_days": {
+            "computed": true,
+            "description": "ZPA client certificate expiration in days.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "zpa_partner_login": {
+            "computed": true,
+            "description": "Whether ZPA partner login is allowed.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "zpa_reauth_enabled": {
+            "computed": true,
+            "description": "Whether ZPA re-authentication is enabled.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "zpn_enabled": {
+            "computed": true,
+            "description": "Whether ZPA is enabled for the tenant.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "zt2_health_probe_interval": {
+            "computed": true,
+            "description": "Tunnel 2.0 health probe interval in seconds.",
+            "description_kind": "plain",
+            "type": "number"
+          }
+        },
+        "description": "Reads the full ZCC company configuration returned by the GET /zcc/papi/public/v1/getCompanyInfo endpoint. This is a singleton data source: there is exactly one company info record per tenant, so no filters are required.",
+        "description_kind": "plain"
+      },
+      "version": 0
+    },
+    "zcc_custom_ip_apps": {
+      "block": {
+        "attributes": {
+          "active": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "app_data_blob": {
+            "computed": true,
+            "description_kind": "plain",
+            "nested_type": {
+              "attributes": {
+                "fqdn": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "ipaddr": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "port": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "proto": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                }
+              },
+              "nesting_mode": "list"
+            }
+          },
+          "app_data_blob_v6": {
+            "computed": true,
+            "description_kind": "plain",
+            "nested_type": {
+              "attributes": {
+                "fqdn": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "ipaddr": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "port": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "proto": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                }
+              },
+              "nesting_mode": "list"
+            }
+          },
+          "app_name": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "created_by": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "edited_by": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "edited_timestamp": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "id": {
+            "computed": true,
+            "description": "The unique identifier of the custom IP-based app.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "name": {
+            "description": "The name of the custom IP-based app (used for lookup).",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "uid": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "zapp_data_blob": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "zapp_data_blob_v6": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          }
+        },
+        "description": "Retrieves a ZCC custom IP-based app by ID or name.",
+        "description_kind": "plain"
+      },
+      "version": 0
+    },
+    "zcc_device_cleanup": {
+      "block": {
+        "attributes": {
+          "active": {
+            "computed": true,
+            "description": "Whether device cleanup is active.",
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "auto_purge_days": {
+            "computed": true,
+            "description": "Auto purge period in days.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "auto_removal_days": {
+            "computed": true,
+            "description": "Auto removal period in days.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "device_exceed_limit": {
+            "computed": true,
+            "description": "Device exceed limit threshold.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "force_remove_type": {
+            "computed": true,
+            "description": "Force remove type code (e.g. \"0\").",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "id": {
+            "computed": true,
+            "description": "Settings record identifier.",
+            "description_kind": "plain",
+            "type": "string"
+          }
+        },
+        "description": "Reads the ZCC device cleanup settings.",
+        "description_kind": "plain"
+      },
+      "version": 0
+    },
+    "zcc_devices": {
+      "block": {
+        "attributes": {
+          "devices": {
+            "computed": true,
+            "description": "List of enrolled devices.",
+            "description_kind": "plain",
+            "nested_type": {
+              "attributes": {
+                "agent_version": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "company_name": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "config_download_time": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "deregistration_timestamp": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "detail": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "download_count": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "number"
+                },
+                "hardware_fingerprint": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "keep_alive_time": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "last_seen_time": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "mac_address": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "machine_hostname": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "manufacturer": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "os_version": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "owner": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "policy_name": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "registration_state": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "registration_time": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "state": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "tunnel_version": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "type": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "udid": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "upm_version": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "user": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "vpn_state": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "zapp_arch": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                }
+              },
+              "nesting_mode": "list"
+            }
+          },
+          "id": {
+            "computed": true,
+            "description": "Placeholder identifier for the datasource.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "os_type": {
+            "description": "Filter devices by OS type (e.g., windows, mac, linux, ios, android).",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "udid": {
+            "description": "Filter for a specific device by UDID. When set, returns device details.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "username": {
+            "description": "Filter devices by username.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          }
+        },
+        "description": "Retrieves ZCC enrolled devices. Can filter by username and/or os_type.",
+        "description_kind": "plain"
+      },
+      "version": 0
+    },
+    "zcc_failopen_policy": {
+      "block": {
+        "attributes": {
+          "active": {
+            "computed": true,
+            "description": "Whether the fail open policy is active.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "captive_portal_web_sec_disable_minutes": {
+            "computed": true,
+            "description": "Number of minutes to disable web security for captive portal detection.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "company_id": {
+            "computed": true,
+            "description": "The company identifier.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "created_by": {
+            "computed": true,
+            "description": "User who created the policy.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "edited_by": {
+            "computed": true,
+            "description": "User who last edited the policy.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "enable_captive_portal_detection": {
+            "computed": true,
+            "description": "Enable captive portal detection.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "enable_fail_open": {
+            "computed": true,
+            "description": "Enable fail open behavior.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "enable_strict_enforcement_prompt": {
+            "computed": true,
+            "description": "Enable strict enforcement prompt.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "enable_web_sec_on_proxy_unreachable": {
+            "computed": true,
+            "description": "Enable web security when proxy is unreachable.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "enable_web_sec_on_tunnel_failure": {
+            "computed": true,
+            "description": "Enable web security on tunnel failure.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "id": {
+            "computed": true,
+            "description": "The unique identifier of the fail open policy.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "strict_enforcement_prompt_delay_minutes": {
+            "computed": true,
+            "description": "Delay in minutes for strict enforcement prompt.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "strict_enforcement_prompt_message": {
+            "computed": true,
+            "description": "Message displayed for strict enforcement prompt.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "tunnel_failure_retry_count": {
+            "computed": true,
+            "description": "Number of retries on tunnel failure.",
+            "description_kind": "plain",
+            "type": "number"
+          }
+        },
+        "description": "Retrieves a ZCC fail open policy by ID, or returns the company's fail open policy.",
+        "description_kind": "plain"
+      },
+      "version": 0
+    },
+    "zcc_forwarding_profile": {
+      "block": {
+        "attributes": {
+          "active": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "condition_type": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "dns_search_domains": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "dns_servers": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "enable_all_default_adapters_tn": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "enable_lwf_driver": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "enable_split_vpn_tn": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "enable_unified_tunnel": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "evaluate_trusted_network": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "hostname": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "id": {
+            "computed": true,
+            "description": "The unique identifier of the forwarding profile.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "name": {
+            "computed": true,
+            "description": "The name of the forwarding profile.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "predefined_tn_all": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "predefined_trusted_networks": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "resolved_ips_for_hostname": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "skip_trusted_criteria_match": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "trusted_dhcp_servers": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "trusted_egress_ips": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "trusted_gateways": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "trusted_network_ids": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": [
+              "list",
+              "number"
+            ]
+          },
+          "trusted_networks": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": [
+              "list",
+              "string"
+            ]
+          },
+          "trusted_subnets": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          }
+        },
+        "description": "Retrieves a ZCC forwarding profile by ID or name.",
+        "description_kind": "plain"
+      },
+      "version": 0
+    },
+    "zcc_notification_template": {
+      "block": {
+        "attributes": {
+          "created_by": {
+            "computed": true,
+            "description": "Numeric user id of the operator who created the template.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "duration_in_seconds": {
+            "computed": true,
+            "description": "Transient notification display duration in seconds.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "edited_by": {
+            "computed": true,
+            "description": "Numeric user id of the operator who last edited the template.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "enable_app_updates": {
+            "computed": true,
+            "description": "Whether app-update notifications are enabled.",
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "enable_client": {
+            "computed": true,
+            "description": "Whether generic Client Connector notifications are enabled.",
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "enable_do_not_disturb": {
+            "computed": true,
+            "description": "Whether the template honours the OS Do-Not-Disturb mode.",
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "enable_persistent": {
+            "computed": true,
+            "description": "Whether notifications stay until dismissed.",
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "enable_service_status": {
+            "computed": true,
+            "description": "Whether service-status notifications are enabled.",
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "enable_zia": {
+            "computed": true,
+            "description": "Master switch for ZIA-driven notifications.",
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "id": {
+            "computed": true,
+            "description": "Numeric identifier of the notification template (carried as a string). Either id or name must be set.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "is_default_template": {
+            "computed": true,
+            "description": "Whether this template is the company default.",
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "name": {
+            "computed": true,
+            "description": "Operator-visible name. Either id or name must be set.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "zia_notification_template": {
+            "computed": true,
+            "description": "Per-channel ZIA notification toggles.",
+            "description_kind": "plain",
+            "nested_type": {
+              "attributes": {
+                "enable_zia_dns": {
+                  "computed": true,
+                  "description": "Whether ZIA DNS block notifications are enabled.",
+                  "description_kind": "plain",
+                  "type": "bool"
+                },
+                "enable_zia_dns_popup": {
+                  "computed": true,
+                  "description": "Whether ZIA DNS blocks raise a popup.",
+                  "description_kind": "plain",
+                  "type": "bool"
+                },
+                "enable_zia_firewall": {
+                  "computed": true,
+                  "description": "Whether ZIA firewall block notifications are enabled.",
+                  "description_kind": "plain",
+                  "type": "bool"
+                },
+                "enable_zia_firewall_popup": {
+                  "computed": true,
+                  "description": "Whether ZIA firewall blocks raise a popup.",
+                  "description_kind": "plain",
+                  "type": "bool"
+                },
+                "enable_zia_ips": {
+                  "computed": true,
+                  "description": "Whether ZIA IPS block notifications are enabled.",
+                  "description_kind": "plain",
+                  "type": "bool"
+                },
+                "enable_zia_ips_popup": {
+                  "computed": true,
+                  "description": "Whether ZIA IPS blocks raise a popup.",
+                  "description_kind": "plain",
+                  "type": "bool"
+                },
+                "enable_zia_persistent": {
+                  "computed": true,
+                  "description": "Whether ZIA notifications stay until dismissed.",
+                  "description_kind": "plain",
+                  "type": "bool"
+                }
+              },
+              "nesting_mode": "single"
+            }
+          },
+          "zpa_notification_template": {
+            "computed": true,
+            "description": "Per-channel ZPA notification toggles.",
+            "description_kind": "plain",
+            "nested_type": {
+              "attributes": {
+                "delay_posture_failure_seconds": {
+                  "computed": true,
+                  "description": "Delay (in seconds) before reporting a posture failure.",
+                  "description_kind": "plain",
+                  "type": "number"
+                },
+                "enable_device_posture_failure": {
+                  "computed": true,
+                  "description": "Whether posture-failure notifications are enabled.",
+                  "description_kind": "plain",
+                  "type": "bool"
+                },
+                "enable_zpa_reauth": {
+                  "computed": true,
+                  "description": "Whether ZPA reauthentication prompts are enabled.",
+                  "description_kind": "plain",
+                  "type": "bool"
+                },
+                "zpa_reauth_interval_in_minutes": {
+                  "computed": true,
+                  "description": "Reauthentication reminder interval in minutes.",
+                  "description_kind": "plain",
+                  "type": "number"
+                }
+              },
+              "nesting_mode": "single"
+            }
+          }
+        },
+        "description": "Retrieves a ZCC notification template from /zcc/papi/public/v2/notification-templates, by numeric id or by name.",
+        "description_kind": "plain"
+      },
+      "version": 0
+    },
+    "zcc_predefined_ip_apps": {
+      "block": {
+        "attributes": {
+          "active": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "app_data_blob": {
+            "computed": true,
+            "description_kind": "plain",
+            "nested_type": {
+              "attributes": {
+                "fqdn": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "ipaddr": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "port": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "proto": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                }
+              },
+              "nesting_mode": "list"
+            }
+          },
+          "app_data_blob_v6": {
+            "computed": true,
+            "description_kind": "plain",
+            "nested_type": {
+              "attributes": {
+                "fqdn": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "ipaddr": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "port": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "proto": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                }
+              },
+              "nesting_mode": "list"
+            }
+          },
+          "app_name": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "app_svc_id": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "app_version": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "created_by": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "edited_by": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "edited_timestamp": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "id": {
+            "computed": true,
+            "description": "The unique identifier of the predefined IP-based app.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "name": {
+            "description": "The name of the predefined IP-based app (used for lookup).",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "uid": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "zapp_data_blob": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "zapp_data_blob_v6": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          }
+        },
+        "description": "Retrieves a ZCC predefined IP-based app by ID or name.",
+        "description_kind": "plain"
+      },
+      "version": 0
+    },
+    "zcc_process_based_apps": {
+      "block": {
+        "attributes": {
+          "app_name": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "certificate_payload": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "created_by": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "edited_by": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "edited_timestamp": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "file_names": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": [
+              "list",
+              "string"
+            ]
+          },
+          "file_paths": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": [
+              "list",
+              "string"
+            ]
+          },
+          "id": {
+            "computed": true,
+            "description": "The unique identifier of the process-based app.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "matching_criteria": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "name": {
+            "description": "The name of the process-based app (used for lookup).",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "signature_payload": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          }
+        },
+        "description": "Retrieves a ZCC process-based app by ID or name.",
+        "description_kind": "plain"
+      },
+      "version": 0
+    },
+    "zcc_trusted_network": {
+      "block": {
+        "attributes": {
+          "active": {
+            "computed": true,
+            "description": "Whether the trusted network is active.",
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "company_id": {
+            "computed": true,
+            "description": "Numeric company id the network is scoped to.",
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "condition_type": {
+            "computed": true,
+            "description": "Match policy applied across the criteria (`ALL`/`ANY` or the numeric forms `0`/`1`).",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "created_by": {
+            "computed": true,
+            "description": "User who created the trusted network.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "dns_search_domains": {
+            "computed": true,
+            "description": "DNS search domains.",
+            "description_kind": "plain",
+            "type": [
+              "list",
+              "string"
+            ]
+          },
+          "dns_server_ips": {
+            "computed": true,
+            "description": "DNS server IPs.",
+            "description_kind": "plain",
+            "type": [
+              "list",
+              "string"
+            ]
+          },
+          "edited_by": {
+            "computed": true,
+            "description": "User who last edited the trusted network.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "guid": {
+            "computed": true,
+            "description": "Stable GUID of the trusted network.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "hostname": {
+            "computed": true,
+            "description": "Hostname used to identify the network.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "id": {
+            "computed": true,
+            "description": "Numeric identifier of the trusted network (carried as a string). Either `id` or `name` must be set.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "name": {
+            "computed": true,
+            "description": "Name of the trusted network. Either `id` or `name` must be set; the data source looks up by the supplied value via the SDK's `GetByName` when `id` is omitted.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "resolved_ips_for_hostname": {
+            "computed": true,
+            "description": "Resolved IPs for the configured hostnames.",
+            "description_kind": "plain",
+            "type": [
+              "list",
+              "string"
+            ]
+          },
+          "ssid": {
+            "computed": true,
+            "description": "Wi-Fi SSID the network is identified by.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "trusted_dhcp_servers_ips": {
+            "computed": true,
+            "description": "Trusted DHCP server IPs.",
+            "description_kind": "plain",
+            "type": [
+              "list",
+              "string"
+            ]
+          },
+          "trusted_egress_ips": {
+            "computed": true,
+            "description": "Trusted egress IPs.",
+            "description_kind": "plain",
+            "type": [
+              "list",
+              "string"
+            ]
+          },
+          "trusted_gateway_ips": {
+            "computed": true,
+            "description": "Trusted default-gateway IPs.",
+            "description_kind": "plain",
+            "type": [
+              "list",
+              "string"
+            ]
+          },
+          "trusted_subnet_ips": {
+            "computed": true,
+            "description": "Trusted CIDR ranges.",
+            "description_kind": "plain",
+            "type": [
+              "list",
+              "string"
+            ]
+          },
+          "zpa_id": {
+            "computed": true,
+            "description": "Linked ZPA tenant identifier.",
+            "description_kind": "plain",
+            "type": "string"
+          }
+        },
+        "description": "Retrieves a ZCC trusted network from the /zcc/papi/public/v2/trusted-networks endpoint, by numeric id or by network name.",
+        "description_kind": "plain"
+      },
+      "version": 0
+    },
+    "zcc_web_app_service": {
+      "block": {
+        "attributes": {
+          "active": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "app_data_blob": {
+            "computed": true,
+            "description_kind": "plain",
+            "nested_type": {
+              "attributes": {
+                "fqdn": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "ipaddr": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "port": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "proto": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                }
+              },
+              "nesting_mode": "list"
+            }
+          },
+          "app_data_blob_v6": {
+            "computed": true,
+            "description_kind": "plain",
+            "nested_type": {
+              "attributes": {
+                "fqdn": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "ipaddr": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "port": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                },
+                "proto": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "type": "string"
+                }
+              },
+              "nesting_mode": "list"
+            }
+          },
+          "app_name": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "app_svc_id": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "app_version": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "created_by": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "edited_by": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "edited_timestamp": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "id": {
+            "computed": true,
+            "description": "The unique identifier of the web app service.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "name": {
+            "description": "The name of the web app service (used for lookup).",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "uid": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "version": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "number"
+          },
+          "zapp_data_blob": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "zapp_data_blob_v6": {
+            "computed": true,
+            "description_kind": "plain",
+            "type": "string"
+          }
+        },
+        "description": "Retrieves a ZCC web app service (bypass app) by ID or name.",
+        "description_kind": "plain"
+      },
+      "version": 0
+    },
+    "zcc_web_privacy": {
+      "block": {
+        "attributes": {
+          "active": {
+            "computed": true,
+            "description": "Whether web privacy settings are active.",
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "collect_machine_hostname": {
+            "computed": true,
+            "description": "Whether to collect machine hostname.",
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "collect_user_info": {
+            "computed": true,
+            "description": "Whether to collect user information.",
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "collect_zdx_location": {
+            "computed": true,
+            "description": "Whether to collect ZDX location.",
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "disable_crashlytics": {
+            "computed": true,
+            "description": "Whether Crashlytics is disabled.",
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "enable_auto_log_snippet": {
+            "computed": true,
+            "description": "Whether automatic log snippet collection is enabled.",
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "enable_fqdn_match_for_vpn_bypasses": {
+            "computed": true,
+            "description": "Whether FQDN matching for VPN bypasses is enabled.",
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "enable_packet_capture": {
+            "computed": true,
+            "description": "Whether packet capture is enabled.",
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "enforce_secure_pac_urls": {
+            "computed": true,
+            "description": "Whether secure PAC URLs are enforced.",
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "export_logs_for_non_admin": {
+            "computed": true,
+            "description": "Whether non-admin users can export logs.",
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "grant_access_to_zscaler_log_folder": {
+            "computed": true,
+            "description": "Whether to grant access to Zscaler log folder.",
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "id": {
+            "computed": true,
+            "description": "Settings record identifier.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "override_t2_protocol_setting": {
+            "computed": true,
+            "description": "Whether to override T2 protocol setting.",
+            "description_kind": "plain",
+            "type": "bool"
+          },
+          "restrict_remote_packet_capture": {
+            "computed": true,
+            "description": "Whether remote packet capture is restricted.",
+            "description_kind": "plain",
+            "type": "bool"
+          }
+        },
+        "description": "Reads the ZCC web privacy settings.",
+        "description_kind": "plain"
+      },
+      "version": 0
+    },
+    "zcc_zia_posture": {
+      "block": {
+        "attributes": {
+          "high_trust_criteria": {
+            "computed": true,
+            "description": "Criteria that promote a device to the HIGH trust tier.",
+            "description_kind": "plain",
+            "nested_type": {
+              "attributes": {
+                "cs": {
+                  "computed": true,
+                  "description": "OR-list of criteria sets. Each set is itself an AND-list of criteria in `cn`.",
+                  "description_kind": "plain",
+                  "nested_type": {
+                    "attributes": {
+                      "cn": {
+                        "computed": true,
+                        "description": "AND-list of criteria \u2014 every criterion in this list must match.",
+                        "description_kind": "plain",
+                        "nested_type": {
+                          "attributes": {
+                            "id": {
+                              "computed": true,
+                              "description": "Criterion identifier.",
+                              "description_kind": "plain",
+                              "type": "string"
+                            },
+                            "name": {
+                              "computed": true,
+                              "description": "Operator-visible label.",
+                              "description_kind": "plain",
+                              "type": "string"
+                            },
+                            "udid": {
+                              "computed": true,
+                              "description": "Optional device UDID the criterion is scoped to.",
+                              "description_kind": "plain",
+                              "type": "string"
+                            }
+                          },
+                          "nesting_mode": "list"
+                        }
+                      }
+                    },
+                    "nesting_mode": "list"
+                  }
+                }
+              },
+              "nesting_mode": "single"
+            }
+          },
+          "id": {
+            "description": "Numeric identifier of the posture profile (carried as a string). Currently the only supported lookup key.",
+            "description_kind": "plain",
+            "required": true,
+            "type": "string"
+          },
+          "low_trust_criteria": {
+            "computed": true,
+            "description": "Criteria that promote a device to the LOW trust tier.",
+            "description_kind": "plain",
+            "nested_type": {
+              "attributes": {
+                "cs": {
+                  "computed": true,
+                  "description": "OR-list of criteria sets. Each set is itself an AND-list of criteria in `cn`.",
+                  "description_kind": "plain",
+                  "nested_type": {
+                    "attributes": {
+                      "cn": {
+                        "computed": true,
+                        "description": "AND-list of criteria \u2014 every criterion in this list must match.",
+                        "description_kind": "plain",
+                        "nested_type": {
+                          "attributes": {
+                            "id": {
+                              "computed": true,
+                              "description": "Criterion identifier.",
+                              "description_kind": "plain",
+                              "type": "string"
+                            },
+                            "name": {
+                              "computed": true,
+                              "description": "Operator-visible label.",
+                              "description_kind": "plain",
+                              "type": "string"
+                            },
+                            "udid": {
+                              "computed": true,
+                              "description": "Optional device UDID the criterion is scoped to.",
+                              "description_kind": "plain",
+                              "type": "string"
+                            }
+                          },
+                          "nesting_mode": "list"
+                        }
+                      }
+                    },
+                    "nesting_mode": "list"
+                  }
+                }
+              },
+              "nesting_mode": "single"
+            }
+          },
+          "medium_trust_criteria": {
+            "computed": true,
+            "description": "Criteria that promote a device to the MEDIUM trust tier.",
+            "description_kind": "plain",
+            "nested_type": {
+              "attributes": {
+                "cs": {
+                  "computed": true,
+                  "description": "OR-list of criteria sets. Each set is itself an AND-list of criteria in `cn`.",
+                  "description_kind": "plain",
+                  "nested_type": {
+                    "attributes": {
+                      "cn": {
+                        "computed": true,
+                        "description": "AND-list of criteria \u2014 every criterion in this list must match.",
+                        "description_kind": "plain",
+                        "nested_type": {
+                          "attributes": {
+                            "id": {
+                              "computed": true,
+                              "description": "Criterion identifier.",
+                              "description_kind": "plain",
+                              "type": "string"
+                            },
+                            "name": {
+                              "computed": true,
+                              "description": "Operator-visible label.",
+                              "description_kind": "plain",
+                              "type": "string"
+                            },
+                            "udid": {
+                              "computed": true,
+                              "description": "Optional device UDID the criterion is scoped to.",
+                              "description_kind": "plain",
+                              "type": "string"
+                            }
+                          },
+                          "nesting_mode": "list"
+                        }
+                      }
+                    },
+                    "nesting_mode": "list"
+                  }
+                }
+              },
+              "nesting_mode": "single"
+            }
+          },
+          "name": {
+            "computed": true,
+            "description": "Operator-visible name. Returned by the API and surfaced as Computed; cannot currently be used as a lookup key (see resource description for the temporary API limitation).",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "platform": {
+            "computed": true,
+            "description": "Target operating system, surfaced as a name: `ios`, `android`, `windows`, `macos`, or `linux` (translated from the API's numeric platform code).",
+            "description_kind": "plain",
+            "type": "string"
+          }
+        },
+        "description": "Retrieves a ZIA posture profile from /zcc/papi/public/v2/zia-posture-profiles. NOTE: lookup is currently restricted to the numeric `id` \u2014 the upstream `/zia-posture-profiles` list endpoint does not paginate correctly and therefore cannot be used to resolve a profile by name or by platform. Once that API is fixed, name-based and platform-based lookup will be reinstated; until then `id` is required.",
+        "description_kind": "plain"
+      },
+      "version": 0
+    }
+  },
+  "provider": {
+    "block": {
+      "attributes": {
+        "client_id": {
+          "description": "ZCC client ID (OAuth2)",
+          "description_kind": "plain",
+          "optional": true,
+          "type": "string"
+        },
+        "client_secret": {
+          "description": "ZCC client secret (OAuth2)",
+          "description_kind": "plain",
+          "optional": true,
+          "sensitive": true,
+          "type": "string"
+        },
+        "http_proxy": {
+          "description": "Alternate HTTP proxy of scheme://hostname or scheme://hostname:port format",
+          "description_kind": "plain",
+          "optional": true,
+          "type": "string"
+        },
+        "max_retries": {
+          "description": "Maximum number of retries to attempt before erroring out",
+          "description_kind": "plain",
+          "optional": true,
+          "type": "number"
+        },
+        "max_wait_seconds": {
+          "description": "Maximum wait in seconds between retry attempts when rate limited",
+          "description_kind": "plain",
+          "optional": true,
+          "type": "number"
+        },
+        "min_wait_seconds": {
+          "description": "Minimum wait in seconds between retry attempts when rate limited",
+          "description_kind": "plain",
+          "optional": true,
+          "type": "number"
+        },
+        "parallelism": {
+          "description": "Number of concurrent requests to make within a resource where bulk operations are not possible",
+          "description_kind": "plain",
+          "optional": true,
+          "type": "number"
+        },
+        "private_key": {
+          "description": "ZCC private key (OAuth2)",
+          "description_kind": "plain",
+          "optional": true,
+          "sensitive": true,
+          "type": "string"
+        },
+        "request_timeout": {
+          "description": "Timeout for single request (in seconds) which is made to Zscaler",
+          "description_kind": "plain",
+          "optional": true,
+          "type": "number"
+        },
+        "vanity_domain": {
+          "description": "Zscaler Vanity Domain",
+          "description_kind": "plain",
+          "optional": true,
+          "sensitive": true,
+          "type": "string"
+        },
+        "zscaler_cloud": {
+          "description": "Zscaler Cloud Name",
+          "description_kind": "plain",
+          "optional": true,
+          "sensitive": true,
+          "type": "string"
+        }
+      },
+      "description_kind": "plain"
+    },
+    "version": 0
+  },
+  "resource_schemas": {
+    "zcc_device_cleanup": {
+      "block": {
+        "attributes": {
+          "active": {
+            "computed": true,
+            "description": "Whether device cleanup is active.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "auto_purge_days": {
+            "computed": true,
+            "description": "Auto purge period in days. Supported values: `0`, `30`, `60`, `90`, `120`, `150`, `180`.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "number"
+          },
+          "auto_removal_days": {
+            "computed": true,
+            "description": "Auto removal period in days. Supported values: `0` (Never), `30`, `60`, `90`, `120`, `150`, `180`.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "number"
+          },
+          "device_exceed_limit": {
+            "computed": true,
+            "description": "Device exceed limit threshold.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "number"
+          },
+          "force_remove_type": {
+            "computed": true,
+            "description": "Force remove type code. Supported values: `0` (Restrict), `8`, `9`, `10`, `11`, `12`, `13`, `14`, `15`, `16`.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "id": {
+            "computed": true,
+            "description": "Settings record identifier.",
+            "description_kind": "plain",
+            "type": "string"
+          }
+        },
+        "description": "Manages ZCC device cleanup settings (singleton). The API only supports GET and PUT; create runs an initial PUT, update runs PUT, and delete only removes the resource from state.",
+        "description_kind": "plain"
+      },
+      "version": 0
+    },
+    "zcc_failopen_policy": {
+      "block": {
+        "attributes": {
+          "active": {
+            "computed": true,
+            "description": "Whether the fail open policy is active.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "captive_portal_web_sec_disable_minutes": {
+            "computed": true,
+            "description": "Number of minutes to disable web security for captive portal detection.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "number"
+          },
+          "enable_captive_portal_detection": {
+            "computed": true,
+            "description": "Enable captive portal detection.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "enable_fail_open": {
+            "computed": true,
+            "description": "Enable fail open behavior.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "enable_strict_enforcement_prompt": {
+            "computed": true,
+            "description": "Enable strict enforcement prompt.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "enable_web_sec_on_proxy_unreachable": {
+            "computed": true,
+            "description": "Enable web security when proxy is unreachable.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "enable_web_sec_on_tunnel_failure": {
+            "computed": true,
+            "description": "Enable web security on tunnel failure.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "id": {
+            "computed": true,
+            "description": "The unique identifier of the fail open policy.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "strict_enforcement_prompt_delay_minutes": {
+            "computed": true,
+            "description": "Delay in minutes for strict enforcement prompt.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "number"
+          },
+          "strict_enforcement_prompt_message": {
+            "computed": true,
+            "description": "Message displayed for strict enforcement prompt.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "tunnel_failure_retry_count": {
+            "computed": true,
+            "description": "Number of retries on tunnel failure.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "number"
+          }
+        },
+        "description": "Manages the ZCC fail open policy. This is a singleton resource \u2014 the policy always exists and cannot be created or deleted, only updated.",
+        "description_kind": "plain"
+      },
+      "version": 0
+    },
+    "zcc_forwarding_profile": {
+      "block": {
+        "attributes": {
+          "active": {
+            "computed": true,
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "condition_type": {
+            "computed": true,
+            "description_kind": "plain",
+            "optional": true,
+            "type": "number"
+          },
+          "dns_search_domains": {
+            "computed": true,
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "dns_servers": {
+            "computed": true,
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "enable_all_default_adapters_tn": {
+            "computed": true,
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "enable_lwf_driver": {
+            "computed": true,
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "enable_split_vpn_tn": {
+            "computed": true,
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "enable_unified_tunnel": {
+            "computed": true,
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "evaluate_trusted_network": {
+            "computed": true,
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "hostname": {
+            "computed": true,
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "id": {
+            "computed": true,
+            "description": "The unique identifier of the forwarding profile.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "name": {
+            "description": "The name of the forwarding profile.",
+            "description_kind": "plain",
+            "required": true,
+            "type": "string"
+          },
+          "predefined_tn_all": {
+            "computed": true,
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "predefined_trusted_networks": {
+            "computed": true,
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "resolved_ips_for_hostname": {
+            "computed": true,
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "skip_trusted_criteria_match": {
+            "computed": true,
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "trusted_dhcp_servers": {
+            "computed": true,
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "trusted_egress_ips": {
+            "computed": true,
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "trusted_gateways": {
+            "computed": true,
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "trusted_network_ids": {
+            "computed": true,
+            "description_kind": "plain",
+            "optional": true,
+            "type": [
+              "list",
+              "number"
+            ]
+          },
+          "trusted_network_ids_selected": {
+            "computed": true,
+            "description_kind": "plain",
+            "optional": true,
+            "type": [
+              "list",
+              "number"
+            ]
+          },
+          "trusted_networks": {
+            "computed": true,
+            "description_kind": "plain",
+            "optional": true,
+            "type": [
+              "list",
+              "string"
+            ]
+          },
+          "trusted_subnets": {
+            "computed": true,
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          }
+        },
+        "block_types": {
+          "forwarding_profile_actions": {
+            "block": {
+              "attributes": {
+                "action_type": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "allow_tls_fallback": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "block_unreachable_domains_traffic": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "custom_pac": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "string"
+                },
+                "drop_ipv6_include_traffic_in_t2": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "drop_ipv6_traffic": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "drop_ipv6_traffic_in_ipv6_network": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "dtls_timeout": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "enable_packet_tunnel": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "is_same_as_on_trusted_network": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "latency_based_server_enablement": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "latency_based_server_mt_enablement": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "latency_based_zen_enablement": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "lbs_probe_interval": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "lbs_probe_sample_size": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "lbs_threshold_limit": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "mtu_for_zadapter": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "network_type": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "optimise_for_unstable_connections": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "path_mtu_discovery": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "primary_transport": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "redirect_web_traffic": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "send_all_dns_to_trusted_server": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "system_proxy": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "tls_timeout": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "tunnel2_fallback_type": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "udp_timeout": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "use_tunnel2_for_proxied_web_traffic": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "use_tunnel2_for_unencrypted_web_traffic": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "zen_probe_interval": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "zen_probe_sample_size": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "zen_threshold_limit": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                }
+              },
+              "block_types": {
+                "system_proxy_data": {
+                  "block": {
+                    "attributes": {
+                      "bypass_proxy_for_private_ip": {
+                        "computed": true,
+                        "description_kind": "plain",
+                        "optional": true,
+                        "type": "bool"
+                      },
+                      "enable_auto_detect": {
+                        "computed": true,
+                        "description_kind": "plain",
+                        "optional": true,
+                        "type": "bool"
+                      },
+                      "enable_pac": {
+                        "computed": true,
+                        "description_kind": "plain",
+                        "optional": true,
+                        "type": "bool"
+                      },
+                      "enable_proxy_server": {
+                        "computed": true,
+                        "description_kind": "plain",
+                        "optional": true,
+                        "type": "bool"
+                      },
+                      "pac_data_path": {
+                        "computed": true,
+                        "description_kind": "plain",
+                        "optional": true,
+                        "type": "string"
+                      },
+                      "pac_url": {
+                        "computed": true,
+                        "description_kind": "plain",
+                        "optional": true,
+                        "type": "string"
+                      },
+                      "perform_gp_update": {
+                        "computed": true,
+                        "description_kind": "plain",
+                        "optional": true,
+                        "type": "bool"
+                      },
+                      "proxy_action": {
+                        "computed": true,
+                        "description_kind": "plain",
+                        "optional": true,
+                        "type": "number"
+                      },
+                      "proxy_server_address": {
+                        "computed": true,
+                        "description_kind": "plain",
+                        "optional": true,
+                        "type": "string"
+                      },
+                      "proxy_server_port": {
+                        "computed": true,
+                        "description_kind": "plain",
+                        "optional": true,
+                        "type": "string"
+                      }
+                    },
+                    "description_kind": "plain"
+                  },
+                  "nesting_mode": "single"
+                }
+              },
+              "description_kind": "plain"
+            },
+            "nesting_mode": "list"
+          },
+          "forwarding_profile_zpa_actions": {
+            "block": {
+              "attributes": {
+                "action_type": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "dtls_timeout": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "is_same_as_on_trusted_network": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "latency_based_server_enablement": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "latency_based_server_mt_enablement": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "lbs_probe_interval": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "lbs_probe_sample_size": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "lbs_threshold_limit": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "mtu_for_zadapter": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "network_type": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "primary_transport": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "send_trusted_network_result_to_zpa": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "tls_timeout": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                }
+              },
+              "block_types": {
+                "partner_info": {
+                  "block": {
+                    "attributes": {
+                      "allow_tls_fallback": {
+                        "computed": true,
+                        "description_kind": "plain",
+                        "optional": true,
+                        "type": "bool"
+                      },
+                      "mtu_for_zadapter": {
+                        "computed": true,
+                        "description_kind": "plain",
+                        "optional": true,
+                        "type": "number"
+                      },
+                      "primary_transport": {
+                        "computed": true,
+                        "description_kind": "plain",
+                        "optional": true,
+                        "type": "number"
+                      }
+                    },
+                    "description_kind": "plain"
+                  },
+                  "nesting_mode": "single"
+                }
+              },
+              "description_kind": "plain"
+            },
+            "nesting_mode": "list"
+          },
+          "unified_tunnel": {
+            "block": {
+              "attributes": {
+                "action_type_zia": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "action_type_zpa": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "allow_tls_fallback": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "block_unreachable_domains_traffic": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "drop_ipv6_include_traffic_in_t2": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "drop_ipv6_traffic": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "drop_ipv6_traffic_in_ipv6_network": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "dtls_timeout": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "mtu_for_zadapter": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "network_type": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "optimise_for_unstable_connections": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "path_mtu_discovery": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "primary_transport": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "redirect_web_traffic": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "same_as_on_trusted": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "send_all_dns_to_trusted_server": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "tls_timeout": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "tunnel2_fallback_type": {
+                  "computed": true,
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                }
+              },
+              "block_types": {
+                "system_proxy_data": {
+                  "block": {
+                    "attributes": {
+                      "bypass_proxy_for_private_ip": {
+                        "computed": true,
+                        "description_kind": "plain",
+                        "optional": true,
+                        "type": "bool"
+                      },
+                      "enable_auto_detect": {
+                        "computed": true,
+                        "description_kind": "plain",
+                        "optional": true,
+                        "type": "bool"
+                      },
+                      "enable_pac": {
+                        "computed": true,
+                        "description_kind": "plain",
+                        "optional": true,
+                        "type": "bool"
+                      },
+                      "enable_proxy_server": {
+                        "computed": true,
+                        "description_kind": "plain",
+                        "optional": true,
+                        "type": "bool"
+                      },
+                      "pac_data_path": {
+                        "computed": true,
+                        "description_kind": "plain",
+                        "optional": true,
+                        "type": "string"
+                      },
+                      "pac_url": {
+                        "computed": true,
+                        "description_kind": "plain",
+                        "optional": true,
+                        "type": "string"
+                      },
+                      "perform_gp_update": {
+                        "computed": true,
+                        "description_kind": "plain",
+                        "optional": true,
+                        "type": "bool"
+                      },
+                      "proxy_action": {
+                        "computed": true,
+                        "description_kind": "plain",
+                        "optional": true,
+                        "type": "number"
+                      },
+                      "proxy_server_address": {
+                        "computed": true,
+                        "description_kind": "plain",
+                        "optional": true,
+                        "type": "string"
+                      },
+                      "proxy_server_port": {
+                        "computed": true,
+                        "description_kind": "plain",
+                        "optional": true,
+                        "type": "string"
+                      }
+                    },
+                    "description_kind": "plain"
+                  },
+                  "nesting_mode": "single"
+                }
+              },
+              "description_kind": "plain"
+            },
+            "nesting_mode": "list"
+          }
+        },
+        "description": "Manages ZCC forwarding profiles.",
+        "description_kind": "plain"
+      },
+      "version": 0
+    },
+    "zcc_notification_template": {
+      "block": {
+        "attributes": {
+          "duration_in_seconds": {
+            "computed": true,
+            "description": "How long (in seconds) transient notifications stay on screen. API field: durationInSeconds.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "number"
+          },
+          "enable_app_updates": {
+            "computed": true,
+            "description": "Notify the end user when the ZCC app receives an update. API field: enableAppUpdates.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "enable_client": {
+            "computed": true,
+            "description": "Enable generic Client Connector notifications. API field: enableClient.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "enable_do_not_disturb": {
+            "computed": true,
+            "description": "Honour the OS \"do not disturb\" mode. API field: enableDoNotDisturb.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "enable_persistent": {
+            "computed": true,
+            "description": "Force notifications to stay on screen until dismissed. API field: enablePersistent.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "enable_service_status": {
+            "computed": true,
+            "description": "Notify on service status changes (tunnel up/down, etc.). API field: enableServiceStatus.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "enable_zia": {
+            "computed": true,
+            "description": "Master switch for ZIA-driven notifications (per-channel toggles live under `zia_notification_template`). API field: enableZia.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "id": {
+            "computed": true,
+            "description": "Numeric identifier of the template, carried as a string per Terraform convention. API field: id (JSON number).",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "is_default_template": {
+            "computed": true,
+            "description": "Marks the template as the company default. Only one template should be the default at a time. API field: isDefaultTemplate.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "name": {
+            "description": "Operator-visible name. API field: name.",
+            "description_kind": "plain",
+            "required": true,
+            "type": "string"
+          },
+          "zia_notification_template": {
+            "computed": true,
+            "description": "Per-channel ZIA notification toggles. API field: ziaNotificationTemplate.",
+            "description_kind": "plain",
+            "nested_type": {
+              "attributes": {
+                "enable_zia_dns": {
+                  "computed": true,
+                  "description": "Notify on ZIA DNS block events. API field: enableZiaDNS.",
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "enable_zia_dns_popup": {
+                  "computed": true,
+                  "description": "Raise a popup for ZIA DNS blocks. API field: enableZiaDNSPopup.",
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "enable_zia_firewall": {
+                  "computed": true,
+                  "description": "Notify on ZIA firewall block events. API field: enableZiaFirewall.",
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "enable_zia_firewall_popup": {
+                  "computed": true,
+                  "description": "Raise a popup (not just a tray notification) for ZIA firewall blocks. API field: enableZiaFirewallPopup.",
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "enable_zia_ips": {
+                  "computed": true,
+                  "description": "Notify on ZIA IPS block events. API field: enableZiaIPS.",
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "enable_zia_ips_popup": {
+                  "computed": true,
+                  "description": "Raise a popup for ZIA IPS blocks. API field: enableZiaIPSPopup.",
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "enable_zia_persistent": {
+                  "computed": true,
+                  "description": "Keep ZIA notifications persistent until dismissed. API field: enableZiaPersistent.",
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                }
+              },
+              "nesting_mode": "single"
+            },
+            "optional": true
+          },
+          "zpa_notification_template": {
+            "computed": true,
+            "description": "Per-channel ZPA notification toggles. API field: zpaNotificationTemplate.",
+            "description_kind": "plain",
+            "nested_type": {
+              "attributes": {
+                "delay_posture_failure_seconds": {
+                  "computed": true,
+                  "description": "Delay (in seconds) before reporting a posture failure to the user. API field: delayPostureFailureSeconds.",
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                },
+                "enable_device_posture_failure": {
+                  "computed": true,
+                  "description": "Notify when device posture evaluation fails. API field: enableDevicePostureFailure.",
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "enable_zpa_reauth": {
+                  "computed": true,
+                  "description": "Notify the user when ZPA reauthentication is required. API field: enableZpaReauth.",
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "bool"
+                },
+                "zpa_reauth_interval_in_minutes": {
+                  "computed": true,
+                  "description": "How often (in minutes) to remind the user to reauthenticate. API field: zpaReauthIntervalInMinutes.",
+                  "description_kind": "plain",
+                  "optional": true,
+                  "type": "number"
+                }
+              },
+              "nesting_mode": "single"
+            },
+            "optional": true
+          }
+        },
+        "description": "Manages a ZCC notification template via /zcc/papi/public/v2/notification-templates. Controls which end-user notifications the Client Connector raises (app updates, service status, ZIA blocks, ZPA reauthentication, etc.). Per-service toggles live under the two nested blocks `zia_notification_template` and `zpa_notification_template`.",
+        "description_kind": "plain"
+      },
+      "version": 0
+    },
+    "zcc_trusted_network": {
+      "block": {
+        "attributes": {
+          "active": {
+            "description": "Whether the trusted network is active. API field: active.",
+            "description_kind": "plain",
+            "required": true,
+            "type": "bool"
+          },
+          "condition_type": {
+            "description": "Match policy applied across the criteria below. The API accepts `ALL`/`ANY` (or the numeric forms `0`/`1`). API field: conditionType.",
+            "description_kind": "plain",
+            "required": true,
+            "type": "string"
+          },
+          "dns_search_domains": {
+            "computed": true,
+            "description": "DNS search domains. API field: dnsSearchDomains.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": [
+              "list",
+              "string"
+            ]
+          },
+          "dns_server_ips": {
+            "computed": true,
+            "description": "DNS server IPs. API field: dnsServerIps.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": [
+              "list",
+              "string"
+            ]
+          },
+          "hostname": {
+            "computed": true,
+            "description": "Hostname used to identify the network. API field: hostname.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "id": {
+            "computed": true,
+            "description": "Numeric identifier of the trusted network, carried as a string per Terraform convention. API field: id (JSON number).",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "name": {
+            "computed": true,
+            "description": "Server-side name. Most operators only set `network_name`; the API echoes `name` separately. API field: name.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "resolved_ips_for_hostname": {
+            "computed": true,
+            "description": "Resolved IPs for the configured hostnames. API field: resolvedIpsForHostname.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": [
+              "list",
+              "string"
+            ]
+          },
+          "ssid": {
+            "computed": true,
+            "description": "Wi-Fi SSID the network is identified by. API field: ssid.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "string"
+          },
+          "trusted_dhcp_servers_ips": {
+            "computed": true,
+            "description": "Trusted DHCP server IPs. API field: trustedDhcpServersIps.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": [
+              "list",
+              "string"
+            ]
+          },
+          "trusted_egress_ips": {
+            "computed": true,
+            "description": "Trusted egress IPs (NAT/public addresses observed from the network). API field: trustedEgressIps.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": [
+              "list",
+              "string"
+            ]
+          },
+          "trusted_gateway_ips": {
+            "computed": true,
+            "description": "Trusted default-gateway IPs. API field: trustedGatewayIps.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": [
+              "list",
+              "string"
+            ]
+          },
+          "trusted_subnet_ips": {
+            "computed": true,
+            "description": "Trusted CIDR ranges (e.g. \"192.0.2.0/24\"). API field: trustedSubnetIps.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": [
+              "list",
+              "string"
+            ]
+          }
+        },
+        "description": "Manages a ZCC trusted network via the /zcc/papi/public/v2/trusted-networks endpoint. The IP/domain criteria fields are List(String) on this resource (the v1 comma-separated string surface is gone); pass `[]` for criteria you do not want to set.",
+        "description_kind": "plain"
+      },
+      "version": 0
+    },
+    "zcc_web_privacy": {
+      "block": {
+        "attributes": {
+          "active": {
+            "computed": true,
+            "description": "Whether web privacy settings are active.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "collect_machine_hostname": {
+            "computed": true,
+            "description": "Whether to collect machine hostname.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "collect_user_info": {
+            "computed": true,
+            "description": "Whether to collect user information.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "collect_zdx_location": {
+            "computed": true,
+            "description": "Whether to collect ZDX location.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "disable_crashlytics": {
+            "computed": true,
+            "description": "Whether Crashlytics is disabled.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "enable_auto_log_snippet": {
+            "computed": true,
+            "description": "Whether automatic log snippet collection is enabled.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "enable_fqdn_match_for_vpn_bypasses": {
+            "computed": true,
+            "description": "Whether FQDN matching for VPN bypasses is enabled.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "enable_packet_capture": {
+            "computed": true,
+            "description": "Whether packet capture is enabled.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "enforce_secure_pac_urls": {
+            "computed": true,
+            "description": "Whether secure PAC URLs are enforced.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "export_logs_for_non_admin": {
+            "computed": true,
+            "description": "Whether non-admin users can export logs.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "grant_access_to_zscaler_log_folder": {
+            "computed": true,
+            "description": "Whether to grant access to Zscaler log folder.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "id": {
+            "computed": true,
+            "description": "Settings record identifier.",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "override_t2_protocol_setting": {
+            "computed": true,
+            "description": "Whether to override T2 protocol setting.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          },
+          "restrict_remote_packet_capture": {
+            "computed": true,
+            "description": "Whether remote packet capture is restricted.",
+            "description_kind": "plain",
+            "optional": true,
+            "type": "bool"
+          }
+        },
+        "description": "Manages ZCC web privacy settings (singleton). The API only supports GET and PUT; create runs an initial PUT, update runs PUT, and delete only removes the resource from state.",
+        "description_kind": "plain"
+      },
+      "version": 0
+    },
+    "zcc_zia_posture": {
+      "block": {
+        "attributes": {
+          "high_trust_criteria": {
+            "computed": true,
+            "description": "Criteria that promote a device to the HIGH trust tier. API field: highTrustCriteria.",
+            "description_kind": "plain",
+            "nested_type": {
+              "attributes": {
+                "cs": {
+                  "computed": true,
+                  "description": "OR-list of criteria sets. Each set is itself an AND-list of criteria in `cn`. API field: cs.",
+                  "description_kind": "plain",
+                  "nested_type": {
+                    "attributes": {
+                      "cn": {
+                        "computed": true,
+                        "description": "AND-list of criteria \u2014 every criterion in this list must match for the parent set to be considered satisfied. API field: cn.",
+                        "description_kind": "plain",
+                        "nested_type": {
+                          "attributes": {
+                            "id": {
+                              "description": "Criterion identifier. API field: id.",
+                              "description_kind": "plain",
+                              "required": true,
+                              "type": "string"
+                            },
+                            "name": {
+                              "computed": true,
+                              "description": "Operator-visible label. API field: name.",
+                              "description_kind": "plain",
+                              "optional": true,
+                              "type": "string"
+                            },
+                            "udid": {
+                              "computed": true,
+                              "description": "Optional device UDID the criterion is scoped to. API field: udid.",
+                              "description_kind": "plain",
+                              "optional": true,
+                              "type": "string"
+                            }
+                          },
+                          "nesting_mode": "list"
+                        },
+                        "optional": true
+                      }
+                    },
+                    "nesting_mode": "list"
+                  },
+                  "optional": true
+                }
+              },
+              "nesting_mode": "single"
+            },
+            "optional": true
+          },
+          "id": {
+            "computed": true,
+            "description": "Numeric identifier of the posture profile, carried as a string per Terraform convention. API field: id (JSON number).",
+            "description_kind": "plain",
+            "type": "string"
+          },
+          "low_trust_criteria": {
+            "computed": true,
+            "description": "Criteria that promote a device to the LOW trust tier. API field: lowTrustCriteria.",
+            "description_kind": "plain",
+            "nested_type": {
+              "attributes": {
+                "cs": {
+                  "computed": true,
+                  "description": "OR-list of criteria sets. Each set is itself an AND-list of criteria in `cn`. API field: cs.",
+                  "description_kind": "plain",
+                  "nested_type": {
+                    "attributes": {
+                      "cn": {
+                        "computed": true,
+                        "description": "AND-list of criteria \u2014 every criterion in this list must match for the parent set to be considered satisfied. API field: cn.",
+                        "description_kind": "plain",
+                        "nested_type": {
+                          "attributes": {
+                            "id": {
+                              "description": "Criterion identifier. API field: id.",
+                              "description_kind": "plain",
+                              "required": true,
+                              "type": "string"
+                            },
+                            "name": {
+                              "computed": true,
+                              "description": "Operator-visible label. API field: name.",
+                              "description_kind": "plain",
+                              "optional": true,
+                              "type": "string"
+                            },
+                            "udid": {
+                              "computed": true,
+                              "description": "Optional device UDID the criterion is scoped to. API field: udid.",
+                              "description_kind": "plain",
+                              "optional": true,
+                              "type": "string"
+                            }
+                          },
+                          "nesting_mode": "list"
+                        },
+                        "optional": true
+                      }
+                    },
+                    "nesting_mode": "list"
+                  },
+                  "optional": true
+                }
+              },
+              "nesting_mode": "single"
+            },
+            "optional": true
+          },
+          "medium_trust_criteria": {
+            "computed": true,
+            "description": "Criteria that promote a device to the MEDIUM trust tier. API field: mediumTrustCriteria.",
+            "description_kind": "plain",
+            "nested_type": {
+              "attributes": {
+                "cs": {
+                  "computed": true,
+                  "description": "OR-list of criteria sets. Each set is itself an AND-list of criteria in `cn`. API field: cs.",
+                  "description_kind": "plain",
+                  "nested_type": {
+                    "attributes": {
+                      "cn": {
+                        "computed": true,
+                        "description": "AND-list of criteria \u2014 every criterion in this list must match for the parent set to be considered satisfied. API field: cn.",
+                        "description_kind": "plain",
+                        "nested_type": {
+                          "attributes": {
+                            "id": {
+                              "description": "Criterion identifier. API field: id.",
+                              "description_kind": "plain",
+                              "required": true,
+                              "type": "string"
+                            },
+                            "name": {
+                              "computed": true,
+                              "description": "Operator-visible label. API field: name.",
+                              "description_kind": "plain",
+                              "optional": true,
+                              "type": "string"
+                            },
+                            "udid": {
+                              "computed": true,
+                              "description": "Optional device UDID the criterion is scoped to. API field: udid.",
+                              "description_kind": "plain",
+                              "optional": true,
+                              "type": "string"
+                            }
+                          },
+                          "nesting_mode": "list"
+                        },
+                        "optional": true
+                      }
+                    },
+                    "nesting_mode": "list"
+                  },
+                  "optional": true
+                }
+              },
+              "nesting_mode": "single"
+            },
+            "optional": true
+          },
+          "name": {
+            "description": "Operator-visible name. API field: name.",
+            "description_kind": "plain",
+            "required": true,
+            "type": "string"
+          },
+          "platform": {
+            "description": "Target operating system. One of `ios`, `android`, `windows`, `macos`, `linux` (case-insensitive). Translated to the API's numeric platform code (1..5) at the SDK boundary. API field: platform.",
+            "description_kind": "plain",
+            "required": true,
+            "type": "string"
+          }
+        },
+        "description": "Manages a ZIA posture profile via /zcc/papi/public/v2/zia-posture-profiles. A posture profile bundles the device-trust criteria that ZCC evaluates against the local machine, classifying each endpoint into one of three trust tiers (high / medium / low). Each tier carries an OR-of-AND set of criteria: every criterion inside a `cs[].cn` block must match (AND), and matching any single set in `cs` (OR) promotes the device to that tier.",
+        "description_kind": "plain"
+      },
+      "version": 0
+    }
+  }
+}

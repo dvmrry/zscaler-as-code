@@ -1,0 +1,50 @@
+[
+  {
+    "id": 42,
+    "companyId": 12345,
+    "active": true,
+    "conditionType": "AND",
+    "name": "Corporate HQ",
+    "dnsSearchDomains": ["corp.example.com"],
+    "dnsServerIps": ["8.8.8.8", "1.1.1.1"],
+    "hostname": "",
+    "resolvedIpsForHostname": [],
+    "ssid": "",
+    "trustedDhcpServersIps": [],
+    "trustedEgressIps": [],
+    "trustedGatewayIps": ["10.0.0.1"],
+    "trustedSubnetIps": ["10.0.0.0/8"]
+  },
+  {
+    "id": 43,
+    "companyId": 12345,
+    "active": true,
+    "conditionType": "OR",
+    "name": "Branch Office",
+    "dnsSearchDomains": ["branch.example.com"],
+    "dnsServerIps": ["10.0.1.1"],
+    "hostname": "",
+    "resolvedIpsForHostname": [],
+    "ssid": "CorpWifi",
+    "trustedDhcpServersIps": ["10.0.1.254"],
+    "trustedEgressIps": [],
+    "trustedGatewayIps": ["10.0.1.1"],
+    "trustedSubnetIps": ["10.0.1.0/24"]
+  },
+  {
+    "id": 44,
+    "companyId": 12345,
+    "active": false,
+    "conditionType": "AND",
+    "name": "Guest Network",
+    "dnsSearchDomains": [],
+    "dnsServerIps": ["8.8.8.8"],
+    "hostname": "",
+    "resolvedIpsForHostname": [],
+    "ssid": "GuestWifi",
+    "trustedDhcpServersIps": [],
+    "trustedEgressIps": [],
+    "trustedGatewayIps": [],
+    "trustedSubnetIps": []
+  }
+]

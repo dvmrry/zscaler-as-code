@@ -11,7 +11,7 @@ import json
 import os
 
 SCHEMA_DIR = os.path.join("schemas", "provider")
-PROVIDER_PREFIXES = {"zia_": "zia", "zpa_": "zpa"}
+PROVIDER_PREFIXES = {"zia_": "zia", "zpa_": "zpa", "zcc_": "zcc"}
 
 _cache = {}
 

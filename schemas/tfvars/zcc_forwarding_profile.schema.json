@@ -1,0 +1,401 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "condition_type": {
+            "type": "number"
+          },
+          "dns_search_domains": {
+            "type": "string"
+          },
+          "dns_servers": {
+            "type": "string"
+          },
+          "enable_all_default_adapters_tn": {
+            "type": "boolean"
+          },
+          "enable_lwf_driver": {
+            "type": "boolean"
+          },
+          "enable_split_vpn_tn": {
+            "type": "boolean"
+          },
+          "enable_unified_tunnel": {
+            "type": "boolean"
+          },
+          "evaluate_trusted_network": {
+            "type": "boolean"
+          },
+          "forwarding_profile_actions": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "action_type": {
+                  "type": "number"
+                },
+                "allow_tls_fallback": {
+                  "type": "boolean"
+                },
+                "block_unreachable_domains_traffic": {
+                  "type": "boolean"
+                },
+                "custom_pac": {
+                  "type": "string"
+                },
+                "drop_ipv6_include_traffic_in_t2": {
+                  "type": "boolean"
+                },
+                "drop_ipv6_traffic": {
+                  "type": "boolean"
+                },
+                "drop_ipv6_traffic_in_ipv6_network": {
+                  "type": "boolean"
+                },
+                "dtls_timeout": {
+                  "type": "number"
+                },
+                "enable_packet_tunnel": {
+                  "type": "boolean"
+                },
+                "is_same_as_on_trusted_network": {
+                  "type": "boolean"
+                },
+                "latency_based_server_enablement": {
+                  "type": "boolean"
+                },
+                "latency_based_server_mt_enablement": {
+                  "type": "boolean"
+                },
+                "latency_based_zen_enablement": {
+                  "type": "boolean"
+                },
+                "lbs_probe_interval": {
+                  "type": "number"
+                },
+                "lbs_probe_sample_size": {
+                  "type": "number"
+                },
+                "lbs_threshold_limit": {
+                  "type": "number"
+                },
+                "mtu_for_zadapter": {
+                  "type": "number"
+                },
+                "network_type": {
+                  "type": "number"
+                },
+                "optimise_for_unstable_connections": {
+                  "type": "boolean"
+                },
+                "path_mtu_discovery": {
+                  "type": "boolean"
+                },
+                "primary_transport": {
+                  "type": "number"
+                },
+                "redirect_web_traffic": {
+                  "type": "boolean"
+                },
+                "send_all_dns_to_trusted_server": {
+                  "type": "boolean"
+                },
+                "system_proxy": {
+                  "type": "boolean"
+                },
+                "system_proxy_data": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "bypass_proxy_for_private_ip": {
+                      "type": "boolean"
+                    },
+                    "enable_auto_detect": {
+                      "type": "boolean"
+                    },
+                    "enable_pac": {
+                      "type": "boolean"
+                    },
+                    "enable_proxy_server": {
+                      "type": "boolean"
+                    },
+                    "pac_data_path": {
+                      "type": "string"
+                    },
+                    "pac_url": {
+                      "type": "string"
+                    },
+                    "perform_gp_update": {
+                      "type": "boolean"
+                    },
+                    "proxy_action": {
+                      "type": "number"
+                    },
+                    "proxy_server_address": {
+                      "type": "string"
+                    },
+                    "proxy_server_port": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "tls_timeout": {
+                  "type": "number"
+                },
+                "tunnel2_fallback_type": {
+                  "type": "number"
+                },
+                "udp_timeout": {
+                  "type": "number"
+                },
+                "use_tunnel2_for_proxied_web_traffic": {
+                  "type": "boolean"
+                },
+                "use_tunnel2_for_unencrypted_web_traffic": {
+                  "type": "boolean"
+                },
+                "zen_probe_interval": {
+                  "type": "number"
+                },
+                "zen_probe_sample_size": {
+                  "type": "number"
+                },
+                "zen_threshold_limit": {
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "forwarding_profile_zpa_actions": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "action_type": {
+                  "type": "number"
+                },
+                "dtls_timeout": {
+                  "type": "number"
+                },
+                "is_same_as_on_trusted_network": {
+                  "type": "boolean"
+                },
+                "latency_based_server_enablement": {
+                  "type": "boolean"
+                },
+                "latency_based_server_mt_enablement": {
+                  "type": "boolean"
+                },
+                "lbs_probe_interval": {
+                  "type": "number"
+                },
+                "lbs_probe_sample_size": {
+                  "type": "number"
+                },
+                "lbs_threshold_limit": {
+                  "type": "number"
+                },
+                "mtu_for_zadapter": {
+                  "type": "number"
+                },
+                "network_type": {
+                  "type": "number"
+                },
+                "partner_info": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "allow_tls_fallback": {
+                      "type": "boolean"
+                    },
+                    "mtu_for_zadapter": {
+                      "type": "number"
+                    },
+                    "primary_transport": {
+                      "type": "number"
+                    }
+                  },
+                  "type": "object"
+                },
+                "primary_transport": {
+                  "type": "number"
+                },
+                "send_trusted_network_result_to_zpa": {
+                  "type": "boolean"
+                },
+                "tls_timeout": {
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "hostname": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "predefined_tn_all": {
+            "type": "boolean"
+          },
+          "predefined_trusted_networks": {
+            "type": "boolean"
+          },
+          "resolved_ips_for_hostname": {
+            "type": "string"
+          },
+          "skip_trusted_criteria_match": {
+            "type": "boolean"
+          },
+          "trusted_dhcp_servers": {
+            "type": "string"
+          },
+          "trusted_egress_ips": {
+            "type": "string"
+          },
+          "trusted_gateways": {
+            "type": "string"
+          },
+          "trusted_network_ids": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "trusted_network_ids_selected": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "trusted_networks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "trusted_subnets": {
+            "type": "string"
+          },
+          "unified_tunnel": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "action_type_zia": {
+                  "type": "number"
+                },
+                "action_type_zpa": {
+                  "type": "number"
+                },
+                "allow_tls_fallback": {
+                  "type": "boolean"
+                },
+                "block_unreachable_domains_traffic": {
+                  "type": "boolean"
+                },
+                "drop_ipv6_include_traffic_in_t2": {
+                  "type": "boolean"
+                },
+                "drop_ipv6_traffic": {
+                  "type": "boolean"
+                },
+                "drop_ipv6_traffic_in_ipv6_network": {
+                  "type": "boolean"
+                },
+                "dtls_timeout": {
+                  "type": "number"
+                },
+                "mtu_for_zadapter": {
+                  "type": "number"
+                },
+                "network_type": {
+                  "type": "number"
+                },
+                "optimise_for_unstable_connections": {
+                  "type": "boolean"
+                },
+                "path_mtu_discovery": {
+                  "type": "boolean"
+                },
+                "primary_transport": {
+                  "type": "number"
+                },
+                "redirect_web_traffic": {
+                  "type": "boolean"
+                },
+                "same_as_on_trusted": {
+                  "type": "boolean"
+                },
+                "send_all_dns_to_trusted_server": {
+                  "type": "boolean"
+                },
+                "system_proxy_data": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "bypass_proxy_for_private_ip": {
+                      "type": "boolean"
+                    },
+                    "enable_auto_detect": {
+                      "type": "boolean"
+                    },
+                    "enable_pac": {
+                      "type": "boolean"
+                    },
+                    "enable_proxy_server": {
+                      "type": "boolean"
+                    },
+                    "pac_data_path": {
+                      "type": "string"
+                    },
+                    "pac_url": {
+                      "type": "string"
+                    },
+                    "perform_gp_update": {
+                      "type": "boolean"
+                    },
+                    "proxy_action": {
+                      "type": "number"
+                    },
+                    "proxy_server_address": {
+                      "type": "string"
+                    },
+                    "proxy_server_port": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "tls_timeout": {
+                  "type": "number"
+                },
+                "tunnel2_fallback_type": {
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zcc_forwarding_profile tfvars",
+  "type": "object"
+}

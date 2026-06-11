@@ -31,6 +31,10 @@ IDs, names, and cross-references are consistent within the cassettes (e.g.
 | `zpa_app_connector_group.json` | `zpa/cassettes/TestAppConnectorGroup.yaml` | `/appConnectorGroup` |
 | `zpa_application_server.json` | `zpa/cassettes/TestApplicationServer.yaml` | `/server` |
 | `zpa_policy_access_rule.json` | `zpa/cassettes/TestAccessPolicyRule.yaml` + `TestAccessPolicyRuleV2.yaml` | `policySet/rules/policyType/ACCESS_POLICY` |
+| `zcc_forwarding_profile.json` | synthetic — shaped from ZCC provider schema | `zcc/papi/public/v1/webForwardingProfile/listByCompany` |
+| `zcc_trusted_network.json` | synthetic — shaped from ZCC provider schema | `zcc/papi/public/v2/trusted-networks` |
+| `zcc_failopen_policy.json` | synthetic — shaped from ZCC provider schema | `zcc/papi/public/v1/webFailOpenPolicy/listByCompany` |
+| `zcc_web_privacy.json` | synthetic — shaped from ZCC provider schema | `zcc/papi/public/v1/getWebPrivacyInfo` |
 
 ## Regeneration
 
