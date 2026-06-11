@@ -41,3 +41,11 @@ Notes that apply to every platform:
 - **Agents without terraform**: `make install-tf VERSION=1.15.4`
   downloads and checksum-verifies the binary into `bin/`; either PATH
   it or pass `TF=bin/terraform` to subsequent make calls.
+- **Delta reports as artifacts**: `make drift-report TENANT=<t>` renders
+  the drift summary + audit attribution to `reports/<t>/drift.md` — one
+  file, three audiences. Publishing is native everywhere (ADO `publish:`
+  pipeline artifact, GHA `upload-artifact`, Bitbucket `artifacts:`).
+  Inline run-summary rendering is the only platform-uneven part: ADO
+  `##vso[task.uploadsummary]`, GHA `$GITHUB_STEP_SUMMARY`, Bitbucket
+  none (artifact download only). The PR description carries the same
+  markdown regardless, so reviewers never depend on the platform extra.

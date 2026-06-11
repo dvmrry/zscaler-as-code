@@ -56,10 +56,19 @@ steps:
         exit "$rc"
       fi
     displayName: Detect drift (exit 3 = drift)
+  - script: make drift-report TENANT=$(TENANT)
+    displayName: Render drift report (summary + audit attribution)
+    condition: eq(variables.DRIFTED, 'true')
+  # Same markdown, three audiences: the run's Summary tab, a downloadable
+  # pipeline (VSO) artifact, and the PR description below.
+  - script: echo "##vso[task.uploadsummary]$(System.DefaultWorkingDirectory)/reports/$(TENANT)/drift.md"
+    displayName: Render report in the run Summary tab
+    condition: eq(variables.DRIFTED, 'true')
+  - publish: reports/$(TENANT)
+    artifact: drift-report
+    condition: eq(variables.DRIFTED, 'true')
   - script: |
       branch="drift/$(TENANT)/$(date -u +%Y%m%dT%H%M)"
-      python3 -m tools.drift_summary $(TENANT) > /tmp/pr-body.md
-      python3 -m tools.audit $(TENANT) 24 >> /tmp/pr-body.md  # advisory; never fails
       git checkout -b "$branch"
       git add config/$(TENANT) imports/$(TENANT)
       git -c user.name=drift-bot -c user.email=drift-bot@invalid \
@@ -70,7 +79,7 @@ steps:
       # the diff summary + audit attribution, and the plan build policy
       # shows merge-readiness; review is read-and-click, not investigate.
       az repos pr create --source-branch "$branch" --target-branch main \
-        --title "Drift backfill: $(TENANT)" --description "$(cat /tmp/pr-body.md)"
+        --title "Drift backfill: $(TENANT)" --description "$(cat reports/$(TENANT)/drift.md)"
     displayName: Open backfill PR
     condition: eq(variables.DRIFTED, 'true')
     env:
