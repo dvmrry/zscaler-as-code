@@ -85,3 +85,13 @@ pipelines:
               -d @/tmp/pr.json
           artifacts:
             - reports/** # the delta/attribution report, downloadable per run
+
+# ---------------------------------------------------------------------------
+# Plan-as-PR-comment (add to the pull-requests step after plan-changed
+# SAVE=1): Bitbucket comments via the 2.0 API; BITBUCKET_PR_TOKEN is an
+# App password / access token with pullrequest:write.
+#
+#   - ls envs/*/*/tfplan >/dev/null 2>&1 || { echo "no plannable changes"; exit 0; }
+#   - make plan-report
+#   - python3 -c 'import json; body=open("reports/plan.md").read(); body=body[:90000] + ("\n\n...truncated" if len(body)>90000 else ""); print(json.dumps({"content": {"raw": body}}))' > /tmp/comment.json
+#   - curl -sf -X POST -H "Authorization: Bearer $BITBUCKET_PR_TOKEN" -H "Content-Type: application/json" -d @/tmp/comment.json "https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pullrequests/$BITBUCKET_PR_ID/comments"

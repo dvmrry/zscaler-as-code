@@ -126,6 +126,24 @@ class ApplyChainTest(unittest.TestCase):
         self.assertNotEqual(rc, 0)
         self.assertIn("NOT CLEAN", out)
 
+    def test_plan_report_renders_markdown(self):
+        self._plan_save()
+        self.addCleanup(lambda: os.path.exists("reports/plan.md") and os.remove("reports/plan.md"))
+        rc, out = _run(
+            ["make", "plan-report", "TENANT=" + TENANT, "TF=" + FAKE_TF])
+        self.assertEqual(rc, 0, out)
+        with open(os.path.join("reports", "plan.md")) as f:
+            body = f.read()
+        self.assertIn("fake_rt", body)
+        self.assertIn("Plan:", body)
+        self.assertIn("```", body)
+
+    def test_plan_report_without_plans_fails_loudly(self):
+        rc, out = _run(
+            ["make", "plan-report", "TENANT=" + TENANT, "TF=" + FAKE_TF])
+        self.assertNotEqual(rc, 0)
+        self.assertIn("no saved plans", out)
+
     def test_assert_clean_without_plans_fails_loudly(self):
         rc, out = _run(
             ["make", "assert-clean", "TENANT=" + TENANT, "TF=" + FAKE_TF])

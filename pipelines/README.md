@@ -50,6 +50,13 @@ Notes that apply to every platform:
 - **Agents without terraform**: `make install-tf VERSION=1.15.4`
   downloads and checksum-verifies the binary into `bin/`; either PATH
   it or pass `TF=bin/terraform` to subsequent make calls.
+- **Plan as a PR comment**: `make plan-report` renders every saved
+  tfplan to `reports/plan.md` (per-root fenced blocks); posting is one
+  platform line — `gh pr comment --body-file` (GHA), the PR-threads
+  REST call with `System.AccessToken` (ADO), the 2.0 comments API
+  (Bitbucket) — each with a truncation guard for the platform's comment
+  size cap (full text stays in the artifact). Plan text can contain
+  sensitive values: private repos only, same caveat as tfplan artifacts.
 - **Delta reports as artifacts**: `make drift-report TENANT=<t>` renders
   the drift summary + audit attribution to `reports/<t>/drift.md` — one
   file, three audiences. Publishing is native everywhere (ADO `publish:`
