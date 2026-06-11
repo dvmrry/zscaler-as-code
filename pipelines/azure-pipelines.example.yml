@@ -87,3 +87,28 @@ steps:
 #                     ZSCALER_CLIENT_SECRET: $(ZSCALER_CLIENT_SECRET)
 #                     ZSCALER_VANITY_DOMAIN: $(ZSCALER_VANITY_DOMAIN)
 #                     ZSCALER_CLOUD: $(ZSCALER_CLOUD)
+
+# ---------------------------------------------------------------------------
+# Plan-as-PR-comment (PR build-policy pipeline): after plan-changed SAVE=1,
+# render the plan and post it to the PR thread so the reviewer sees exactly
+# what would change. Requires the build service identity to have
+# "Contribute to pull requests"; ADO comments cap around 150K chars.
+#
+#   - script: make plan-changed BASE=origin/main SAVE=1 BACKEND_CONFIG=backend.conf
+#   - script: |
+#       ls envs/*/*/tfplan >/dev/null 2>&1 || { echo "no plannable changes"; exit 0; }
+#       make plan-report
+#       python3 - > /tmp/thread.json <<'PYEOF'
+#       import json
+#       body = open('reports/plan.md').read()
+#       if len(body) > 140000:
+#           body = body[:140000] + '\n\n...truncated -- full plan in the pipeline artifacts.\n'
+#       print(json.dumps({'comments': [{'parentCommentId': 0, 'content': body,
+#                                       'commentType': 1}], 'status': 1}))
+#       PYEOF
+#       curl -sf -X POST \
+#         -H "Authorization: Bearer $(System.AccessToken)" \
+#         -H "Content-Type: application/json" \
+#         -d @/tmp/thread.json \
+#         "$(System.CollectionUri)$(System.TeamProject)/_apis/git/repositories/$(Build.Repository.ID)/pullRequests/$(System.PullRequest.PullRequestId)/threads?api-version=7.0"
+#     displayName: Comment the plan on the PR

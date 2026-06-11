@@ -8,10 +8,12 @@
 chdir=""
 cmd=""
 saved=no
+json=no
 for arg in "$@"; do
   case "$arg" in
     -chdir=*) chdir="${arg#-chdir=}" ;;
     -out=tfplan) saved=yes ;;
+    -json) json=yes ;;
     -*) ;;
     *) [ -z "$cmd" ] && cmd="$arg" ;;
   esac
@@ -24,6 +26,12 @@ case "$cmd" in
     [ "$saved" = yes ] && echo "fake-plan" > "$chdir/tfplan"
     exit 0 ;;
   show)
+    if [ "$json" = "no" ]; then
+      # human-readable form (plan-report consumes this)
+      echo "fake-tf plan for $chdir"
+      echo "Plan: 1 to import, 0 to add, 0 to change, ${FAKE_TF_DESTROYS:-0} to destroy."
+      exit 0
+    fi
     # Parseable JSON lacking resource_changes — simulates a skewed
     # terraform/provider whose show prints an old-format document. The
     # gates must reject this, not read it as "0 changes".

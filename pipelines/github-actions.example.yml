@@ -148,6 +148,46 @@ jobs:
           gh pr create --title "Drift backfill: FILL-tenant-label" \
             --body-file reports/FILL-tenant-label/drift.md
 
+  # ---- 2b. Plan-as-PR-comment for config PRs ----
+  # plan-changed scopes to the PR's own diff (docs-only PRs plan nothing
+  # and the comment step skips). The plan lands as a PR comment so the
+  # reviewer sees exactly what would change before merging.
+  pr-plan:
+    if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'drift/')
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write # gh pr comment
+    env:
+      ZSCALER_CLIENT_ID: ${{ secrets.ZSCALER_CLIENT_ID }}
+      ZSCALER_CLIENT_SECRET: ${{ secrets.ZSCALER_CLIENT_SECRET }}
+      ZSCALER_VANITY_DOMAIN: ${{ secrets.ZSCALER_VANITY_DOMAIN }}
+      ZSCALER_CLOUD: ${{ secrets.ZSCALER_CLOUD }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.4"
+      - run: make plan-changed BASE=origin/${{ github.base_ref }} SAVE=1 BACKEND_CONFIG=backend.conf
+      - name: Comment the plan on the PR (skips when nothing planned)
+        run: |
+          ls envs/*/*/tfplan >/dev/null 2>&1 || { echo "no plannable changes"; exit 0; }
+          make plan-report
+          # GitHub comments cap at 65536 chars; truncate with a pointer.
+          head -c 60000 reports/plan.md > /tmp/comment.md
+          if [ "$(wc -c < reports/plan.md)" -gt 60000 ]; then
+            printf '\n\n…truncated — full plan in the run artifacts.\n' >> /tmp/comment.md
+          fi
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/comment.md
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr-plan
+          path: reports/
+          retention-days: 3 # plans can contain sensitive values
+
   # ---- 3b. Drift-PR merge-readiness check (a HUMAN merges) ----
   # Green here means: the backfill is a faithful snapshot — the real plan
   # is pure no-op (imports of new objects allowed). The reviewer reads
@@ -157,7 +197,10 @@ jobs:
   drift-pr-plan:
     if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'drift/')
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write # gh pr comment
     env:
+      GH_TOKEN: ${{ github.token }}
       ZSCALER_CLIENT_ID: ${{ secrets.ZSCALER_CLIENT_ID }}
       ZSCALER_CLIENT_SECRET: ${{ secrets.ZSCALER_CLIENT_SECRET }}
       ZSCALER_VANITY_DOMAIN: ${{ secrets.ZSCALER_VANITY_DOMAIN }}
@@ -170,4 +213,13 @@ jobs:
         with:
           terraform_version: "1.15.4"
       - run: make plan-changed BASE=origin/main SAVE=1 BACKEND_CONFIG=backend.conf
+      - name: Comment the plan on the drift PR
+        run: |
+          make plan-report
+          head -c 60000 reports/plan.md > /tmp/comment.md
+          if [ "$(wc -c < reports/plan.md)" -gt 60000 ]; then
+            printf '\n\n…truncated — full plan in the run artifacts.\n' >> /tmp/comment.md
+          fi
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/comment.md
+      # comment first, THEN gate: the reviewer sees the plan even when red
       - run: make assert-clean

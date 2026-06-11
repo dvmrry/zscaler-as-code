@@ -1,7 +1,7 @@
 PYTHON ?= python3
 TF     ?= terraform
 
-.PHONY: help env install-tf bump-check test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck conformance
+.PHONY: help env install-tf bump-check plan-report test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck conformance
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
@@ -160,6 +160,20 @@ drift-report: ## Render the drift summary + audit attribution to reports/<tenant
 	@$(PYTHON) -m tools.drift_summary "$(TENANT)" > reports/$(TENANT)/drift.md
 	@$(PYTHON) -m tools.audit "$(TENANT)" $(or $(AUDIT_HOURS),24) >> reports/$(TENANT)/drift.md
 	@echo "wrote reports/$(TENANT)/drift.md"
+
+plan-report: ## Render saved plans to reports/plan.md (markdown, for PR comments) ([TENANT=<label>] [RESOURCE=<type>])
+	@set -e; mkdir -p reports; out="reports/plan.md"; found=0; \
+	printf '## Terraform plan\n\n' > "$$out"; \
+	for d in envs/$(or $(TENANT),*)/$(or $(RESOURCE),*)/; do \
+		test -f "$$d/tfplan" || continue; \
+		rt=$$(basename "$$d"); t=$$(basename "$$(dirname "$$d")"); \
+		found=$$((found+1)); \
+		printf '### %s/%s\n\n```\n' "$$t" "$$rt" >> "$$out"; \
+		$(TF) -chdir="$$d" show -no-color tfplan >> "$$out"; \
+		printf '\n```\n\n' >> "$$out"; \
+	done; \
+	test $$found -gt 0 || { rm -f "$$out"; echo "error: no saved plans — run make plan-changed SAVE=1 (or make plan SAVE=1) first"; exit 1; }; \
+	echo "wrote $$out ($$found plan(s))"
 
 assert-clean: ## Exit 0 only when every saved plan is no-op (imports allowed) — the drift-PR merge-readiness check ([TENANT=<label>] [RESOURCE=<type>])
 	@set -e; checked=0; dirty=0; for d in envs/$(or $(TENANT),*)/$(or $(RESOURCE),*)/; do \
