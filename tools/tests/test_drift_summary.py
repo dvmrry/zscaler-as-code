@@ -48,6 +48,8 @@ class RenderSummaryTest(unittest.TestCase):
         self.assertIn("~ edited_cat", out)
         self.assertIn("urls, keywords", out)
         self.assertIn("0 to add/change/destroy", out)
+        # the merged-but-never-applied tell, pre-interpreted for the reviewer
+        self.assertIn("merged but never APPLIED", out)
 
     def test_untouched_resources_omitted(self):
         out = render_summary("t1", {
