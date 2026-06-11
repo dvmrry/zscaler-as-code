@@ -3,7 +3,7 @@ import io
 import json
 import unittest
 
-from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, build_headers, compose_url, fetch_resource, acquire_token, products_in_manifest, auth_mode_from_env, _zslogin_host, ca_bundle_path, connection_hint, diag_hosts, expand_paths
+from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, paginate_single, paginate_zcc_v2, build_headers, compose_url, fetch_resource, acquire_token, products_in_manifest, auth_mode_from_env, _zslogin_host, _legacy_zcc_base, ca_bundle_path, connection_hint, diag_hosts, expand_paths
 
 
 class ManifestTest(unittest.TestCase):
@@ -18,7 +18,7 @@ class ManifestTest(unittest.TestCase):
 
     def test_manifest_products_valid(self):
         for rt, e in load_manifest().items():
-            self.assertIn(e["product"], ("zia", "zpa"), rt)
+            self.assertIn(e["product"], ("zcc", "zia", "zpa"), rt)
             self.assertIn("path", e)
 
 
@@ -193,7 +193,7 @@ class FetchResourceTest(unittest.TestCase):
 
 class ProductsTest(unittest.TestCase):
     def test_products_in_manifest(self):
-        self.assertEqual(products_in_manifest(), ["zia", "zpa"])
+        self.assertEqual(products_in_manifest(), ["zcc", "zia", "zpa"])
 
 
 class AcquireTokenTest(unittest.TestCase):
@@ -308,10 +308,11 @@ class DiagHostsTest(unittest.TestCase):
         )
 
     def test_legacy_hosts(self):
-        env = {"ZSCALER_USE_LEGACY_CLIENT": "true", "ZIA_CLOUD": "zscalertwo"}
+        env = {"ZSCALER_USE_LEGACY_CLIENT": "true", "ZIA_CLOUD": "zscalertwo",
+               "ZCC_CLOUD": "zscalertwo"}
         self.assertEqual(
             diag_hosts(env),
-            ["config.private.zscaler.com", "zsapi.zscalertwo.net"],
+            ["api-mobile.zscalertwo.net", "config.private.zscaler.com", "zsapi.zscalertwo.net"],
         )
 
     def test_placeholder_when_unset(self):
@@ -369,6 +370,127 @@ class FetchResourceExpandTest(unittest.TestCase):
         }
         out = _fetch_paths(entry, "legacy", {"cloud": "zscalertwo"}, "tok", opener)
         self.assertEqual([i["id"] for i in out], ["1", "2"])
+
+
+class PaginateSingleTest(unittest.TestCase):
+    def test_wraps_single_object(self):
+        opener = FakeOpener({
+            "https://x/getWebPrivacyInfo": [(200, {"id": "1", "active": "1"})]
+        })
+        out = paginate_single(opener, "https://x/getWebPrivacyInfo", {}, {})
+        self.assertEqual(out, [{"id": "1", "active": "1"}])
+
+    def test_passthrough_list(self):
+        opener = FakeOpener({
+            "https://x/list": [(200, [{"id": "1"}, {"id": "2"}])]
+        })
+        out = paginate_single(opener, "https://x/list", {}, {})
+        self.assertEqual(out, [{"id": "1"}, {"id": "2"}])
+
+
+class PaginateZccV2Test(unittest.TestCase):
+    def test_stops_on_short_page(self):
+        opener = FakeOpener({
+            "https://x/trusted-networks": [
+                (200, {"items": [{"id": 1}], "total": 3, "offset": 0, "limit": 2, "count": 2}),
+                (200, {"items": [{"id": 2}, {"id": 3}], "total": 3, "offset": 2, "limit": 2, "count": 1}),
+            ]
+        })
+        out = paginate_zcc_v2(opener, "https://x/trusted-networks", {}, {}, per_page=2)
+        self.assertEqual([i["id"] for i in out], [1, 2, 3])
+
+    def test_empty_first_page(self):
+        opener = FakeOpener({
+            "https://x/t": [(200, {"items": [], "total": 0, "offset": 0, "limit": 100, "count": 0})]
+        })
+        self.assertEqual(paginate_zcc_v2(opener, "https://x/t", {}, {}, per_page=100), [])
+
+    def test_total_based_termination(self):
+        opener = FakeOpener({
+            "https://x/t": [
+                (200, {"items": [{"id": 1}, {"id": 2}], "total": 2, "offset": 0, "limit": 2, "count": 2}),
+            ]
+        })
+        out = paginate_zcc_v2(opener, "https://x/t", {}, {}, per_page=2)
+        self.assertEqual(len(out), 2)
+        # only one HTTP call needed since collected == total
+        self.assertEqual(len(opener.calls), 1)
+
+
+class ComposeUrlZccTest(unittest.TestCase):
+    def test_oneapi_zcc(self):
+        self.assertEqual(
+            compose_url("oneapi", "zcc",
+                        "zcc/papi/public/v1/webForwardingProfile/listByCompany",
+                        {"cloud": ""}),
+            "https://api.zsapi.net/zcc/papi/public/v1/webForwardingProfile/listByCompany",
+        )
+
+    def test_oneapi_zcc_cloud_variant(self):
+        self.assertEqual(
+            compose_url("oneapi", "zcc",
+                        "zcc/papi/public/v1/webTrustedNetwork/listByCompany",
+                        {"cloud": "beta"}),
+            "https://api.beta.zsapi.net/zcc/papi/public/v1/webTrustedNetwork/listByCompany",
+        )
+
+    def test_legacy_zcc(self):
+        self.assertEqual(
+            compose_url("legacy", "zcc",
+                        "zcc/papi/public/v1/webForwardingProfile/listByCompany",
+                        {"zcc_cloud": "zscalertwo"}),
+            "https://api-mobile.zscalertwo.net/papi/zcc/papi/public/v1/webForwardingProfile/listByCompany",
+        )
+
+    def test_legacy_zcc_base_helper(self):
+        self.assertEqual(
+            _legacy_zcc_base("zscalertwo"),
+            "https://api-mobile.zscalertwo.net/papi",
+        )
+
+
+class BuildHeadersZccTest(unittest.TestCase):
+    def test_auth_token_header(self):
+        h = build_headers("jwt123", auth_token_header=True)
+        self.assertEqual(h["auth-token"], "jwt123")
+        self.assertNotIn("Authorization", h)
+
+    def test_bearer_by_default(self):
+        h = build_headers("tok")
+        self.assertIn("Authorization", h)
+        self.assertNotIn("auth-token", h)
+
+
+class AcquireTokenZccLegacyTest(unittest.TestCase):
+    def test_zcc_legacy_login_returns_jwt(self):
+        opener = FakeOpener({
+            "https://api-mobile.zscalertwo.net/papi/auth/v1/login": [
+                (200, {"jwtToken": "ZCC_JWT_TOK", "expires_in": "86400"})
+            ]
+        })
+        env = {
+            "ZCC_CLIENT_ID": "cid",
+            "ZCC_CLIENT_SECRET": "sec",
+            "ZCC_CLOUD": "zscalertwo",
+        }
+        token = acquire_token("legacy", "zcc", env, {}, opener)
+        self.assertEqual(token, "ZCC_JWT_TOK")
+        body = json.loads(opener.bodies[0].decode())
+        self.assertEqual(body["apiKey"], "cid")
+        self.assertEqual(body["secretKey"], "sec")
+
+
+class DiagHostsZccTest(unittest.TestCase):
+    def test_legacy_includes_zcc_host(self):
+        env = {"ZSCALER_USE_LEGACY_CLIENT": "true",
+               "ZIA_CLOUD": "zscalertwo", "ZCC_CLOUD": "zscalertwo"}
+        hosts = diag_hosts(env)
+        self.assertIn("api-mobile.zscalertwo.net", hosts)
+
+    def test_legacy_zcc_defaults_to_zia_cloud(self):
+        env = {"ZSCALER_USE_LEGACY_CLIENT": "true", "ZIA_CLOUD": "zscalertwo"}
+        hosts = diag_hosts(env)
+        self.assertIn("api-mobile.zscalertwo.net", hosts)
 
 
 if __name__ == "__main__":

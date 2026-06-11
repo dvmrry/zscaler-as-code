@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "captive_portal_web_sec_disable_minutes": {
+            "type": "number"
+          },
+          "enable_captive_portal_detection": {
+            "type": "boolean"
+          },
+          "enable_fail_open": {
+            "type": "boolean"
+          },
+          "enable_strict_enforcement_prompt": {
+            "type": "boolean"
+          },
+          "enable_web_sec_on_proxy_unreachable": {
+            "type": "boolean"
+          },
+          "enable_web_sec_on_tunnel_failure": {
+            "type": "boolean"
+          },
+          "strict_enforcement_prompt_delay_minutes": {
+            "type": "number"
+          },
+          "strict_enforcement_prompt_message": {
+            "type": "string"
+          },
+          "tunnel_failure_retry_count": {
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zcc_failopen_policy tfvars",
+  "type": "object"
+}

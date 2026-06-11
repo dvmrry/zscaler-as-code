@@ -115,5 +115,37 @@
     },
     "generate": true,
     "product": "zpa"
+  },
+  "zcc_failopen_policy": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "zcc/papi/public/v1/webFailOpenPolicy/listByCompany"
+    },
+    "generate": true,
+    "product": "zcc"
+  },
+  "zcc_forwarding_profile": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "zcc/papi/public/v1/webForwardingProfile/listByCompany"
+    },
+    "generate": true,
+    "product": "zcc"
+  },
+  "zcc_trusted_network": {
+    "fetch": {
+      "pagination": "zcc_v2",
+      "path": "zcc/papi/public/v2/trusted-networks"
+    },
+    "generate": true,
+    "product": "zcc"
+  },
+  "zcc_web_privacy": {
+    "fetch": {
+      "pagination": "single",
+      "path": "zcc/papi/public/v1/getWebPrivacyInfo"
+    },
+    "generate": true,
+    "product": "zcc"
   }
 }

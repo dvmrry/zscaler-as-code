@@ -22,6 +22,15 @@ def _header(resource_type, provider):
 _PROVIDER_SOURCES = {
     "zia": "zscaler/zia",
     "zpa": "zscaler/zpa",
+    "zcc": "zscaler/zcc",
+}
+
+# Beta providers must be pinned explicitly in the module's required_providers
+# because the Terraform registry does not advertise pre-release versions as
+# "latest" — omitting the constraint causes `terraform init` to fail with
+# "no available releases match the given constraints".
+_PROVIDER_VERSION_CONSTRAINTS = {
+    "zcc": "0.1.0-beta.1",
 }
 
 
@@ -171,12 +180,16 @@ def render_readme(resource_type, resource_schema):
 def render_versions(resource_type, resource_schema):
     provider = _provider_of(resource_type)
     source = _PROVIDER_SOURCES[provider]
+    version_line = ""
+    if provider in _PROVIDER_VERSION_CONSTRAINTS:
+        version_line = '      version = "%s"\n' % _PROVIDER_VERSION_CONSTRAINTS[provider]
     return (
         _header(resource_type, provider)
         + "terraform {\n"
         + "  required_providers {\n"
         + '    %s = {\n' % provider
         + '      source = "%s"\n' % source
+        + version_line
         + "    }\n"
         + "  }\n"
         + "}\n"

@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "condition_type": {
+            "type": "string"
+          },
+          "dns_search_domains": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "dns_server_ips": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "hostname": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "resolved_ips_for_hostname": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "ssid": {
+            "type": "string"
+          },
+          "trusted_dhcp_servers_ips": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "trusted_egress_ips": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "trusted_gateway_ips": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "trusted_subnet_ips": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "active",
+          "condition_type"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zcc_trusted_network tfvars",
+  "type": "object"
+}

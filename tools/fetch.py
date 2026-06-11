@@ -97,6 +97,55 @@ def paginate_zpa(opener, url, headers, query, page_size=500):
         page += 1
 
 
+def paginate_single(opener, url, headers, query):
+    """Single-object endpoints (no pagination): GET once, return as a
+    one-element list so the caller can iterate items uniformly.
+
+    Used for ZCC singleton resources (fail-open policy, web-privacy) that
+    return a plain JSON object rather than a paged array.
+    """
+    payload = _get_json(opener, url, headers, query)
+    if isinstance(payload, list):
+        return payload
+    return [payload]
+
+
+def paginate_zcc_v2(opener, url, headers, query, per_page=100, max_pages=100000):
+    """ZCC v2 offset-based pagination: {items, total, offset, limit, count}.
+
+    Advances skip by per_page after each page. Terminates on any of:
+    - count == 0 or items empty (empty-page safety)
+    - count < limit (short last page)
+    - collected >= total (server-authoritative total)
+    """
+    items = []
+    skip = 0
+    page = 0
+    while True:
+        q = dict(query)
+        q.update({"skip": skip, "perPage": per_page})
+        payload = _get_json(opener, url, headers, q)
+        page_items = payload.get("items") or []
+        items.extend(page_items)
+        count = payload.get("count", 0)
+        total = payload.get("total", 0)
+        limit = payload.get("limit", per_page)
+        if count == 0 or not page_items:
+            break
+        if limit > 0 and count < limit:
+            break
+        if total > 0 and len(items) >= total:
+            break
+        page += 1
+        if page >= max_pages:
+            raise RuntimeError(
+                "ZCC v2 %s exceeded max_pages=%d; aborting runaway pagination"
+                % (url, max_pages)
+            )
+        skip += per_page
+    return items
+
+
 # The OAuth audience is NOT a dialable host — api.zscaler.com serves no
 # valid cert and exists only as the token-request audience value. The real
 # OneAPI gateway is api.zsapi.net (api.<cloud>.zsapi.net off production).
@@ -111,12 +160,22 @@ def _oneapi_gateway(cloud):
     return "https://api.%s.zsapi.net" % norm
 
 
+def _legacy_zcc_base(cloud):
+    """ZCC legacy base URL (SDK-derived): https://api-mobile.<cloud>.net/papi"""
+    return "https://api-mobile.%s.net/papi" % cloud
+
+
 def compose_url(auth_mode, product, path, ctx):
     """Compose the product base URL + resource path for the auth mode.
 
     ctx carries cloud/customer_id as needed. All Zscaler-specific URL
     shapes live here (SDK-derived) — confirm against dev before first work
     run; a wrong literal here is a one-line fix.
+
+    ZCC paths in the registry carry their full post-gateway path including
+    the /zcc/papi/public/v1/ prefix (e.g. zcc/papi/public/v1/webForwardingProfile/listByCompany).
+    For OneAPI, the gateway is the same api.zsapi.net as zia/zpa.
+    For legacy, the base is https://api-mobile.<cloud>.net/papi (SDK v2_config.go).
     """
     if auth_mode == "oneapi":
         if product == "zia":
@@ -125,6 +184,8 @@ def compose_url(auth_mode, product, path, ctx):
             return "%s/zpa/mgmtconfig/v1/admin/customers/%s/%s" % (
                 _oneapi_gateway(ctx.get("cloud", "")), ctx["customer_id"], path
             )
+        if product == "zcc":
+            return "%s/%s" % (_oneapi_gateway(ctx.get("cloud", "")), path)
     elif auth_mode == "legacy":
         if product == "zia":
             return "https://zsapi.%s.net/api/v1/%s" % (ctx["cloud"], path)
@@ -132,15 +193,24 @@ def compose_url(auth_mode, product, path, ctx):
             return "%s/mgmtconfig/v1/admin/customers/%s/%s" % (
                 _LEGACY_ZPA_BASE, ctx["customer_id"], path
             )
+        if product == "zcc":
+            return "%s/%s" % (_legacy_zcc_base(ctx["zcc_cloud"]), path)
     raise ValueError("unknown auth_mode/product: %r/%r" % (auth_mode, product))
 
 
-def build_headers(token):
+def build_headers(token, auth_token_header=False):
     """Bearer header for OneAPI / legacy-ZPA; cookie-only (no auth header)
     for legacy-ZIA, where token is None and the session cookie rides in the
-    opener's cookie jar."""
+    opener's cookie jar.
+
+    auth_token_header=True uses the ZCC legacy header name 'auth-token'
+    (SDK: v2_client.go req.Header.Set("auth-token", ...)) instead of
+    the standard Authorization: Bearer form.
+    """
     if token is None:
         return {"Accept": "application/json"}
+    if auth_token_header:
+        return {"auth-token": token, "Accept": "application/json"}
     return {"Authorization": "Bearer " + token, "Accept": "application/json"}
 
 
@@ -226,7 +296,12 @@ def real_opener(env=None):
     return _open
 
 
-_PAGINATORS = {"zia": paginate_zia, "zpa": paginate_zpa}
+_PAGINATORS = {
+    "zia": paginate_zia,
+    "zpa": paginate_zpa,
+    "single": paginate_single,
+    "zcc_v2": paginate_zcc_v2,
+}
 
 
 def expand_paths(entry):
@@ -249,7 +324,9 @@ def expand_paths(entry):
 
 def _fetch_paths(entry, auth_mode, ctx, token, opener):
     product = entry["product"]
-    headers = build_headers(token)
+    # ZCC legacy auth uses a non-standard header: auth-token (SDK v2_client.go)
+    use_auth_token_header = (product == "zcc" and auth_mode == "legacy")
+    headers = build_headers(token, auth_token_header=use_auth_token_header)
     query = entry.get("query") or {}
     paginate = _PAGINATORS[entry.get("pagination", product)]
     items = []
@@ -338,6 +415,21 @@ def acquire_token(auth_mode, product, env, ctx, opener, now_ms=None):
             if status != 200:
                 raise SystemExit("ZIA session auth failed: HTTP %d" % status)
             return None
+        if product == "zcc":
+            # ZCC legacy: POST /auth/v1/login with {apiKey, secretKey} ->
+            # {jwtToken} used as auth-token header (SDK zcc/v2_client.go).
+            cloud = _require(env, "ZCC_CLOUD")
+            url = "%s/auth/v1/login" % _legacy_zcc_base(cloud)
+            payload = json.dumps({
+                "apiKey": _require(env, "ZCC_CLIENT_ID"),
+                "secretKey": _require(env, "ZCC_CLIENT_SECRET"),
+            }).encode()
+            status, raw = opener(
+                "POST", url, {"Content-Type": "application/json"}, payload
+            )
+            if status != 200:
+                raise SystemExit("ZCC login failed: HTTP %d" % status)
+            return json.loads(raw.decode())["jwtToken"]
     raise SystemExit("unknown auth mode %r" % auth_mode)
 
 
@@ -354,7 +446,14 @@ def diag_hosts(env):
         gateway = _oneapi_gateway(cloud)
         return sorted({login.split("//", 1)[1], gateway.split("//", 1)[1]})
     cloud = env.get("ZIA_CLOUD", "") or env.get("ZSCALER_CLOUD", "") or "<cloud>"
-    return sorted({"zsapi.%s.net" % cloud, "config.private.zscaler.com"})
+    zcc_cloud = env.get("ZCC_CLOUD", "") or cloud
+    # ZCC legacy base: api-mobile.<cloud>.net (path /papi is not a hostname)
+    zcc_host = "api-mobile.%s.net" % zcc_cloud
+    return sorted({
+        "zsapi.%s.net" % cloud,
+        "config.private.zscaler.com",
+        zcc_host,
+    })
 
 
 def _try_tls(host, context):
@@ -425,6 +524,7 @@ def main(argv=None):
     ctx = {
         "cloud": env.get("ZIA_CLOUD", "") or env.get("ZSCALER_CLOUD", ""),
         "customer_id": _require(env, "ZPA_CUSTOMER_ID"),
+        "zcc_cloud": env.get("ZCC_CLOUD", ""),
     }
     tokens = {}
     for product in products_in_manifest():

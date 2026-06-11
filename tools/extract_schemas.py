@@ -14,6 +14,7 @@ import sys
 PROVIDERS = {
     "registry.terraform.io/zscaler/zia": "zia",
     "registry.terraform.io/zscaler/zpa": "zpa",
+    "registry.terraform.io/zscaler/zcc": "zcc",
 }
 
 OUT_DIR = os.path.join("schemas", "provider")

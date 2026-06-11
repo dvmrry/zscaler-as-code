@@ -13,20 +13,26 @@ FAKE_COMBINED = {
         "registry.terraform.io/zscaler/zpa": {
             "resource_schemas": {"zpa_application_segment": {"version": 0}}
         },
+        "registry.terraform.io/zscaler/zcc": {
+            "resource_schemas": {"zcc_forwarding_profile": {"version": 0}}
+        },
     },
 }
 
 
 class SplitSchemasTest(unittest.TestCase):
-    def test_splits_into_zia_and_zpa(self):
+    def test_splits_into_zia_zpa_and_zcc(self):
         result = split_schemas(FAKE_COMBINED)
-        self.assertEqual(sorted(result), ["zia", "zpa"])
+        self.assertEqual(sorted(result), ["zcc", "zia", "zpa"])
 
     def test_preserves_provider_subtree(self):
         result = split_schemas(FAKE_COMBINED)
         self.assertIn("zia_url_categories", result["zia"]["resource_schemas"])
         self.assertIn(
             "zpa_application_segment", result["zpa"]["resource_schemas"]
+        )
+        self.assertIn(
+            "zcc_forwarding_profile", result["zcc"]["resource_schemas"]
         )
 
     def test_missing_provider_raises(self):

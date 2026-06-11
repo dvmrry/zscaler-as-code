@@ -1,6 +1,6 @@
 # zscaler-as-code
 
-Schema-driven Terraform boilerplate for managing Zscaler (ZIA + ZPA) where
+Schema-driven Terraform boilerplate for managing Zscaler (ZIA + ZPA + ZCC) where
 all configuration lives in typed JSON (`.auto.tfvars.json`) and module code
 is generated from the provider schema rather than hand-curated.
 

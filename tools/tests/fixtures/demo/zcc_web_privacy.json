@@ -1,0 +1,18 @@
+[
+  {
+    "id": "7777",
+    "active": "1",
+    "collectUserInfo": "1",
+    "collectMachineHostname": "1",
+    "collectZdxLocation": "1",
+    "enablePacketCapture": "1",
+    "disableCrashlytics": "1",
+    "overrideT2ProtocolSetting": "1",
+    "restrictRemotePacketCapture": "1",
+    "grantAccessToZscalerLogFolder": "1",
+    "exportLogsForNonAdmin": "1",
+    "enableAutoLogSnippet": "1",
+    "enforceSecurePacUrls": "0",
+    "enableFQDNMatchForVpnBypasses": "0"
+  }
+]

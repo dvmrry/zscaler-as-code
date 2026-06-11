@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "collect_machine_hostname": {
+            "type": "boolean"
+          },
+          "collect_user_info": {
+            "type": "boolean"
+          },
+          "collect_zdx_location": {
+            "type": "boolean"
+          },
+          "disable_crashlytics": {
+            "type": "boolean"
+          },
+          "enable_auto_log_snippet": {
+            "type": "boolean"
+          },
+          "enable_fqdn_match_for_vpn_bypasses": {
+            "type": "boolean"
+          },
+          "enable_packet_capture": {
+            "type": "boolean"
+          },
+          "enforce_secure_pac_urls": {
+            "type": "boolean"
+          },
+          "export_logs_for_non_admin": {
+            "type": "boolean"
+          },
+          "grant_access_to_zscaler_log_folder": {
+            "type": "boolean"
+          },
+          "override_t2_protocol_setting": {
+            "type": "boolean"
+          },
+          "restrict_remote_packet_capture": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zcc_web_privacy tfvars",
+  "type": "object"
+}
