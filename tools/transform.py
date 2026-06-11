@@ -189,12 +189,21 @@ def _skip_item(snake_raw, override):
 
 
 def derive_key(item, override):
+    """Stable map key from the override's key_field — a single field name
+    or a LIST of fields joined into one slug (composite keys, for
+    resources whose names are only unique within a type, e.g. cloud app
+    control rules across rule types)."""
     field = override.get("key_field", "name")
-    if field not in item:
-        raise KeyError(
-            "key field %r missing from item; set key_field in the override map" % field
-        )
-    return slugify(str(item[field]))
+    fields = field if isinstance(field, list) else [field]
+    parts = []
+    for f in fields:
+        if f not in item:
+            raise KeyError(
+                "key field %r missing from item; set key_field in the "
+                "override map" % f
+            )
+        parts.append(str(item[f]))
+    return slugify(" ".join(parts))
 
 
 def transform_items(raw_items, resource_type, override):

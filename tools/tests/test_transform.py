@@ -186,6 +186,21 @@ class DeriveKeyTest(unittest.TestCase):
         with self.assertRaises(KeyError):
             derive_key({"description": "no name"}, {})
 
+    def test_composite_key_field(self):
+        # names unique only within a type (cloud app control rules)
+        item = {"type": "STREAMING_MEDIA", "name": "Block Risky"}
+        self.assertEqual(
+            derive_key(item, {"key_field": ["type", "name"]}),
+            "streaming_media_block_risky",
+        )
+
+    def test_composite_key_missing_part_names_the_field(self):
+        try:
+            derive_key({"type": "WEBMAIL"}, {"key_field": ["type", "name"]})
+            self.fail("expected KeyError")
+        except KeyError as e:
+            self.assertIn("name", str(e))
+
 
 class PipelineTest(unittest.TestCase):
     RAW = [
