@@ -8,7 +8,8 @@ terraform {
       source = "zscaler/zcc"
     }
   }
-  # backend configured per environment (Plan 5 / operator)
+  # local state — opt into remote state with
+  # make gen-env TENANT=zs3 BACKEND=azurerm
 }
 
 provider "zcc" {

@@ -57,9 +57,9 @@ ifeq ($(CHECK),1)
 		exit 1; }
 endif
 
-gen-env: ## Generate env roots for a tenant (TENANT=<label>)
-	@test -n "$(TENANT)" || { echo "usage: make gen-env TENANT=<label>"; exit 2; }
-	$(PYTHON) -m tools.gen_env "$(TENANT)"
+gen-env: ## Generate env roots for a tenant (TENANT=<label> [BACKEND=azurerm])
+	@test -n "$(TENANT)" || { echo "usage: make gen-env TENANT=<label> [BACKEND=azurerm]"; exit 2; }
+	$(PYTHON) -m tools.gen_env "$(TENANT)" $(BACKEND)
 
 transform: ## Transform pulled API JSON into tfvars + imports (IN=<dir> TENANT=<name>)
 	@test -n "$(IN)" -a -n "$(TENANT)" || { echo "usage: make transform IN=pulls/<tenant> TENANT=<tenant>"; exit 2; }
@@ -115,15 +115,19 @@ validate-imports: ## Validate fixture import addresses against a tenant's roots 
 		fi; \
 	done
 
-plan: ## Terraform plan for a tenant's roots (TENANT=<label> [RESOURCE=<type>]; real creds via env)
-	@test -n "$(TENANT)" || { echo "usage: make plan TENANT=<label> [RESOURCE=<type>]"; exit 2; }
+plan: ## Terraform plan for a tenant's roots (TENANT=<label> [RESOURCE=<type>] [BACKEND_CONFIG=<file>]; real creds via env)
+	@test -n "$(TENANT)" || { echo "usage: make plan TENANT=<label> [RESOURCE=<type>] [BACKEND_CONFIG=<file>]"; exit 2; }
 	@set -e; planned=0; for d in envs/$(TENANT)/$(or $(RESOURCE),*)/; do \
 		test -d "$$d" || continue; \
 		rt=$$(basename $$d); \
 		vf="$(abspath config/$(TENANT))/$$rt.auto.tfvars.json"; \
 		test -f "$$vf" || { echo "skip $$rt (no $$vf)"; continue; }; \
+		if grep -q '^  backend "' "$$d/main.tf" && [ -z "$(BACKEND_CONFIG)" ]; then \
+			echo "error: $$rt declares a remote backend; run with BACKEND_CONFIG=<file>"; \
+			echo "(copy backend.conf.example, fill the values, pass BACKEND_CONFIG=backend.conf)"; \
+			exit 1; fi; \
 		echo "== plan $$rt"; \
-		$(TF) -chdir=$$d init -input=false > /dev/null; \
+		$(TF) -chdir=$$d init -input=false $(if $(BACKEND_CONFIG),-reconfigure -backend-config="$(abspath $(BACKEND_CONFIG))" -backend-config="key=$(TENANT)/$$rt.tfstate") > /dev/null; \
 		$(TF) -chdir=$$d plan -input=false -var-file="$$vf"; \
 		planned=$$((planned+1)); \
 	done; \

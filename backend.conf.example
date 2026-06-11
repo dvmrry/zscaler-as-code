@@ -1,0 +1,20 @@
+# Azure Blob Storage backend for Terraform state — partial configuration.
+#
+# Copy to backend.conf (gitignored), fill the three values, then:
+#   make gen-env TENANT=<label> BACKEND=azurerm     # one-time: adds the backend block
+#   make plan TENANT=<label> BACKEND_CONFIG=backend.conf
+#
+# The state key (blob name) is derived automatically per root:
+#   <tenant>/<resource_type>.tfstate
+# so every value below is shared across all roots — fill once.
+#
+# Authentication comes from the environment, never this file: an Azure
+# pipeline service connection, `az login`, or ARM_* environment variables.
+# The identity needs "Storage Blob Data Contributor" on the container.
+
+resource_group_name  = "FILL-resource-group-containing-the-storage-account"
+storage_account_name = "FILL-storage-account-name"
+container_name       = "FILL-blob-container-name"
+
+# Recommended: Entra ID data-plane auth (no storage account keys).
+use_azuread_auth = true
