@@ -52,7 +52,11 @@ certificate — attempts to call it fail TLS verification on any network.
     ZCC_CLOUD                ZCC cloud suffix (e.g. zscalertwo); resolves
                              the legacy host api-mobile.<cloud>.net
 
-ZCC only supports legacy auth; it does not use the OneAPI gateway.
+ZCC works in both modes: OneAPI uses the same `ZSCALER_*` credentials and
+gateway as the other products; legacy uses the mobile-portal API key/secret
+above with ZCC's non-standard `auth-token` header (handled automatically).
+The ZCC provider itself is pre-1.0 (`0.1.0-beta.1`, pinned) — expect schema
+churn on bumps.
 
 Credentials are read from the environment at runtime only. They are never
 written to disk, never logged, and never enter `pulls/` output. Real pulls
