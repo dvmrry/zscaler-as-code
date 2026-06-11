@@ -1,0 +1,86 @@
+# Example Azure DevOps pipeline — reference material, not a working config.
+# Bootstrapping a NEW environment: copy this file to azure-pipelines.yml in
+# your repo and adapt it (agent pool, terraform availability on the agents,
+# proxy/registry mirrors). If an adapted azure-pipelines.yml already exists,
+# keep it — never delete it or repoint CI at this example.
+# Keep pipelines thin shells over make — all logic lives in the Makefile
+# (see AGENTS.md rule 9).
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - script: make env
+    displayName: Toolchain versions
+  - script: make test
+    displayName: Python unit tests
+  # `make validate` requires terraform on the agent. Hosted ubuntu images
+  # ship it; for self-hosted pools either bake terraform into the agent
+  # image or insert your installer task above this step, e.g. the
+  # Microsoft DevLabs extension:
+  # - task: TerraformInstaller@1
+  #   inputs:
+  #     terraformVersion: "1.15.4"
+  - script: make validate
+    displayName: Terraform format check
+  # Drift detection and env-root consistency are adopter concerns: scheduling,
+  # credential injection, and failure routing depend on your ADO setup. Two
+  # commented-out examples for reference:
+  #
+  # - script: make drift TENANT=<label>
+  #   displayName: Drift detection (scheduled pipeline; set ZSCALER_* env via library)
+  #   # exits 3 on drift — set continueOnError or wire a custom failure handler
+  #   # to notify the team; exits 2 if TENANT is unset.
+  #
+  # - script: make check-envs
+  #   displayName: Env-root consistency check (PR gate; fails on uncommitted drift)
+
+# ---------------------------------------------------------------------------
+# Delivery pipeline (separate yaml in practice): plan -> approval -> apply.
+# Scope is derived from the merge diff (make plan-changed) and apply is
+# bounded to the saved-plan artifacts — there is no apply-all to misfire.
+# Needs: variable group with ZSCALER_* creds, a service connection (or
+# ARM_* vars) for the azurerm state backend, backend.conf in the repo,
+# and an ADO environment with approvals + exclusive lock for the apply.
+# Set fetchDepth: 0 on checkout — plan-changed diffs against the merge-base.
+#
+# stages:
+#   - stage: plan
+#     jobs:
+#       - job: plan
+#         steps:
+#           - checkout: self
+#             fetchDepth: 0
+#           - script: make plan-changed BASE=origin/main~1 SAVE=1 BACKEND_CONFIG=backend.conf
+#             displayName: Plan changed roots
+#             env: # creds from the variable group
+#               ZSCALER_CLIENT_ID: $(ZSCALER_CLIENT_ID)
+#               ZSCALER_CLIENT_SECRET: $(ZSCALER_CLIENT_SECRET)
+#               ZSCALER_VANITY_DOMAIN: $(ZSCALER_VANITY_DOMAIN)
+#               ZSCALER_CLOUD: $(ZSCALER_CLOUD)
+#           - publish: envs
+#             artifact: tfplans   # plans can contain sensitive values; restrict retention
+#   - stage: apply
+#     dependsOn: plan
+#     jobs:
+#       - deployment: apply
+#         environment: <protected-environment>   # approvals + exclusive lock HERE
+#         strategy:
+#           runOnce:
+#             deploy:
+#               steps:
+#                 - checkout: self
+#                 - download: current
+#                   artifact: tfplans
+#                 - script: cp -R "$(Pipeline.Workspace)/tfplans/"* envs/
+#                 - script: make apply BACKEND_CONFIG=backend.conf
+#                   displayName: Apply saved plans (refuses destroys without ALLOW_DESTROY=1)
+#                   env:
+#                     ZSCALER_CLIENT_ID: $(ZSCALER_CLIENT_ID)
+#                     ZSCALER_CLIENT_SECRET: $(ZSCALER_CLIENT_SECRET)
+#                     ZSCALER_VANITY_DOMAIN: $(ZSCALER_VANITY_DOMAIN)
+#                     ZSCALER_CLOUD: $(ZSCALER_CLOUD)

@@ -1,0 +1,91 @@
+# Example GitHub Actions workflows — reference material, not working config.
+# Copy the jobs you need into .github/workflows/*.yml and fill the FILL-
+# markers. Keep pipelines thin shells over make — all logic lives in the
+# Makefile (AGENTS.md rule 9).
+
+name: zscaler-as-code
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * *" # drift detection; remove if not using the drift job
+
+jobs:
+  # ---- 1. Validation (PR gate) — no credentials, never touches state ----
+  validate:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.4"
+      - run: make test
+      - run: make validate
+      - run: make typecheck TENANT=FILL-tenant-label
+      - run: make test-envs TENANT=FILL-tenant-label
+
+  # ---- 2. Plan -> Apply (delivery) — needs real creds + state auth ----
+  plan:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    env:
+      # OneAPI creds from repo/environment secrets; ARM_* or OIDC for state
+      ZSCALER_CLIENT_ID: ${{ secrets.ZSCALER_CLIENT_ID }}
+      ZSCALER_CLIENT_SECRET: ${{ secrets.ZSCALER_CLIENT_SECRET }}
+      ZSCALER_VANITY_DOMAIN: ${{ secrets.ZSCALER_VANITY_DOMAIN }}
+      ZSCALER_CLOUD: ${{ secrets.ZSCALER_CLOUD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # plan-changed diffs against the merge-base
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.4"
+      - run: make plan-changed BASE=origin/main~1 SAVE=1 BACKEND_CONFIG=backend.conf
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tfplans
+          path: envs/**/tfplan
+          retention-days: 3 # plans can contain sensitive values
+
+  apply:
+    needs: plan
+    runs-on: ubuntu-latest
+    # FILL: protect this environment with required reviewers — that is the
+    # approval gate between plan and apply.
+    environment: FILL-protected-environment-name
+    concurrency: tfstate-FILL-tenant-label # serialize applies per tenant
+    env:
+      ZSCALER_CLIENT_ID: ${{ secrets.ZSCALER_CLIENT_ID }}
+      ZSCALER_CLIENT_SECRET: ${{ secrets.ZSCALER_CLIENT_SECRET }}
+      ZSCALER_VANITY_DOMAIN: ${{ secrets.ZSCALER_VANITY_DOMAIN }}
+      ZSCALER_CLOUD: ${{ secrets.ZSCALER_CLOUD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.4"
+      - uses: actions/download-artifact@v4
+        with:
+          name: tfplans
+          path: envs/
+      # Applies ONLY the saved plans; refuses destroys without ALLOW_DESTROY=1
+      - run: make apply BACKEND_CONFIG=backend.conf
+
+  # ---- 3. Drift (scheduled) — read-only creds, no state ----
+  drift:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    env:
+      ZSCALER_CLIENT_ID: ${{ secrets.ZSCALER_RO_CLIENT_ID }}
+      ZSCALER_CLIENT_SECRET: ${{ secrets.ZSCALER_RO_CLIENT_SECRET }}
+      ZSCALER_VANITY_DOMAIN: ${{ secrets.ZSCALER_VANITY_DOMAIN }}
+      ZSCALER_CLOUD: ${{ secrets.ZSCALER_CLOUD }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: make drift TENANT=FILL-tenant-label
+        # exit 3 = drift detected; the git diff is the report. Typical
+        # follow-up: open a PR with the regenerated config so remediation
+        # rides the normal plan->apply pipeline, e.g. peter-evans/create-pull-request.

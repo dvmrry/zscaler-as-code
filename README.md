@@ -51,7 +51,7 @@ Directories not yet present are created by later build phases.
 
 ## CI
 
-`azure-pipelines.example.yml` is a starting point for Azure DevOps: point a
+`pipelines/azure-pipelines.example.yml` is a starting point for Azure DevOps: point a
 pipeline definition at it (or copy it) and adapt the agent pool and
 toolchain setup to your environment. Pipelines stay thin shells — they only
 call `make` targets.
