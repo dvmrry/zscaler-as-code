@@ -242,8 +242,13 @@ def main(argv=None):
             all_mismatches.append(line)
 
     if not resource_types_checked:
-        sys.stdout.write("no config files found for tenant %r in %s\n" % (tenant, config_dir))
-        return 0
+        # Checking nothing is never success — a typo'd label or a skipped
+        # `make transform` should fail loudly, not pass silently.
+        sys.stdout.write(
+            "error: no config files found for tenant %r in %s "
+            "(typo? run make transform first)\n" % (tenant, config_dir)
+        )
+        return 1
 
     n = len(all_mismatches)
     m = len(resource_types_checked)

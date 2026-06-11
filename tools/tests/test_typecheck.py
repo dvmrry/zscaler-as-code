@@ -334,11 +334,18 @@ class MainTest(unittest.TestCase):
         self.assertEqual(result, 0)
 
     def test_main_missing_tenant_exits_nonzero(self):
-        result = main(["tenant_that_does_not_exist_xyzzy"])
-        # No config files found → clean (0) or usage guard → still well-formed
-        # Either 0 (no files checked) or 1 (if the tool errors) is acceptable
-        # But it must not raise an exception
-        self.assertIn(result, (0, 1, 2))
+        # Checking zero files is never success — a typo'd label must fail
+        # loudly (same rule as make plan's zero-roots guard).
+        import io
+        old = sys.stdout
+        sys.stdout = io.StringIO()
+        try:
+            result = main(["tenant_that_does_not_exist_xyzzy"])
+            out = sys.stdout.getvalue()
+        finally:
+            sys.stdout = old
+        self.assertEqual(result, 1)
+        self.assertIn("no config files found", out)
 
     def test_main_no_args_exits_nonzero(self):
         result = main([])
