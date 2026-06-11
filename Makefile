@@ -13,6 +13,10 @@ env: ## Print toolchain versions (diagnostic)
 	@$(TF) version 2>/dev/null | head -1 || echo "terraform: not found"
 	@docker --version 2>/dev/null || echo "docker: not found"
 
+install-tf: ## Download+checksum-verify a pinned terraform (VERSION=<v> [DEST=bin]); then PATH it or pass TF=bin/terraform
+	@test -n "$(VERSION)" || { echo "usage: make install-tf VERSION=1.15.4 [DEST=bin]"; exit 2; }
+	$(PYTHON) -m tools.install_tf "$(VERSION)" $(or $(DEST),bin)
+
 test: ## Run Python unit tests with the local interpreter
 	$(PYTHON) -m unittest discover -s tools/tests -t . -v
 

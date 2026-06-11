@@ -1,0 +1,43 @@
+#!/bin/sh
+# Fake terraform for Makefile chain tests (make ... TF=tools/tests/bin/fake-tf).
+# Speaks just enough of the CLI surface the plan/apply targets use:
+#   init  -> ok
+#   plan  -> prints a summary; writes tfplan into -chdir when -out=tfplan
+#   show  -> emits plan JSON with $FAKE_TF_DESTROYS delete actions
+#   apply -> requires tfplan; appends the root to $FAKE_TF_LOG
+chdir=""
+cmd=""
+saved=no
+for arg in "$@"; do
+  case "$arg" in
+    -chdir=*) chdir="${arg#-chdir=}" ;;
+    -out=tfplan) saved=yes ;;
+    -*) ;;
+    *) [ -z "$cmd" ] && cmd="$arg" ;;
+  esac
+done
+case "$cmd" in
+  init)
+    exit 0 ;;
+  plan)
+    echo "Plan: 1 to import, 0 to add, 0 to change, ${FAKE_TF_DESTROYS:-0} to destroy."
+    [ "$saved" = yes ] && echo "fake-plan" > "$chdir/tfplan"
+    exit 0 ;;
+  show)
+    n="${FAKE_TF_DESTROYS:-0}"
+    printf '{"resource_changes": ['
+    i=0
+    while [ "$i" -lt "$n" ]; do
+      [ "$i" -gt 0 ] && printf ','
+      printf '{"change":{"actions":["delete"]}}'
+      i=$((i+1))
+    done
+    printf ']}'
+    exit 0 ;;
+  apply)
+    test -f "$chdir/tfplan" || { echo "fake-tf: no tfplan in $chdir" >&2; exit 1; }
+    [ -n "$FAKE_TF_LOG" ] && echo "applied $chdir" >> "$FAKE_TF_LOG"
+    exit 0 ;;
+  *)
+    exit 0 ;;
+esac

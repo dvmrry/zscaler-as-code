@@ -1,7 +1,7 @@
 # Example scheduled drift/plan pipeline — reference material, not a working
 # config. Copy or point a pipeline at this file and adapt: schedule, pool,
 # variable group names, tenant labels. Keep it a thin shell over make
-# (AGENTS.md rule 9). The CI pipeline example (azure-pipelines.example.yml)
+# (AGENTS.md rule 9). The CI pipeline example (azure-pipelines.example.yml, same folder)
 # covers tests/validation; this one is the recurring tenant-sync job.
 schedules:
   - cron: "0 6 * * *"
