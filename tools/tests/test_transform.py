@@ -255,6 +255,33 @@ class CoerceTest(unittest.TestCase):
         self.assertEqual(out["ids"], [])
         self.assertEqual(out["names"], [])
 
+    def test_object_typed_list_attr_members_coerce(self):
+        # tcp_port_range/udp_port_range are object-typed list ATTRIBUTES
+        # (not block_types): ["list", ["object", {"from": "string",
+        # "to": "string"}]]. Members must coerce by their declared type the
+        # same way block members do — an int/bool where the schema wants a
+        # string must be stringified, mirroring quirk 6. Before the fix these
+        # attributes passed through wholly uncoerced.
+        rs = load_resource("zpa_application_segment")
+        item = {"tcp_port_range": [{"from": 9002, "to": True}]}
+        out = coerce_item(item, rs["block"])
+        self.assertEqual(out["tcp_port_range"], [{"from": "9002", "to": "true"}])
+
+    def test_object_typed_list_attr_ref_unwrap(self):
+        # An object-typed list attribute whose member is a number must unwrap
+        # {id,name} reference objects and coerce, exactly like a block member.
+        fake_block = {
+            "attributes": {
+                "ranges": {
+                    "type": ["list", ["object", {"port": "number"}]],
+                    "optional": True,
+                }
+            }
+        }
+        item = {"ranges": [{"port": "443"}, {"port": {"id": 8080, "name": "x"}}]}
+        out = coerce_item(item, fake_block)
+        self.assertEqual(out["ranges"], [{"port": 443}, {"port": 8080}])
+
 
 class OverrideTest(unittest.TestCase):
     def test_missing_override_is_empty(self):

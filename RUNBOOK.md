@@ -211,6 +211,11 @@ make test
 
 3. Commit. All module code, JSON Schemas, and env roots are generated.
 
+New registry entries are automatically conformance-tested (`make test` /
+`make conformance`) — schema-driven adversarial synthesis through the full
+transform and a nesting-aware structural typecheck against the complete quirk
+catalog — before any tenant contact.
+
 ---
 
 ## Provider Bumps

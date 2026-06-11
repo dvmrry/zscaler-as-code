@@ -165,8 +165,38 @@ def coerce_item(item, block):
                 out[key] = value
             else:
                 out[key] = [_coerce_primitive(_unwrap_ref(value), enc[1])]
+        elif (
+            isinstance(enc, list) and len(enc) == 2
+            and isinstance(enc[1], list) and len(enc[1]) == 2 and enc[1][0] == "object"
+        ):
+            # Object-typed list/set ATTRIBUTE (e.g. tcp_port_range:
+            # ["list", ["object", {"from": "string", "to": "string"}]]).
+            # Structurally identical to a list block from the API's view, so
+            # coerce each member by its declared type — same quirk-6 / ref
+            # unwrap treatment block members get (filter_item leaves these
+            # attribute values untouched, so coerce handles them here).
+            members = enc[1][1]
+            out[key] = [
+                _coerce_object_members(v, members) if isinstance(v, dict) else v
+                for v in value
+            ] if isinstance(value, list) else value
         else:
             out[key] = value
+    return out
+
+
+def _coerce_object_members(obj, members):
+    """Coerce each member of an object-typed-list element by its declared
+    primitive type, unwrapping {id,...} reference objects first. Unknown keys
+    (schema filter already pruned attribute objects only structurally) pass
+    through untouched."""
+    out = {}
+    for k in sorted(obj):
+        enc = members.get(k)
+        if isinstance(enc, str):
+            out[k] = _coerce_primitive(_unwrap_ref(obj[k]), enc)
+        else:
+            out[k] = obj[k]
     return out
 
 
