@@ -25,11 +25,16 @@ case "$cmd" in
     exit 0 ;;
   show)
     n="${FAKE_TF_DESTROYS:-0}"
-    printf '{"resource_changes": ['
+    u="${FAKE_TF_UPDATES:-0}"
+    printf '{"resource_changes": [{"change":{"actions":["no-op"]}}'
     i=0
     while [ "$i" -lt "$n" ]; do
-      [ "$i" -gt 0 ] && printf ','
-      printf '{"change":{"actions":["delete"]}}'
+      printf ',{"change":{"actions":["delete"]}}'
+      i=$((i+1))
+    done
+    i=0
+    while [ "$i" -lt "$u" ]; do
+      printf ',{"change":{"actions":["update"]}}'
       i=$((i+1))
     done
     printf ']}'

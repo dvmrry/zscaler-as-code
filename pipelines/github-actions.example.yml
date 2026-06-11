@@ -9,7 +9,8 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: "0 6 * * *" # drift detection; remove if not using the drift job
+    - cron: "0 * * * *" # hourly: hot-path resource drift (see drift job)
+    - cron: "0 6 * * 0" # weekly: broad all-resource drift check
 
 jobs:
   # ---- 1. Validation (PR gate) — no credentials, never touches state ----
@@ -75,7 +76,13 @@ jobs:
       # Applies ONLY the saved plans; refuses destroys without ALLOW_DESTROY=1
       - run: make apply BACKEND_CONFIG=backend.conf
 
-  # ---- 3. Drift (scheduled) — read-only creds, no state ----
+  # ---- 3. Drift (scheduled) -> automatic backfill PR ----
+  # Two cadences from the two cron entries: hourly is scoped to the
+  # hot-path resource (admins edit with no warning); weekly sweeps all.
+  # Drift -> branch -> PR whose body is the item-level diff plus ZIA
+  # audit-trail attribution (WHO changed it, advisory). The PR rides the
+  # normal validation pipeline; drift-pr-plan below adds the real-plan
+  # auto-merge gate.
   drift:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
@@ -84,9 +91,59 @@ jobs:
       ZSCALER_CLIENT_SECRET: ${{ secrets.ZSCALER_RO_CLIENT_SECRET }}
       ZSCALER_VANITY_DOMAIN: ${{ secrets.ZSCALER_VANITY_DOMAIN }}
       ZSCALER_CLOUD: ${{ secrets.ZSCALER_CLOUD }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
-      - run: make drift TENANT=FILL-tenant-label
-        # exit 3 = drift detected; the git diff is the report. Typical
-        # follow-up: open a PR with the regenerated config so remediation
-        # rides the normal plan->apply pipeline, e.g. peter-evans/create-pull-request.
+      - name: Scope by schedule
+        run: |
+          if [ "${{ github.event.schedule }}" = "0 * * * *" ]; then
+            echo "SCOPE=RESOURCE=zia_url_categories" >> "$GITHUB_ENV"  # FILL: hot-path resource
+          else
+            echo "SCOPE=" >> "$GITHUB_ENV"
+          fi
+      - name: Detect drift
+        id: drift
+        run: |
+          set +e
+          make drift TENANT=FILL-tenant-label $SCOPE
+          rc=$?
+          set -e
+          if [ "$rc" = "3" ]; then echo "drifted=true" >> "$GITHUB_OUTPUT"; fi
+          if [ "$rc" != "0" ] && [ "$rc" != "3" ]; then exit "$rc"; fi
+      - name: Open backfill PR
+        if: steps.drift.outputs.drifted == 'true'
+        run: |
+          branch="drift/FILL-tenant-label/$(date -u +%Y%m%dT%H%M)"
+          python3 -m tools.drift_summary FILL-tenant-label > /tmp/pr-body.md
+          python3 -m tools.audit FILL-tenant-label 24 >> /tmp/pr-body.md  # advisory; never fails
+          git checkout -b "$branch"
+          git add config/FILL-tenant-label imports/FILL-tenant-label
+          git -c user.name=drift-bot -c user.email=drift-bot@invalid \
+            commit -m "Backfill drift: FILL-tenant-label"
+          git push -u origin "$branch"
+          gh pr create --title "Drift backfill: FILL-tenant-label" \
+            --body-file /tmp/pr-body.md
+
+  # ---- 3b. Drift-PR gate: the real plan must be no-op, then auto-merge ----
+  drift-pr-plan:
+    if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'drift/')
+    runs-on: ubuntu-latest
+    env:
+      ZSCALER_CLIENT_ID: ${{ secrets.ZSCALER_CLIENT_ID }}
+      ZSCALER_CLIENT_SECRET: ${{ secrets.ZSCALER_CLIENT_SECRET }}
+      ZSCALER_VANITY_DOMAIN: ${{ secrets.ZSCALER_VANITY_DOMAIN }}
+      ZSCALER_CLOUD: ${{ secrets.ZSCALER_CLOUD }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.4"
+      - run: make plan-changed BASE=origin/main SAVE=1 BACKEND_CONFIG=backend.conf
+      # Backfill means config now MATCHES the tenant: every saved plan
+      # must be no-op (imports allowed). Anything else means the tenant
+      # moved again or transform disagrees -> human review, no auto-merge.
+      - run: make assert-clean
+      - run: gh pr merge --auto --merge "$GITHUB_HEAD_REF"

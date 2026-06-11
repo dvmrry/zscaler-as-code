@@ -65,9 +65,10 @@ gen-env: ## Generate env roots for a tenant (TENANT=<label> [BACKEND=azurerm])
 	@test -n "$(TENANT)" || { echo "usage: make gen-env TENANT=<label> [BACKEND=azurerm]"; exit 2; }
 	$(PYTHON) -m tools.gen_env "$(TENANT)" $(BACKEND)
 
-transform: ## Transform pulled API JSON into tfvars + imports (IN=<dir> TENANT=<name>)
-	@test -n "$(IN)" -a -n "$(TENANT)" || { echo "usage: make transform IN=pulls/<tenant> TENANT=<tenant>"; exit 2; }
+transform: ## Transform pulled API JSON into tfvars + imports (IN=<dir> TENANT=<name> [RESOURCE=<type>])
+	@test -n "$(IN)" -a -n "$(TENANT)" || { echo "usage: make transform IN=pulls/<tenant> TENANT=<tenant> [RESOURCE=<type>]"; exit 2; }
 	@failed=""; for rt in $$($(PYTHON) -c "from tools.registry import generated_types; print('\n'.join(generated_types()))"); do \
+		if [ -n "$(RESOURCE)" ] && [ "$$rt" != "$(RESOURCE)" ]; then continue; fi; \
 		if [ -f "$(IN)/$$rt.json" ]; then \
 			$(PYTHON) -m tools.transform "$$rt" "$(IN)/$$rt.json" "$(TENANT)" || failed="$$failed $$rt"; \
 		else \
@@ -77,9 +78,9 @@ transform: ## Transform pulled API JSON into tfvars + imports (IN=<dir> TENANT=<
 	test -z "$$failed" || { echo ""; echo "transform FAILED for:$$failed"; \
 		echo "(fix the override map per the error above; successful outputs are already written)"; exit 1; }
 
-fetch: ## Pull API JSON into pulls/<tenant> (TENANT=<name>; needs ZSCALER_*/ZIA_*/ZPA_* env, real creds — trusted env only)
-	@test -n "$(TENANT)" || { echo "usage: make fetch TENANT=<tenant> (with ZSCALER_*/ZIA_*/ZPA_* env set)"; exit 2; }
-	$(PYTHON) -m tools.fetch "$(TENANT)"
+fetch: ## Pull API JSON into pulls/<tenant> (TENANT=<name> [RESOURCE=<type>]; needs ZSCALER_*/ZIA_*/ZPA_* env, real creds — trusted env only)
+	@test -n "$(TENANT)" || { echo "usage: make fetch TENANT=<tenant> [RESOURCE=<type>] (with ZSCALER_*/ZIA_*/ZPA_* env set)"; exit 2; }
+	$(PYTHON) -m tools.fetch "$(TENANT)" $(RESOURCE)
 
 fetch-diag: ## Probe TLS to the fetcher's hosts under system trust and +bundle
 	$(PYTHON) -m tools.fetch --diag
@@ -145,6 +146,20 @@ plan-changed: ## Plan only the (tenant, resource) pairs changed vs BASE (default
 	done < .plan-changed.tmp; \
 	rm -f .plan-changed.tmp
 
+assert-clean: ## Exit 0 only when every saved plan is no-op (imports allowed) — the drift-PR auto-merge gate ([TENANT=<label>] [RESOURCE=<type>])
+	@set -e; checked=0; dirty=0; for d in envs/$(or $(TENANT),*)/$(or $(RESOURCE),*)/; do \
+		test -f "$$d/tfplan" || continue; \
+		rt=$$(basename $$d); t=$$(basename $$(dirname $$d)); \
+		checked=$$((checked+1)); \
+		changes=$$($(TF) -chdir=$$d show -json tfplan | $(PYTHON) -c "import json,sys; p=json.load(sys.stdin); print(sum(1 for rc in p.get('resource_changes') or [] if set((rc.get('change') or {}).get('actions') or []) - set(['no-op'])))"); \
+		if [ "$$changes" != "0" ]; then \
+			echo "NOT CLEAN: $$t/$$rt plan contains $$changes change(s) beyond imports"; \
+			dirty=$$((dirty+1)); fi; \
+	done; \
+	test $$checked -gt 0 || { echo "error: no saved plans to check — run make plan-changed SAVE=1 first"; exit 1; }; \
+	test $$dirty -eq 0 || { echo ""; echo "tenant moved since fetch (or transform disagrees) — do NOT auto-merge; re-run drift"; exit 1; }; \
+	echo "all $$checked saved plan(s) clean (no-op/imports only)"
+
 apply: ## Apply ONLY saved plans from 'make plan SAVE=1' ([TENANT=<label>] [RESOURCE=<type>] [BACKEND_CONFIG=<file>] [ALLOW_DESTROY=1])
 	@set -e; applied=0; for d in envs/$(or $(TENANT),*)/$(or $(RESOURCE),*)/; do \
 		test -f "$$d/tfplan" || continue; \
@@ -162,10 +177,10 @@ apply: ## Apply ONLY saved plans from 'make plan SAVE=1' ([TENANT=<label>] [RESO
 	done; \
 	test $$applied -gt 0 || { echo "error: no saved plans found — run 'make plan SAVE=1 ...' (or plan-changed SAVE=1) first; apply's scope IS the saved plans"; exit 1; }
 
-drift: ## Fetch + transform + report config diff for a tenant (TENANT=<label>; real creds via env)
-	@test -n "$(TENANT)" || { echo "usage: make drift TENANT=<label>"; exit 2; }
-	$(MAKE) fetch TENANT=$(TENANT)
-	$(MAKE) transform IN=pulls/$(TENANT) TENANT=$(TENANT)
+drift: ## Fetch + transform + report config diff (TENANT=<label> [RESOURCE=<type>]; real creds via env)
+	@test -n "$(TENANT)" || { echo "usage: make drift TENANT=<label> [RESOURCE=<type>]"; exit 2; }
+	$(MAKE) fetch TENANT=$(TENANT) $(if $(RESOURCE),RESOURCE=$(RESOURCE))
+	$(MAKE) transform IN=pulls/$(TENANT) TENANT=$(TENANT) $(if $(RESOURCE),RESOURCE=$(RESOURCE))
 	@if [ -n "$$(git status --porcelain config/$(TENANT) imports/$(TENANT) 2>/dev/null)" ]; then \
 		echo ""; echo "DRIFT DETECTED (tenant differs from committed config):"; \
 		git status --porcelain config/$(TENANT) imports/$(TENANT); \
