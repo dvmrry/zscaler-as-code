@@ -50,6 +50,27 @@ def build_schema(resource_type, resource_schema):
     }
 
 
+def build_editor_settings():
+    """VS Code json.schemas mapping for every generated resource type.
+
+    Written as a committed REFERENCE file (schemas/tfvars/
+    vscode.settings.example.json) for operators to merge into their own
+    .vscode/settings.json — never written into .vscode/ directly, which
+    would clobber personal settings. Editing config by hand then gets
+    field autocomplete and inline validation from the same schemas CI
+    validates with.
+    """
+    return {
+        "json.schemas": [
+            {
+                "fileMatch": ["config/*/%s.auto.tfvars.json" % rt],
+                "url": "./schemas/tfvars/%s.schema.json" % rt,
+            }
+            for rt in generated_types()
+        ]
+    }
+
+
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
     for resource_type in generated_types():
@@ -59,6 +80,11 @@ def main():
             json.dump(schema, f, indent=2, sort_keys=True)
             f.write("\n")
         sys.stderr.write("wrote %s\n" % path)
+    settings_path = os.path.join(OUT_DIR, "vscode.settings.example.json")
+    with open(settings_path, "w") as f:
+        json.dump(build_editor_settings(), f, indent=2, sort_keys=True)
+        f.write("\n")
+    sys.stderr.write("wrote %s\n" % settings_path)
 
 
 if __name__ == "__main__":

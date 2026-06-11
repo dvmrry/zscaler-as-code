@@ -36,5 +36,19 @@ class BuildSchemaTest(unittest.TestCase):
         self.assertNotIn("uniqueItems", props["url_keyword_counts"])
 
 
+class EditorSettingsTest(unittest.TestCase):
+    def test_every_generated_type_mapped(self):
+        from tools.gen_jsonschema import build_editor_settings
+        from tools.registry import generated_types
+
+        settings = build_editor_settings()
+        mappings = settings["json.schemas"]
+        self.assertEqual(len(mappings), len(generated_types()))
+        for m in mappings:
+            self.assertEqual(len(m["fileMatch"]), 1)
+            self.assertTrue(m["fileMatch"][0].startswith("config/*/"))
+            self.assertTrue(m["url"].startswith("./schemas/tfvars/"))
+
+
 if __name__ == "__main__":
     unittest.main()

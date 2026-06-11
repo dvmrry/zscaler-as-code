@@ -1,0 +1,100 @@
+{
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "config/*/zcc_failopen_policy.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zcc_failopen_policy.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zcc_forwarding_profile.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zcc_forwarding_profile.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zcc_trusted_network.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zcc_trusted_network.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zcc_web_privacy.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zcc_web_privacy.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_cloud_app_control_rule.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_cloud_app_control_rule.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_location_management.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_location_management.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_rule_labels.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_rule_labels.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_ssl_inspection_rules.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_ssl_inspection_rules.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_url_categories.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_url_categories.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_url_filtering_rules.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_url_filtering_rules.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_app_connector_group.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_app_connector_group.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_application_segment.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_application_segment.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_application_server.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_application_server.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_policy_access_rule.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_policy_access_rule.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_segment_group.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_segment_group.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_server_group.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_server_group.schema.json"
+    }
+  ]
+}
