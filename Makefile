@@ -1,7 +1,14 @@
 PYTHON ?= python3
 TF     ?= terraform
 
-.PHONY: help env install-tf bump-check plan-report clean-plans stage-imports unstage-imports lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck conformance
+# Scope glob for the per-root targets (plan/apply/assert-clean/plan-report/
+# clean-plans/stage-imports/unstage-imports): a resource type, a glob
+# (zia_*), or a SINGLE product token (zia|zpa|zcc) which expands to
+# <product>_*. Multi-selector scoping ("zia zpa") is fetch/drift-only —
+# the python side expands those.
+SCOPE_GLOB = $(if $(RESOURCE),$(if $(word 2,$(RESOURCE)),$(RESOURCE),$(if $(filter zia zpa zcc,$(RESOURCE)),$(RESOURCE)_*,$(RESOURCE))),*)
+
+.PHONY: help env install-tf bump-check plan-report clean clean-plans stage-imports unstage-imports lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck conformance
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
@@ -148,7 +155,7 @@ lock: ## Pin provider HASHES per env root (TENANT=<label>; one registry fetch pe
 plan: ## Terraform plan for a tenant's roots (TENANT=<label> [RESOURCE=<type>] [BACKEND_CONFIG=<file>]; real creds via env)
 	@test -n "$(TENANT)" || { echo "usage: make plan TENANT=<label> [RESOURCE=<type>] [BACKEND_CONFIG=<file>]"; exit 2; }
 	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
-	@set -e; planned=0; for d in envs/$(TENANT)/$(or $(RESOURCE),*)/; do \
+	@set -e; planned=0; for d in envs/$(TENANT)/$(SCOPE_GLOB)/; do \
 		test -d "$$d" || continue; \
 		rt=$$(basename $$d); \
 		vf="$(abspath config/$(TENANT))/$$rt.auto.tfvars.json"; \
@@ -164,8 +171,17 @@ plan: ## Terraform plan for a tenant's roots (TENANT=<label> [RESOURCE=<type>] [
 	done; \
 	test $$planned -gt 0 || { echo "error: no roots planned for TENANT=$(TENANT) (typo? missing config/?)"; exit 1; }
 
+clean: ## Remove run artifacts: saved plans, staged import/move copies, reports/, temp files (committed files, pulls/, caches untouched)
+	@$(MAKE) clean-plans > /dev/null 2>&1 || true
+	@removed=0; for f in envs/*/*/*_imports.tf envs/*/*/*_moves.tf envs/*/*/.state-list.tmp; do \
+		test -f "$$f" || continue; \
+		rm -f "$$f"; removed=$$((removed+1)); \
+	done; \
+	rm -rf reports .plan-changed.tmp; \
+	echo "clean: removed staged copies ($$removed), saved plans, reports/, temp files"
+
 clean-plans: ## Delete saved tfplan artifacts ([TENANT=<label>] [RESOURCE=<type>]) — run before any fresh plan set; stale plans from a failed/cancelled run otherwise ride into the next apply
-	@removed=0; for d in envs/$(or $(TENANT),*)/$(or $(RESOURCE),*)/; do \
+	@removed=0; for d in envs/$(or $(TENANT),*)/$(SCOPE_GLOB)/; do \
 		test -f "$$d/tfplan" || continue; \
 		rm -f "$$d/tfplan"; echo "removed $$d""tfplan"; removed=$$((removed+1)); \
 	done; \
@@ -190,7 +206,7 @@ drift-report: ## Render the drift summary + audit attribution to reports/<tenant
 
 stage-imports: ## Copy import (and moved) blocks into env roots (TENANT=<label> [RESOURCE=<type>] [STATE_AWARE=1 [BACKEND_CONFIG=<file>]]) — STATE_AWARE filters out already-managed imports so re-runs adopt only the delta
 	@test -n "$(TENANT)" || { echo "usage: make stage-imports TENANT=<label> [RESOURCE=<type>] [STATE_AWARE=1] [BACKEND_CONFIG=<file>]"; exit 2; }
-	@set -e; staged=0; sources=0; for f in imports/$(TENANT)/$(or $(RESOURCE),*)_imports.tf imports/$(TENANT)/$(or $(RESOURCE),*)_moves.tf; do \
+	@set -e; staged=0; sources=0; for f in imports/$(TENANT)/$(SCOPE_GLOB)_imports.tf imports/$(TENANT)/$(SCOPE_GLOB)_moves.tf; do \
 		test -f "$$f" || continue; \
 		sources=$$((sources+1)); \
 		base=$$(basename "$$f"); \
@@ -223,7 +239,7 @@ stage-imports: ## Copy import (and moved) blocks into env roots (TENANT=<label> 
 
 unstage-imports: ## Remove staged import/moved blocks from env roots after apply (TENANT=<label> [RESOURCE=<type>])
 	@test -n "$(TENANT)" || { echo "usage: make unstage-imports TENANT=<label> [RESOURCE=<type>]"; exit 2; }
-	@removed=0; for f in envs/$(TENANT)/$(or $(RESOURCE),*)/*_imports.tf envs/$(TENANT)/$(or $(RESOURCE),*)/*_moves.tf; do \
+	@removed=0; for f in envs/$(TENANT)/$(SCOPE_GLOB)/*_imports.tf envs/$(TENANT)/$(SCOPE_GLOB)/*_moves.tf; do \
 		test -f "$$f" || continue; \
 		rm -f "$$f"; echo "removed $$f"; removed=$$((removed+1)); \
 	done; \
@@ -232,7 +248,7 @@ unstage-imports: ## Remove staged import/moved blocks from env roots after apply
 plan-report: ## Render saved plans to reports/plan.md (markdown, for PR comments) ([TENANT=<label>] [RESOURCE=<type>])
 	@set -e; mkdir -p reports; out="reports/plan.md"; found=0; \
 	printf '## Terraform plan\n\n' > "$$out"; \
-	for d in envs/$(or $(TENANT),*)/$(or $(RESOURCE),*)/; do \
+	for d in envs/$(or $(TENANT),*)/$(SCOPE_GLOB)/; do \
 		test -f "$$d/tfplan" || continue; \
 		rt=$$(basename "$$d"); t=$$(basename "$$(dirname "$$d")"); \
 		found=$$((found+1)); \
@@ -244,7 +260,7 @@ plan-report: ## Render saved plans to reports/plan.md (markdown, for PR comments
 	echo "wrote $$out ($$found plan(s))"
 
 assert-clean: ## Exit 0 only when every saved plan is no-op (imports allowed) — the drift-PR merge-readiness check ([TENANT=<label>] [RESOURCE=<type>])
-	@set -e; checked=0; dirty=0; for d in envs/$(or $(TENANT),*)/$(or $(RESOURCE),*)/; do \
+	@set -e; checked=0; dirty=0; for d in envs/$(or $(TENANT),*)/$(SCOPE_GLOB)/; do \
 		test -f "$$d/tfplan" || continue; \
 		rt=$$(basename $$d); t=$$(basename $$(dirname $$d)); \
 		checked=$$((checked+1)); \
@@ -266,7 +282,7 @@ apply: ## Apply ONLY saved plans from 'make plan SAVE=1' ([TENANT=<label>] [RESO
 		echo "error: apply refused from '$$branch' — only merged $(or $(MAIN_BRANCH),main) config gets applied."; \
 		echo "(deliberate exception, e.g. testing: re-run with ALLOW_NON_MAIN=1; different default branch: MAIN_BRANCH=<name>)"; \
 		exit 1; fi
-	@set -e; applied=0; for d in envs/$(or $(TENANT),*)/$(or $(RESOURCE),*)/; do \
+	@set -e; applied=0; for d in envs/$(or $(TENANT),*)/$(SCOPE_GLOB)/; do \
 		test -f "$$d/tfplan" || continue; \
 		rt=$$(basename $$d); t=$$(basename $$(dirname $$d)); \
 		echo "== apply $$t/$$rt"; \

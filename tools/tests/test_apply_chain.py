@@ -257,6 +257,41 @@ class ApplyChainTest(unittest.TestCase):
         self.assertFalse(
             os.path.exists(os.path.join(self.root, "fake_rt_imports.tf")))
 
+    def test_product_token_scopes_glob_targets(self):
+        # RESOURCE=zia must expand to zia_* on the per-root targets
+        # (field report: bare product tokens previously matched nothing).
+        zia_root = os.path.join("envs", TENANT, "zia_fake")
+        os.makedirs(zia_root, exist_ok=True)
+        with open(os.path.join(zia_root, "main.tf"), "w", encoding="utf-8") as f:
+            f.write("# zia fake root\n")
+        with open(os.path.join(self.config_dir, "zia_fake.auto.tfvars.json"),
+                  "w", encoding="utf-8") as f:
+            f.write('{"items": {}}\n')
+        rc, out = _run(
+            ["make", "plan", "TENANT=" + TENANT, "RESOURCE=zia", "SAVE=1",
+             "TF=" + FAKE_TF])
+        self.assertEqual(rc, 0, out)
+        self.assertTrue(
+            os.path.exists(os.path.join(zia_root, "tfplan")))
+        # the non-zia root was NOT planned
+        self.assertFalse(os.path.exists(self.tfplan))
+
+    def test_make_clean_removes_run_artifacts_only(self):
+        self._plan_save()
+        staged = os.path.join(self.root, "fake_rt_imports.tf")
+        with open(staged, "w", encoding="utf-8") as f:
+            f.write("import {}\n")
+        os.makedirs("reports", exist_ok=True)
+        with open(os.path.join("reports", "plan.md"), "w", encoding="utf-8") as f:
+            f.write("x\n")
+        rc, out = _run(["make", "clean"])
+        self.assertEqual(rc, 0, out)
+        self.assertFalse(os.path.exists(self.tfplan))
+        self.assertFalse(os.path.exists(staged))
+        self.assertFalse(os.path.exists("reports"))
+        # committed/source files untouched
+        self.assertTrue(os.path.exists(os.path.join(self.root, "main.tf")))
+
     def test_stage_imports_nothing_to_stage_fails_loudly(self):
         rc, out = _run(["make", "stage-imports", "TENANT=" + TENANT])
         self.assertNotEqual(rc, 0)

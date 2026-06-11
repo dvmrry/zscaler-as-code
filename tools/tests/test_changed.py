@@ -88,14 +88,17 @@ class PairsFromPathsTest(unittest.TestCase):
 class DiscoverConfigPairsTest(unittest.TestCase):
     def test_discovers_committed_demo_pairs(self):
         # The committed demo tenant must be discovered (registry-bounded).
+        # Deliberately TENANT-TOLERANT: in private deployment repos real
+        # tenants are committed alongside demo, and this suite runs there
+        # too — never assert demo is the only tenant (field-broke once).
         from tools.changed import discover_config_pairs
+        from tools.registry import generated_types
 
         pairs = discover_config_pairs()
         self.assertIn(("demo", "zia_rule_labels"), pairs)
-        self.assertTrue(
-            all(t == "demo" for t, _ in pairs),
-            "unexpected tenant in config_pairs",
-        )
+        types = set(generated_types())
+        for _tenant, rt in pairs:
+            self.assertIn(rt, types, "non-registry type discovered: %r" % rt)
 
 
 class MainEmptyDiffTest(unittest.TestCase):
