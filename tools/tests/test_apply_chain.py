@@ -21,6 +21,9 @@ TENANT = "tmpchaintest"
 
 def _run(args, extra_env=None):
     env = dict(os.environ)
+    # The apply branch guard reads CI ref vars before git; tests run on
+    # dev branches, so simulate main unless a test overrides it.
+    env.setdefault("BUILD_SOURCEBRANCH", "refs/heads/main")
     env.update(extra_env or {})
     proc = subprocess.run(
         args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env
@@ -144,6 +147,58 @@ class ApplyChainTest(unittest.TestCase):
         self.assertNotEqual(rc, 0)
         self.assertIn("no saved plans", out)
 
+    def test_apply_refused_off_main(self):
+        self._plan_save()
+        rc, out = _run(
+            ["make", "apply", "TENANT=" + TENANT, "TF=" + FAKE_TF],
+            {"BUILD_SOURCEBRANCH": "refs/heads/feature-x"},
+        )
+        self.assertNotEqual(rc, 0)
+        self.assertIn("apply refused", out)
+        # the saved plan survives the refusal for inspection
+        self.assertTrue(os.path.exists(self.tfplan))
+
+    def test_apply_branch_override_and_custom_main(self):
+        self._plan_save()
+        rc, out = _run(
+            ["make", "apply", "TENANT=" + TENANT, "TF=" + FAKE_TF,
+             "ALLOW_NON_MAIN=1"],
+            {"BUILD_SOURCEBRANCH": "refs/heads/feature-x"},
+        )
+        self.assertEqual(rc, 0, out)
+        # custom default branch honored
+        self._plan_save()
+        rc, out = _run(
+            ["make", "apply", "TENANT=" + TENANT, "TF=" + FAKE_TF,
+             "MAIN_BRANCH=trunk"],
+            {"BUILD_SOURCEBRANCH": "refs/heads/trunk"},
+        )
+        self.assertEqual(rc, 0, out)
+
+    def test_stale_plans_cleared_before_new_plan_set(self):
+        # The field scenario: full bootstrap plan -> cancel -> scoped
+        # re-run on a REUSED agent workspace. Stale tfplans must not ride
+        # into the next apply: clean-plans removes them.
+        stale_root = os.path.join("envs", TENANT, "stale_rt")
+        os.makedirs(stale_root, exist_ok=True)
+        with open(os.path.join(stale_root, "main.tf"), "w",
+                  encoding="utf-8") as f:
+            f.write("# stale root\n")
+        with open(os.path.join(stale_root, "tfplan"), "w",
+                  encoding="utf-8") as f:
+            f.write("stale\n")
+        rc, out = _run(["make", "clean-plans", "TENANT=" + TENANT])
+        self.assertEqual(rc, 0, out)
+        self.assertFalse(os.path.exists(os.path.join(stale_root, "tfplan")))
+        self.assertIn("1 stale plan(s) removed", out)
+
+    def test_plan_changed_recipe_cleans_first(self):
+        # plan-changed defines the run's plan set: its recipe must invoke
+        # clean-plans before planning (dry-run inspection).
+        rc, out = _run(["make", "-n", "plan-changed", "BASE=HEAD"])
+        self.assertEqual(rc, 0, out)
+        self.assertIn("clean-plans", out)
+
     def test_stage_imports_roundtrip(self):
         os.makedirs(os.path.join("imports", TENANT), exist_ok=True)
         self.addCleanup(shutil.rmtree, os.path.join("imports", TENANT), True)
@@ -161,6 +216,46 @@ class ApplyChainTest(unittest.TestCase):
         self.assertEqual(rc, 0, out)
         self.assertFalse(os.path.exists(os.path.join(self.root, "fake_rt_imports.tf")))
         self.assertFalse(os.path.exists(os.path.join(self.root, "fake_rt_moves.tf")))
+
+    def test_stage_imports_state_aware_keeps_only_delta(self):
+        # Bootstrap RE-RUN semantics: terraform errors on importing an
+        # already-managed address, so state-aware staging filters those
+        # blocks out — re-runs adopt only the delta.
+        os.makedirs(os.path.join("imports", TENANT), exist_ok=True)
+        self.addCleanup(shutil.rmtree, os.path.join("imports", TENANT), True)
+        with open(os.path.join("imports", TENANT, "fake_rt_imports.tf"),
+                  "w", encoding="utf-8") as f:
+            f.write(
+                'import {\n  to = module.fake_rt.fake_rt.this["managed"]\n  id = "1"\n}\n\n'
+                'import {\n  to = module.fake_rt.fake_rt.this["brand_new"]\n  id = "2"\n}\n'
+            )
+        rc, out = _run(
+            ["make", "stage-imports", "TENANT=" + TENANT, "STATE_AWARE=1",
+             "TF=" + FAKE_TF],
+            {"FAKE_TF_STATE": 'module.fake_rt.fake_rt.this["managed"]'},
+        )
+        self.assertEqual(rc, 0, out)
+        with open(os.path.join(self.root, "fake_rt_imports.tf"),
+                  encoding="utf-8") as f:
+            staged = f.read()
+        self.assertIn("brand_new", staged)
+        self.assertNotIn('"managed"', staged)
+
+    def test_stage_imports_state_aware_empty_delta_is_noop(self):
+        os.makedirs(os.path.join("imports", TENANT), exist_ok=True)
+        self.addCleanup(shutil.rmtree, os.path.join("imports", TENANT), True)
+        with open(os.path.join("imports", TENANT, "fake_rt_imports.tf"),
+                  "w", encoding="utf-8") as f:
+            f.write('import {\n  to = module.fake_rt.fake_rt.this["managed"]\n  id = "1"\n}\n')
+        rc, out = _run(
+            ["make", "stage-imports", "TENANT=" + TENANT, "STATE_AWARE=1",
+             "TF=" + FAKE_TF],
+            {"FAKE_TF_STATE": 'module.fake_rt.fake_rt.this["managed"]'},
+        )
+        self.assertEqual(rc, 0, out)
+        self.assertIn("delta is empty", out)
+        self.assertFalse(
+            os.path.exists(os.path.join(self.root, "fake_rt_imports.tf")))
 
     def test_stage_imports_nothing_to_stage_fails_loudly(self):
         rc, out = _run(["make", "stage-imports", "TENANT=" + TENANT])

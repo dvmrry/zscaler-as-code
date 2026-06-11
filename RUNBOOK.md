@@ -212,6 +212,19 @@ per resource/product wave. Steps 7–8 collapse into one supervised run;
 the staged import copies live only in the agent workspace, so there is
 nothing to remove afterwards.
 
+**Re-running bootstrap is safe and delta-only**: staging is state-aware
+(`make stage-imports STATE_AWARE=1`) — import blocks whose address is
+already managed are filtered out against `terraform state list`
+(terraform errors on re-importing, so unfiltered re-runs would go red),
+already-applied `moved` blocks are inherent no-ops, and an empty delta
+plans to no-op. The same mechanism adopts NEW objects found by drift:
+merge the drift PR, re-run bootstrap, only the new imports execute.
+Applies are additionally refused off the default branch
+(`make apply` checks the CI ref / local branch; `MAIN_BRANCH=` to
+rename, `ALLOW_NON_MAIN=1` for deliberate exceptions), and each run
+clears stale saved plans first (`make clean-plans`) so a cancelled
+previous run can never leak its tfplans into the next apply.
+
 Otherwise, apply the saved plan with:
 
 ```

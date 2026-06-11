@@ -29,6 +29,15 @@ Notes that apply to every platform:
 - **Full git history for `plan-changed`**: the diff-derived plan targets
   need the merge-base with the target branch. Shallow clones break it —
   set fetch depth 0 (examples below do).
+- **Applies run from the default branch only**: `make apply` refuses
+  other refs (reads ADO/GHA/Bitbucket ref vars, falls back to the local
+  git branch; `MAIN_BRANCH=` overrides the name, `ALLOW_NON_MAIN=1` is
+  the deliberate escape hatch). Only merged config gets applied.
+- **Stale-plan hygiene on reused agents**: self-hosted workspaces
+  persist between runs, so a cancelled run's tfplans would ride into
+  the next apply (apply's scope IS the artifacts). `plan-changed`
+  clears stale plans automatically; pipelines calling bare `make plan
+  SAVE=1` (bootstrap) run `make clean-plans` first.
 - **Apply scope is the saved-plan artifacts.** Stage 1 publishes
   `envs/**/tfplan` (and the plan text for the approval screen); stage 2
   runs `make apply`, which only ever applies those artifacts. There is

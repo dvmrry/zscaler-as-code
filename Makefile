@@ -1,7 +1,7 @@
 PYTHON ?= python3
 TF     ?= terraform
 
-.PHONY: help env install-tf bump-check plan-report stage-imports unstage-imports lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck conformance
+.PHONY: help env install-tf bump-check plan-report clean-plans stage-imports unstage-imports lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck conformance
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
@@ -164,7 +164,15 @@ plan: ## Terraform plan for a tenant's roots (TENANT=<label> [RESOURCE=<type>] [
 	done; \
 	test $$planned -gt 0 || { echo "error: no roots planned for TENANT=$(TENANT) (typo? missing config/?)"; exit 1; }
 
+clean-plans: ## Delete saved tfplan artifacts ([TENANT=<label>] [RESOURCE=<type>]) — run before any fresh plan set; stale plans from a failed/cancelled run otherwise ride into the next apply
+	@removed=0; for d in envs/$(or $(TENANT),*)/$(or $(RESOURCE),*)/; do \
+		test -f "$$d/tfplan" || continue; \
+		rm -f "$$d/tfplan"; echo "removed $$d""tfplan"; removed=$$((removed+1)); \
+	done; \
+	echo "$$removed stale plan(s) removed"
+
 plan-changed: ## Plan only the (tenant, resource) pairs changed vs BASE (default origin/main); SAVE/BACKEND_CONFIG pass through
+	@$(MAKE) clean-plans > /dev/null
 	@set -e; $(PYTHON) -m tools.changed "$(or $(BASE),origin/main)" > .plan-changed.tmp; \
 	if ! [ -s .plan-changed.tmp ]; then rm -f .plan-changed.tmp; echo "nothing to plan — no plannable changes vs $(or $(BASE),origin/main)"; exit 0; fi; \
 	while read t rt; do \
@@ -180,18 +188,38 @@ drift-report: ## Render the drift summary + audit attribution to reports/<tenant
 	@$(PYTHON) -m tools.audit "$(TENANT)" $(or $(AUDIT_HOURS),24) >> reports/$(TENANT)/drift.md
 	@echo "wrote reports/$(TENANT)/drift.md"
 
-stage-imports: ## Copy import (and moved) blocks into env roots for adoption plans (TENANT=<label> [RESOURCE=<type>])
-	@test -n "$(TENANT)" || { echo "usage: make stage-imports TENANT=<label> [RESOURCE=<type>]"; exit 2; }
-	@set -e; staged=0; for f in imports/$(TENANT)/$(or $(RESOURCE),*)_imports.tf imports/$(TENANT)/$(or $(RESOURCE),*)_moves.tf; do \
+stage-imports: ## Copy import (and moved) blocks into env roots (TENANT=<label> [RESOURCE=<type>] [STATE_AWARE=1 [BACKEND_CONFIG=<file>]]) — STATE_AWARE filters out already-managed imports so re-runs adopt only the delta
+	@test -n "$(TENANT)" || { echo "usage: make stage-imports TENANT=<label> [RESOURCE=<type>] [STATE_AWARE=1] [BACKEND_CONFIG=<file>]"; exit 2; }
+	@set -e; staged=0; sources=0; for f in imports/$(TENANT)/$(or $(RESOURCE),*)_imports.tf imports/$(TENANT)/$(or $(RESOURCE),*)_moves.tf; do \
 		test -f "$$f" || continue; \
+		sources=$$((sources+1)); \
 		base=$$(basename "$$f"); \
 		rt=$$(echo "$$base" | sed 's/_imports\.tf$$//; s/_moves\.tf$$//'); \
-		test -d "envs/$(TENANT)/$$rt" || { echo "skip $$base (no env root envs/$(TENANT)/$$rt — run make gen-env)"; continue; }; \
-		cp "$$f" "envs/$(TENANT)/$$rt/$$base"; \
-		echo "staged envs/$(TENANT)/$$rt/$$base"; \
+		d="envs/$(TENANT)/$$rt"; \
+		test -d "$$d" || { echo "skip $$base (no env root $$d — run make gen-env)"; continue; }; \
+		case "$$base" in \
+		*_imports.tf) \
+			if [ -n "$(STATE_AWARE)" ]; then \
+				$(TF) -chdir="$$d" init -input=false $(if $(BACKEND_CONFIG),-reconfigure -backend-config="$(abspath $(BACKEND_CONFIG))" -backend-config="key=$(TENANT)/$$rt.tfstate") > /dev/null; \
+				$(TF) -chdir="$$d" state list > "$$d/.state-list.tmp" 2>/dev/null || : > "$$d/.state-list.tmp"; \
+				$(PYTHON) -m tools.filter_imports "$$f" "$$d/.state-list.tmp" > "$$d/$$base"; \
+				rm -f "$$d/.state-list.tmp"; \
+				if ! [ -s "$$d/$$base" ]; then \
+					rm -f "$$d/$$base"; \
+					echo "skip $$base (every import already managed — delta is empty)"; \
+					continue; \
+				fi; \
+			else \
+				cp "$$f" "$$d/$$base"; \
+			fi ;; \
+		*) \
+			cp "$$f" "$$d/$$base" ;; \
+		esac; \
+		echo "staged $$d/$$base"; \
 		staged=$$((staged+1)); \
 	done; \
-	test $$staged -gt 0 || { echo "error: nothing to stage for TENANT=$(TENANT) (no imports/$(TENANT)/*_imports.tf — run make transform first)"; exit 1; }
+	test $$sources -gt 0 || { echo "error: nothing to stage for TENANT=$(TENANT) (no imports/$(TENANT)/*_imports.tf — run make transform first)"; exit 1; }; \
+	test $$staged -gt 0 || echo "NOTE: 0 staged — every import is already managed; the delta is empty and the plan will be a no-op"
 
 unstage-imports: ## Remove staged import/moved blocks from env roots after apply (TENANT=<label> [RESOURCE=<type>])
 	@test -n "$(TENANT)" || { echo "usage: make unstage-imports TENANT=<label> [RESOURCE=<type>]"; exit 2; }
@@ -230,7 +258,14 @@ assert-clean: ## Exit 0 only when every saved plan is no-op (imports allowed) �
 	test $$dirty -eq 0 || { echo ""; echo "tenant moved since fetch (or transform disagrees) — do NOT auto-merge; re-run drift"; exit 1; }; \
 	echo "all $$checked saved plan(s) clean (no-op/imports only)"
 
-apply: ## Apply ONLY saved plans from 'make plan SAVE=1' ([TENANT=<label>] [RESOURCE=<type>] [BACKEND_CONFIG=<file>] [ALLOW_DESTROY=1])
+apply: ## Apply ONLY saved plans from 'make plan SAVE=1' ([TENANT=<label>] [RESOURCE=<type>] [BACKEND_CONFIG=<file>] [ALLOW_DESTROY=1] [ALLOW_NON_MAIN=1]) — refuses to run off $(or $(MAIN_BRANCH),main)
+	@ref="$${BUILD_SOURCEBRANCH:-$${GITHUB_REF:-$${BITBUCKET_BRANCH:-}}}"; \
+	if [ -z "$$ref" ]; then ref="refs/heads/$$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)"; fi; \
+	branch="$${ref#refs/heads/}"; \
+	if [ "$$branch" != "$(or $(MAIN_BRANCH),main)" ] && [ -z "$(ALLOW_NON_MAIN)" ]; then \
+		echo "error: apply refused from '$$branch' — only merged $(or $(MAIN_BRANCH),main) config gets applied."; \
+		echo "(deliberate exception, e.g. testing: re-run with ALLOW_NON_MAIN=1; different default branch: MAIN_BRANCH=<name>)"; \
+		exit 1; fi
 	@set -e; applied=0; for d in envs/$(or $(TENANT),*)/$(or $(RESOURCE),*)/; do \
 		test -f "$$d/tfplan" || continue; \
 		rt=$$(basename $$d); t=$$(basename $$(dirname $$d)); \
