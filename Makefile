@@ -1,10 +1,10 @@
 PYTHON ?= python3
 TF     ?= terraform
 
-.PHONY: help env test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens test-modules test-envs validate-imports plan drift check-envs validate-config demo check-demo
+.PHONY: help env test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan drift check-envs validate-config demo check-demo
 
 help: ## List available targets
-	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
+	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
 
 env: ## Print toolchain versions (diagnostic)
 	@uname -sm
@@ -99,6 +99,9 @@ validate-imports: ## Validate fixture import addresses against a tenant's roots 
 	@set -e; for d in envs/$(TENANT)/*/; do \
 		rt=$$(basename $$d); \
 		fix="tools/tests/fixtures/transform/$$rt/expected_imports.tf"; \
+		if [ ! -f "$$fix" ]; then \
+			fix="tools/tests/fixtures/demo-expected/$${rt}_imports.tf"; \
+		fi; \
 		if [ -f "$$fix" ]; then \
 			cp "$$fix" "$$d/imports_check.tf"; \
 			$(TF) -chdir=$$d init -backend=false -input=false > /dev/null; \
@@ -197,3 +200,20 @@ update-goldens: ## Re-bless generator golden fixtures from current output
 	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zpa_application_server'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zpa_application_server/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"
 	mkdir -p tools/tests/fixtures/gen/zpa_policy_access_rule
 	$(PYTHON) -c "from tools.tfschema import load_resource; from tools.gen_module import render_variables, render_main, render_outputs, render_versions, _fmt; rt = 'zpa_policy_access_rule'; rs = load_resource(rt); base = 'tools/tests/fixtures/gen/zpa_policy_access_rule/'; open(base+'variables.tf','w').write(_fmt(render_variables(rt, rs))); open(base+'main.tf','w').write(_fmt(render_main(rt, rs))); open(base+'outputs.tf','w').write(_fmt(render_outputs(rt, rs))); open(base+'versions.tf','w').write(_fmt(render_versions(rt, rs)))"
+
+update-demo-goldens: ## Re-bless demo-expected fixtures from the current pipeline output
+	@mkdir -p tools/tests/fixtures/demo-expected
+	@set -e; for rt in $$($(PYTHON) -c "from tools.registry import generated_types; print('\n'.join(generated_types()))"); do \
+		f="tools/tests/fixtures/demo/$$rt.json"; \
+		if [ ! -f "$$f" ]; then echo "skip $$rt (no demo file)"; continue; fi; \
+		$(PYTHON) -c "\
+import json, os, sys; sys.path.insert(0, '.'); \
+from tools.transform import load_override, transform_items, render_tfvars, render_imports; \
+rt='$$rt'; \
+raw=json.load(open('$$f')); \
+ov=load_override(rt); \
+items, originals, _=transform_items(raw, rt, ov); \
+open('tools/tests/fixtures/demo-expected/'+rt+'.tfvars.json','w').write(render_tfvars(items)); \
+open('tools/tests/fixtures/demo-expected/'+rt+'_imports.tf','w').write(render_imports(rt, originals, ov)); \
+print('blessed', rt)" 2>/dev/null; \
+	done

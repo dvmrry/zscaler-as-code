@@ -45,7 +45,7 @@ No Zscaler credentials or network access are needed for this path.
 ```
 git clone https://github.com/dvmrry/zscaler-as-code
 cd zscaler-as-code
-make test            # 145 Python unit tests
+make test            # full unit suite
 make test-modules    # mock-provider module tests
 make test-envs TENANT=demo   # smoke tests against the committed demo dataset
 ```

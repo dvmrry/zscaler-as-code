@@ -43,9 +43,9 @@ Common ops targets:
     schemas/provider/          pinned provider schema dumps (make schemas)
     schemas/tfvars/            generated JSON Schemas for config files
     tools/                     stdlib-only Python (3.6-floor) + overrides
-    envs/{tenant-a,tenant-b}/  root modules, split state
-    config/{tenant-a,tenant-b}/ fictional sample tfvars
-    imports/{tenant-a,tenant-b}/ transform-emitted import blocks
+    envs/<tenant>/             root modules, split state
+    config/<tenant>/           fictional sample tfvars
+    imports/<tenant>/          transform-emitted import blocks
 
 Directories not yet present are created by later build phases.
 
