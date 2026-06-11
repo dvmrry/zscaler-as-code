@@ -317,6 +317,49 @@ class FetchAllAuthIsolationTest(unittest.TestCase):
         self.assertEqual(written, non_zcc)
 
 
+class ExpandSelectorsTest(unittest.TestCase):
+    def test_product_token_expands_to_its_resources(self):
+        from tools.fetch import expand_selectors, load_manifest, manifest_entry
+
+        out = expand_selectors(["zcc"])
+        self.assertTrue(out)
+        for rt in out:
+            self.assertEqual(manifest_entry(rt)["product"], "zcc")
+        self.assertEqual(
+            out,
+            set(rt for rt in load_manifest()
+                if manifest_entry(rt)["product"] == "zcc"),
+        )
+
+    def test_products_and_resources_mix(self):
+        from tools.fetch import expand_selectors
+
+        out = expand_selectors(["zia", "zpa_segment_group"])
+        self.assertIn("zia_rule_labels", out)
+        self.assertIn("zpa_segment_group", out)
+        self.assertNotIn("zcc_web_privacy", out)
+
+    def test_disable_one_product_pattern(self):
+        # The pipeline pattern for "ZCC off until OneAPI": RESOURCE="zia zpa"
+        from tools.fetch import expand_selectors, load_manifest, manifest_entry
+
+        out = expand_selectors(["zia", "zpa"])
+        zcc = set(rt for rt in load_manifest()
+                  if manifest_entry(rt)["product"] == "zcc")
+        self.assertEqual(out & zcc, set())
+        self.assertEqual(len(out), len(load_manifest()) - len(zcc))
+
+    def test_unknown_passes_through_for_loud_validation(self):
+        from tools.fetch import expand_selectors
+
+        self.assertIn("nonsense", expand_selectors(["nonsense"]))
+
+    def test_empty_means_everything(self):
+        from tools.fetch import expand_selectors
+
+        self.assertIsNone(expand_selectors([]))
+
+
 class MainZpaCustomerIdTest(unittest.TestCase):
     """ZPA_CUSTOMER_ID is required only when ZPA is in scope, so scoped
     ZIA/ZCC fetches do not demand ZPA credentials they never use."""
