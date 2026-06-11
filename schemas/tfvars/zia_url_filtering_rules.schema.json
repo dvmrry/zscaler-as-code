@@ -40,41 +40,33 @@
             "type": "boolean"
           },
           "departments": {
-            "items": {
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "items": {
-                    "type": "number"
-                  },
-                  "type": "array",
-                  "uniqueItems": true
-                }
-              },
-              "type": "object"
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
             },
-            "type": "array",
-            "uniqueItems": true
+            "type": "object"
           },
           "description": {
             "type": "string"
           },
           "device_groups": {
-            "items": {
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "items": {
-                    "type": "number"
-                  },
-                  "type": "array",
-                  "uniqueItems": true
-                }
-              },
-              "type": "object"
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
             },
-            "type": "array",
-            "uniqueItems": true
+            "type": "object"
           },
           "device_trust_levels": {
             "items": {
@@ -84,21 +76,17 @@
             "uniqueItems": true
           },
           "devices": {
-            "items": {
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "items": {
-                    "type": "number"
-                  },
-                  "type": "array",
-                  "uniqueItems": true
-                }
-              },
-              "type": "object"
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
             },
-            "type": "array",
-            "uniqueItems": true
+            "type": "object"
           },
           "end_user_notification_url": {
             "type": "string"
@@ -107,72 +95,56 @@
             "type": "boolean"
           },
           "groups": {
-            "items": {
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "items": {
-                    "type": "number"
-                  },
-                  "type": "array",
-                  "uniqueItems": true
-                }
-              },
-              "type": "object"
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
             },
-            "type": "array",
-            "uniqueItems": true
+            "type": "object"
           },
           "labels": {
-            "items": {
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "items": {
-                    "type": "number"
-                  },
-                  "type": "array",
-                  "uniqueItems": true
-                }
-              },
-              "type": "object"
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
             },
-            "type": "array",
-            "uniqueItems": true
+            "type": "object"
           },
           "location_groups": {
-            "items": {
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "items": {
-                    "type": "number"
-                  },
-                  "type": "array",
-                  "uniqueItems": true
-                }
-              },
-              "type": "object"
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
             },
-            "type": "array",
-            "uniqueItems": true
+            "type": "object"
           },
           "locations": {
-            "items": {
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "items": {
-                    "type": "number"
-                  },
-                  "type": "array",
-                  "uniqueItems": true
-                }
-              },
-              "type": "object"
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
             },
-            "type": "array",
-            "uniqueItems": true
+            "type": "object"
           },
           "name": {
             "type": "string"
@@ -181,38 +153,30 @@
             "type": "number"
           },
           "override_groups": {
-            "items": {
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "items": {
-                    "type": "number"
-                  },
-                  "type": "array",
-                  "uniqueItems": true
-                }
-              },
-              "type": "object"
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
             },
-            "type": "array",
-            "uniqueItems": true
+            "type": "object"
           },
           "override_users": {
-            "items": {
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "items": {
-                    "type": "number"
-                  },
-                  "type": "array",
-                  "uniqueItems": true
-                }
-              },
-              "type": "object"
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
             },
-            "type": "array",
-            "uniqueItems": true
+            "type": "object"
           },
           "protocols": {
             "items": {
@@ -242,21 +206,17 @@
             "uniqueItems": true
           },
           "source_ip_groups": {
-            "items": {
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "items": {
-                    "type": "number"
-                  },
-                  "type": "array",
-                  "uniqueItems": true
-                }
-              },
-              "type": "object"
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
             },
-            "type": "array",
-            "uniqueItems": true
+            "type": "object"
           },
           "state": {
             "type": "string"
@@ -265,21 +225,17 @@
             "type": "number"
           },
           "time_windows": {
-            "items": {
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "items": {
-                    "type": "number"
-                  },
-                  "type": "array",
-                  "uniqueItems": true
-                }
-              },
-              "type": "object"
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
             },
-            "type": "array",
-            "uniqueItems": true
+            "type": "object"
           },
           "timeouts": {
             "additionalProperties": false,
@@ -315,21 +271,17 @@
             "uniqueItems": true
           },
           "users": {
-            "items": {
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "items": {
-                    "type": "number"
-                  },
-                  "type": "array",
-                  "uniqueItems": true
-                }
-              },
-              "type": "object"
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
             },
-            "type": "array",
-            "uniqueItems": true
+            "type": "object"
           },
           "validity_end_time": {
             "type": "string"

@@ -71,13 +71,29 @@ class FilterTest(unittest.TestCase):
         )
 
     def test_list_block_passthrough(self):
-        # url_keyword_counts is nesting_mode=list per schema; a list value
-        # is kept as a list of filtered dicts.
+        # forwarding_profile_actions is an UNBOUNDED list block (no
+        # max_items); a list value is kept as a list of filtered dicts.
+        rs = load_resource("zcc_forwarding_profile")
+        item = {
+            "forwarding_profile_actions": [{"action_type": 1}, {"action_type": 2}]
+        }
+        drops = []
+        out = filter_item(item, rs["block"], "", drops)
+        self.assertEqual(
+            out,
+            {"forwarding_profile_actions": [{"action_type": 1}, {"action_type": 2}]},
+        )
+        self.assertEqual(drops, [])
+
+    def test_max_items_one_list_block_becomes_object(self):
+        # url_keyword_counts is a max_items=1 LIST block: the API's
+        # one-element list unwraps to a bare object (same single-instance
+        # contract as nesting_mode=single).
         rs = load_resource("zia_url_categories")
         item = {"url_keyword_counts": [{"total_url_count": 5}]}
         drops = []
         out = filter_item(item, rs["block"], "", drops)
-        self.assertEqual(out, {"url_keyword_counts": [{"total_url_count": 5}]})
+        self.assertEqual(out, {"url_keyword_counts": {"total_url_count": 5}})
         self.assertEqual(drops, [])
 
     def test_single_block_dict_stays_object(self):
@@ -137,9 +153,10 @@ class FilterTest(unittest.TestCase):
         )
         self.assertEqual(drops, [])
 
-    def test_single_block_multi_element_list_dropped(self):
-        # More than one element for a single-mode block is ambiguous —
-        # report-drop rather than silently pick one.
+    def test_single_block_multi_element_list_merged_with_conflict_report(self):
+        # More than one element for a single-instance block merges
+        # provider-style: scalar members keep the FIRST value, and a later
+        # conflicting value is recorded in drops — reported, never silent.
         rs = load_resource("zcc_forwarding_profile")
         item = {
             "forwarding_profile_actions": [
@@ -148,10 +165,35 @@ class FilterTest(unittest.TestCase):
         }
         drops = []
         out = filter_item(item, rs["block"], "", drops)
-        self.assertNotIn("system_proxy_data", out["forwarding_profile_actions"][0])
-        self.assertIn(
-            "forwarding_profile_actions[].system_proxy_data", drops
+        self.assertEqual(
+            out["forwarding_profile_actions"][0]["system_proxy_data"],
+            {"enable_pac": True},
         )
+        self.assertEqual(len(drops), 1)
+        self.assertIn(
+            "forwarding_profile_actions[].system_proxy_data.enable_pac", drops[0]
+        )
+        self.assertIn("conflicting", drops[0])
+
+    def test_max_items_one_block_merges_id_group_elements(self):
+        # The ZIA ID-group pattern: the API returns N {id, name} elements
+        # for a max_items=1 set block whose only input member is id (a set
+        # of numbers). The merge must union the ids into ONE object —
+        # terraform core rejects a second block ("Too many ... blocks").
+        rs = load_resource("zia_cloud_app_control_rule")
+        item = {
+            "departments": [
+                {"id": 10, "name": "Engineering"},
+                {"id": 20, "name": "Sales"},
+                {"id": 30, "name": "Finance"},
+            ]
+        }
+        drops = []
+        out = filter_item(item, rs["block"], "", drops)
+        self.assertEqual(out, {"departments": {"id": [10, 20, 30]}})
+        # name is not an input member: dropped once via the schema filter,
+        # with no per-element conflict noise.
+        self.assertEqual(drops, ["departments.name"])
 
 
 class CoerceTest(unittest.TestCase):
@@ -381,6 +423,39 @@ class PipelineTest(unittest.TestCase):
         self.assertNotIn("creation_time", items["a_group"])
         self.assertIn("creation_time", drops)
         self.assertEqual(originals["a_group"]["id"], "1")
+
+    def test_id_group_blocks_and_quota_defaults_through_pipeline(self):
+        # A realistic ZIA rule: camelCase keys, multi-element ID-group
+        # blocks, and sizeQuota/timeQuota 0 meaning "not set" (a provider
+        # runtime validator rejects 0, so the override drops it).
+        raw = [
+            {
+                "id": 101,
+                "type": "STREAMING_MEDIA",
+                "name": "Block big streams",
+                "order": 1,
+                "sizeQuota": 0,
+                "timeQuota": 0,
+                "departments": [
+                    {"id": 10, "name": "Engineering"},
+                    {"id": 20, "name": "Sales"},
+                ],
+                "groups": [{"id": 7, "name": "All"}],
+            }
+        ]
+        override = {
+            "key_field": ["type", "name"],
+            "drop_if_default": {"size_quota": 0, "time_quota": 0},
+        }
+        items, originals, drops = transform_items(
+            raw, "zia_cloud_app_control_rule", override
+        )
+        (key,) = list(items)
+        item = items[key]
+        self.assertEqual(item["departments"], {"id": [10, 20]})
+        self.assertEqual(item["groups"], {"id": [7]})
+        self.assertNotIn("size_quota", item)
+        self.assertNotIn("time_quota", item)
 
     def test_duplicate_keys_raise(self):
         with self.assertRaises(ValueError):

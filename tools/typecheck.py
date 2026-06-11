@@ -10,7 +10,7 @@ import os
 import sys
 
 from tools.registry import generated_types
-from tools.tfschema import classify_attributes, load_resource
+from tools.tfschema import block_is_single, classify_attributes, load_resource
 
 
 # ---------------------------------------------------------------------------
@@ -112,9 +112,10 @@ def check_item(item, block):
             if value is None:
                 continue
             inner_block = block_types[key]["block"]
-            if block_types[key]["nesting_mode"] == "single":
-                # single-mode block: value is a bare object (the generator
-                # wraps [x] at plan time). A list is the broken shape.
+            if block_is_single(block_types[key]):
+                # single-instance block (nesting "single" or max_items=1):
+                # value is a bare object (the generator wraps [x] at plan
+                # time). A list is the broken shape.
                 if not isinstance(value, dict):
                     issues.append(("", key, "object (single block)", type(value).__name__))
                     continue

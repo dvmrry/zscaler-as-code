@@ -11,7 +11,7 @@ import os
 import re
 import sys
 
-from tools.tfschema import classify_attributes, load_resource
+from tools.tfschema import block_is_single, classify_attributes, load_resource
 
 _SNAKE_1 = re.compile(r"(.)([A-Z][a-z]+)")
 _SNAKE_2 = re.compile(r"([a-z0-9])([A-Z])")
@@ -43,9 +43,10 @@ def filter_item(item, block, path, drops):
 
     Computed-only and unknown keys are dropped and their paths recorded in
     drops (the provider-coverage-gap report). Block handling branches on
-    nesting_mode: single-mode blocks carry a single dict (kept as a bare
-    object, NOT wrapped in a list — the generator wraps [x] at plan time);
-    list/set-mode blocks carry a list of dicts.
+    block_is_single: single-instance blocks (nesting_mode "single" or
+    max_items=1) carry one dict (kept as a bare object, NOT wrapped in a
+    list — the generator wraps [x] at plan time); multi-instance blocks
+    carry a list of dicts.
     """
     cls = classify_attributes(block)
     keep_attrs = set(cls["required"] + cls["optional"])
@@ -58,17 +59,28 @@ def filter_item(item, block, path, drops):
             out[key] = value
         elif key in block_types:
             inner_block = block_types[key]["block"]
-            if block_types[key]["nesting_mode"] == "single":
-                # single-mode: value is an object. Recurse the dict in
-                # place (no [] path suffix, no list wrap). Tolerate a
-                # one-element list from odd/legacy API shapes by unwrapping.
+            if block_is_single(block_types[key]):
+                # single-instance block: value is ONE object. Tolerate list
+                # shapes from the API: unwrap [x]; MERGE longer lists the
+                # way the provider's own flattener does (ZIA ID-groups
+                # return N {id, name} elements for a max_items=1 block
+                # whose real members are lists).
                 single = value
                 if isinstance(single, list):
-                    if len(single) == 1 and isinstance(single[0], dict):
-                        single = single[0]
-                    else:
+                    if not single:
+                        # empty list = "none set" — omit silently; this is
+                        # absence of data, not a provider coverage gap.
+                        continue
+                    elems = [v for v in single if isinstance(v, dict)]
+                    if not elems:
                         drops.append(child_path)
                         continue
+                    if len(elems) == 1:
+                        single = elems[0]
+                    else:
+                        single = _merge_block_elements(
+                            elems, inner_block, child_path, drops
+                        )
                 if isinstance(single, dict):
                     out[key] = filter_item(single, inner_block, child_path, drops)
                 else:
@@ -88,6 +100,38 @@ def filter_item(item, block, path, drops):
         else:
             drops.append(child_path)
     return out
+
+
+def _merge_block_elements(elems, block, path, drops):
+    """Collapse N raw elements of a single-instance block into one dict,
+    mirroring the provider's own flattener: list/set-typed members union
+    across elements (scalars wrap; empty strings mean empty and are
+    skipped), every other key keeps its first value. A later conflicting
+    value for a schema input is recorded in drops — never silently lost.
+    """
+    cls = classify_attributes(block)
+    inputs = set(cls["required"] + cls["optional"])
+    attrs = block.get("attributes") or {}
+    merged = {}
+    for elem in elems:
+        for k in sorted(elem):
+            v = elem[k]
+            if v is None:
+                continue
+            enc = attrs.get(k, {}).get("type")
+            if isinstance(enc, list) and len(enc) == 2 and enc[0] in ("list", "set"):
+                bucket = merged.setdefault(k, [])
+                if v == "":
+                    continue
+                bucket.extend(v if isinstance(v, list) else [v])
+            elif k not in merged:
+                merged[k] = v
+            elif merged[k] != v and k in inputs:
+                drops.append(
+                    "%s.%s (conflicting values across merged elements; "
+                    "kept first)" % (path, k)
+                )
+    return merged
 
 
 def _coerce_primitive(value, prim):
@@ -135,9 +179,10 @@ def coerce_item(item, block):
 
     When the schema expects a primitive (or collection of primitives) and
     the API handed us reference objects, unwrap to ids before coercing.
-    Block values recurse with their inner schema, branching on nesting_mode:
-    single-mode blocks are a single dict (recurse into it directly);
-    list/set-mode blocks are lists of dicts (filter_item ran first).
+    Block values recurse with their inner schema, branching on
+    block_is_single: single-instance blocks are a single dict (recurse into
+    it directly); multi-instance blocks are lists of dicts (filter_item ran
+    first).
     """
     attrs = block.get("attributes") or {}
     block_types = block.get("block_types") or {}
@@ -146,7 +191,7 @@ def coerce_item(item, block):
         value = item[key]
         if key in block_types:
             inner = block_types[key]["block"]
-            if block_types[key]["nesting_mode"] == "single":
+            if block_is_single(block_types[key]):
                 out[key] = coerce_item(value, inner) if isinstance(value, dict) else value
             else:
                 out[key] = [coerce_item(v, inner) for v in value] if isinstance(value, list) else value

@@ -44,6 +44,23 @@ def load_resource(resource_type):
     return schemas[resource_type]
 
 
+def block_is_single(block_type):
+    """True when a nested block holds at most ONE instance: nesting_mode
+    "single", or a list/set block the provider caps with max_items=1 (the
+    ZIA ID-group pattern — one block whose members are lists, e.g.
+    departments { id = [...] }; terraform core rejects a second block).
+
+    Single-instance blocks are OBJECTS in every generated contract —
+    variables.tf type, JSON Schema, transform output, typecheck — and the
+    generated main.tf wraps [x] at plan time. Every layer must call THIS
+    predicate rather than reading nesting_mode directly, so the layers
+    cannot disagree about which blocks are objects.
+    """
+    if block_type["nesting_mode"] == "single":
+        return True
+    return block_type.get("max_items") == 1
+
+
 def classify_attributes(block):
     """Split a block's attributes into required / optional / computed_only.
 

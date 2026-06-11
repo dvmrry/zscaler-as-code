@@ -225,6 +225,39 @@ class CheckItemBlockNestingTest(unittest.TestCase):
         item = {"name": "x", "timeouts": None}
         self.assertEqual(check_item(item, self.SINGLE_BLOCK), [])
 
+    MAX_ITEMS_ONE_BLOCK = {
+        "attributes": {"name": {"type": "string", "required": True}},
+        "block_types": {
+            "departments": {
+                "nesting_mode": "set",
+                "max_items": 1,
+                "block": {
+                    "attributes": {
+                        "id": {"type": ["set", "number"], "optional": True}
+                    },
+                    "block_types": {},
+                },
+            }
+        },
+    }
+
+    def test_max_items_one_block_dict_ok(self):
+        # max_items=1 list/set blocks share the single-instance contract:
+        # ONE object whose list members carry the ids.
+        item = {"name": "x", "departments": {"id": [10, 20]}}
+        self.assertEqual(check_item(item, self.MAX_ITEMS_ONE_BLOCK), [])
+
+    def test_max_items_one_block_list_flagged(self):
+        # The pre-merge broken shape: N blocks — terraform core would
+        # reject with "Too many departments blocks".
+        item = {"name": "x", "departments": [{"id": [10]}, {"id": [20]}]}
+        result = check_item(item, self.MAX_ITEMS_ONE_BLOCK)
+        self.assertEqual(len(result), 1)
+        _, field_path, expected, got = result[0]
+        self.assertEqual(field_path, "departments")
+        self.assertIn("single block", expected)
+        self.assertIn("list", got)
+
     def test_list_block_list_ok(self):
         item = {"name": "x", "rules": [{"id": "a"}, {"id": "b"}]}
         self.assertEqual(check_item(item, self.LIST_BLOCK), [])

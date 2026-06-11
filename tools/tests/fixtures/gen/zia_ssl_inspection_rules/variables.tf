@@ -40,46 +40,46 @@ variable "items" {
         id = optional(number)
       })))
     })))
-    departments = optional(set(object({
+    departments = optional(object({
       id = optional(set(number))
-    })))
-    dest_ip_groups = optional(set(object({
+    }))
+    dest_ip_groups = optional(object({
       id = optional(set(number))
-    })))
-    device_groups = optional(set(object({
+    }))
+    device_groups = optional(object({
       id = optional(set(number))
-    })))
-    devices = optional(set(object({
+    }))
+    devices = optional(object({
       id = optional(set(number))
-    })))
-    groups = optional(set(object({
+    }))
+    groups = optional(object({
       id = optional(set(number))
-    })))
-    labels = optional(set(object({
+    }))
+    labels = optional(object({
       id = optional(set(number))
-    })))
-    location_groups = optional(set(object({
+    }))
+    location_groups = optional(object({
       id = optional(set(number))
-    })))
-    locations = optional(set(object({
+    }))
+    locations = optional(object({
       id = optional(set(number))
-    })))
-    proxy_gateways = optional(set(object({
+    }))
+    proxy_gateways = optional(object({
       id = optional(set(number))
-    })))
-    source_ip_groups = optional(set(object({
+    }))
+    source_ip_groups = optional(object({
       id = optional(set(number))
-    })))
-    time_windows = optional(set(object({
+    }))
+    time_windows = optional(object({
       id = optional(set(number))
-    })))
+    }))
     timeouts = optional(object({
       create = optional(string)
       update = optional(string)
     }))
-    users = optional(set(object({
+    users = optional(object({
       id = optional(set(number))
-    })))
+    }))
     workload_groups = optional(set(object({
       id   = optional(number)
       name = optional(string)

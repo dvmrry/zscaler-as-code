@@ -81,42 +81,34 @@
               "additionalProperties": false,
               "properties": {
                 "scope_entities": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "id": {
-                        "items": {
-                          "type": "number"
-                        },
-                        "type": "array"
-                      }
-                    },
-                    "required": [
-                      "id"
-                    ],
-                    "type": "object"
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "items": {
+                        "type": "number"
+                      },
+                      "type": "array"
+                    }
                   },
-                  "type": "array",
-                  "uniqueItems": true
+                  "required": [
+                    "id"
+                  ],
+                  "type": "object"
                 },
                 "scope_group_member_entities": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "id": {
-                        "items": {
-                          "type": "number"
-                        },
-                        "type": "array"
-                      }
-                    },
-                    "required": [
-                      "id"
-                    ],
-                    "type": "object"
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "items": {
+                        "type": "number"
+                      },
+                      "type": "array"
+                    }
                   },
-                  "type": "array",
-                  "uniqueItems": true
+                  "required": [
+                    "id"
+                  ],
+                  "type": "object"
                 },
                 "type": {
                   "type": "string"
@@ -134,25 +126,22 @@
             "type": "string"
           },
           "url_keyword_counts": {
-            "items": {
-              "additionalProperties": false,
-              "properties": {
-                "retain_parent_keyword_count": {
-                  "type": "number"
-                },
-                "retain_parent_url_count": {
-                  "type": "number"
-                },
-                "total_keyword_count": {
-                  "type": "number"
-                },
-                "total_url_count": {
-                  "type": "number"
-                }
+            "additionalProperties": false,
+            "properties": {
+              "retain_parent_keyword_count": {
+                "type": "number"
               },
-              "type": "object"
+              "retain_parent_url_count": {
+                "type": "number"
+              },
+              "total_keyword_count": {
+                "type": "number"
+              },
+              "total_url_count": {
+                "type": "number"
+              }
             },
-            "type": "array"
+            "type": "object"
           },
           "url_type": {
             "type": "string"

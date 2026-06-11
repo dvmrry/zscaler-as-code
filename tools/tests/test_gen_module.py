@@ -41,7 +41,10 @@ class RenderVariablesTest(unittest.TestCase):
         self.assertIn("configured_name = optional(string)", out)
         self.assertIn("urls = optional(list(string))", out)
         self.assertIn("scopes = optional(set(object({", out)
-        self.assertIn("url_keyword_counts = optional(list(object({", out)
+        # max_items=1 list block: typed as ONE object, not list(object)
+        self.assertIn("url_keyword_counts = optional(object({", out)
+        # nested max_items=1 set block inside scopes: also an object
+        self.assertIn("scope_entities = optional(object({", out)
 
 
 EXPECTED_SEGMENT_GROUP_MAIN = '''\
