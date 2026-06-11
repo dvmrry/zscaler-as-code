@@ -97,9 +97,11 @@ def _coerce_primitive(value, prim):
                 return True
             if value.lower() in ("false", "0"):
                 return False
-        if isinstance(value, int) and value in (0, 1):
-            # ZCC returns flags as 0/1 integers
-            return value == 1
+        if isinstance(value, int):
+            # Mirror the provider's own helper (zcc IntToBool): any
+            # non-zero integer is true — ZCC uses tri-state ints (e.g. 2)
+            # for some flags and the provider reads them all as i != 0.
+            return value != 0
         return value  # "yes"/"no" style strings pass through; terraform reports the type error
     return value
 

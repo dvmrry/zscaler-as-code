@@ -107,17 +107,23 @@ class CoerceTest(unittest.TestCase):
         )
 
     def test_int_flags_coerce_to_bool(self):
-        # ZCC returns flags as 0/1 integers where the schema wants bool
+        # ZCC returns flags as integers where the schema wants bool —
+        # including TRI-STATE values like 2. The provider's own helper
+        # (IntToBool) reads any non-zero as true; we mirror it exactly.
         fake_block = {
             "attributes": {
                 "active": {"type": "bool", "optional": True},
                 "enabled": {"type": "bool", "optional": True},
+                "system_proxy": {"type": "bool", "optional": True},
                 "count": {"type": "number", "optional": True},
             }
         }
-        out = coerce_item({"active": 1, "enabled": 0, "count": 1}, fake_block)
+        out = coerce_item(
+            {"active": 1, "enabled": 0, "system_proxy": 2, "count": 1}, fake_block
+        )
         self.assertIs(out["active"], True)
         self.assertIs(out["enabled"], False)
+        self.assertIs(out["system_proxy"], True)  # tri-state non-zero -> true
         self.assertEqual(out["count"], 1)  # numbers untouched
 
     def test_blocks_recurse(self):
