@@ -1,6 +1,7 @@
 # Azure Blob Storage backend for Terraform state — partial configuration.
 #
-# Copy to backend.conf (gitignored), fill the three values, then:
+# Copy to backend.conf (gitignored in this template; committable in a
+# private deployment repo), fill the values for ONE auth mode below, then:
 #   make gen-env TENANT=<label> BACKEND=azurerm     # one-time: adds the backend block
 #   make plan TENANT=<label> BACKEND_CONFIG=backend.conf
 #
@@ -8,13 +9,19 @@
 #   <tenant>/<resource_type>.tfstate
 # so every value below is shared across all roots — fill once.
 #
-# Authentication comes from the environment, never this file: an Azure
-# pipeline service connection, `az login`, or ARM_* environment variables.
-# The identity needs "Storage Blob Data Contributor" on the container.
+# SECRETS NEVER GO IN THIS FILE: tokens/keys come from the environment
+# (pipeline secret variables), because this file may be committed.
 
-resource_group_name  = "FILL-resource-group-containing-the-storage-account"
 storage_account_name = "FILL-storage-account-name"
 container_name       = "FILL-blob-container-name"
 
-# Recommended: Entra ID data-plane auth (no storage account keys).
-use_azuread_auth = true
+# --- Auth mode A: SAS token -------------------------------------------------
+# Supply the token via the ARM_SAS_TOKEN environment variable (pipeline
+# secret), NOT here. With SAS auth, resource_group_name must be OMITTED —
+# it triggers a management-plane lookup a SAS token cannot perform.
+
+# --- Auth mode B: Entra ID data-plane auth ----------------------------------
+# Identity from a pipeline service connection / az login / ARM_* vars,
+# needing "Storage Blob Data Contributor" on the container. Uncomment BOTH:
+# resource_group_name = "FILL-resource-group-containing-the-storage-account"
+# use_azuread_auth    = true

@@ -190,8 +190,12 @@ make gen-env TENANT=<label> BACKEND=azurerm
 make plan TENANT=<label> RESOURCE=<type> SAVE=1 BACKEND_CONFIG=backend.conf
 ```
 
-Authentication is environment-only (pipeline service connection,
-`az login`, or `ARM_*` vars) — never written into `backend.conf`.
+Authentication is environment-only — never written into `backend.conf`:
+a SAS token via the `ARM_SAS_TOKEN` secret variable (omit
+`resource_group_name` in SAS mode — it triggers a management-plane
+lookup SAS cannot perform), or Entra ID via a pipeline service
+connection / `az login` / `ARM_*` vars with `use_azuread_auth = true`.
+Both modes are laid out in `backend.conf.example`.
 Mock-provider tests are unaffected (they init with `-backend=false`).
 If a root was already applied with LOCAL state, migrate once with
 `terraform -chdir=envs/<label>/<type> init -migrate-state
