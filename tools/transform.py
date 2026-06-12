@@ -776,13 +776,12 @@ def main(argv=None):
         # different schema name.
         sys.stderr.write(
             "%d unacknowledged dropped field(s) above — NEW API surface "
-            "for %s. Triage each before silencing: run make issue-watch "
-            "and check the provider docs (a dropped field can be "
-            "write-REQUIRED under another schema name — the signingCertId "
-            "class); then encode an override (renames if the schema has "
-            "another spelling) or add it to acknowledged_drops in "
-            "tools/overrides/%s.json. DROPS_CHECK=1 makes this exit 4.\n"
-            % (len(drops), resource_type, resource_type))
+            "for %s. Run: make triage IN=<pulls dir> APPLY=1 — it "
+            "classifies every path, auto-acknowledges the provably-safe "
+            "classes, and leaves only SYNONYM/UNKNOWN for eyes (a "
+            "dropped field can be write-REQUIRED under another schema "
+            "name — the signingCertId class). DROPS_CHECK=1 makes this "
+            "exit 4.\n" % (len(drops), resource_type))
     sys.stderr.write("wrote %s\nwrote %s\n" % (tfvars_path, imports_path))
     if drops and os.environ.get("DROPS_CHECK"):
         # outputs are already written — the exit only makes the run red

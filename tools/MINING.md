@@ -236,11 +236,15 @@ lives in two places, both now mechanized:
    pulls that the schema doesn't know is, by definition, the API
    moving under the pins. `make transform` prints every unacknowledged
    drop plus a triage summary; `DROPS_CHECK=1` makes it exit 4 (red
-   run). Triage means: is the field write-required under another
-   schema spelling (→ `renames`), real new provider-less surface
-   (→ `acknowledged_drops` + a RUNBOOK note), or metadata
-   (→ `acknowledged_drops`). signingCertId sat in this report for
-   weeks as noise; never silence a drop without the triage.
+   run). signingCertId sat in this report for weeks as noise; never
+   silence a drop without the triage — and the triage itself is
+   mechanized: **`make triage IN=pulls/<tenant> APPLY=1`** classifies
+   every dropped path (SYNONYM / DECORATION / METADATA / SDK /
+   UNKNOWN), auto-acknowledges the provably-safe classes, and leaves
+   only SYNONYM/UNKNOWN for eyes (exit 4) with the per-path recipe.
+   SYNONYM — a leaf sharing tokens with a same-level schema field —
+   is the signingCertId class and is NEVER auto-acknowledged: verify
+   the provider read/expand, then encode `renames` or acknowledge.
 2. **Other operators hit it first — read their reports.**
    `make issue-watch` scans the three provider issue trackers for
    issues/PRs mentioning OUR resource types, against a committed
