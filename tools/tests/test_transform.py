@@ -1395,7 +1395,12 @@ ESTATE_DROPS = {
     "server_groups[].modified_by", "server_groups[].modified_time",
     "server_groups[].name", "sticky_entity", "sticky_group",
     "zscaler_managed"],
- "zpa_policy_access_rule": ["conditions[].operands[].referenced_object_deleted"],
+ "zpa_policy_access_rule": ["conditions[].operands[].referenced_object_deleted",
+    "app_server_groups[].config_space", "app_server_groups[].creation_time",
+    "app_server_groups[].description", "app_server_groups[].dynamic_discovery",
+    "app_server_groups[].enabled", "app_server_groups[].extranet_enabled",
+    "app_server_groups[].modified_by", "app_server_groups[].modified_time",
+    "app_server_groups[].name"],
 }
 
 ESTATE_BASE = {
