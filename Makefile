@@ -16,8 +16,10 @@ SCOPE_GLOB = $(if $(RESOURCE),$(if $(word 2,$(RESOURCE)),$(RESOURCE),$(if $(filt
 # shipped by the template and is yours to commit privately.
 -include local.mk
 
-help: ## List available targets
-	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
+##@ Toolchain & provider intel
+
+help: ## List available targets, grouped (annotated local.mk targets appear too)
+	@awk 'BEGIN {FS = ":.*?## "} /^##@ / {printf "\n%s\n", substr($$0, 5)} /^[a-zA-Z_-]+:.*?## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 env: ## Print toolchain versions (diagnostic)
 	@uname -sm
@@ -40,6 +42,8 @@ shape: ## Sanitized structural digest of a plan JSON / config / pull (FILE=<path
 	@test -n "$(FILE)" || { echo "usage: make shape FILE=plan.json [ONLY=zpa_policy_access_rule]"; exit 2; }
 	$(PYTHON) -m tools.shape "$(FILE)" $(ONLY)
 
+##@ Tests & template gates
+
 test: ## Run Python unit tests with the local interpreter
 	$(PYTHON) -m unittest discover -s tools/tests -t . -v
 
@@ -49,6 +53,8 @@ test-floor: ## Run unit tests under Python 3.6 in Docker (optional dev check; ne
 
 validate: ## Terraform formatting checks
 	$(TF) fmt -check -recursive
+
+##@ Generation chain
 
 schemas: ## Re-extract provider schemas into schemas/provider/ (CHECK=1 fails on drift)
 	$(TF) -chdir=tools/schema-extract init -input=false
@@ -110,6 +116,8 @@ fetch: ## Pull API JSON into pulls/<tenant> (TENANT=<name> [RESOURCE="<type|prod
 fetch-diag: ## Probe TLS to the fetcher's hosts under system trust and +bundle
 	$(PYTHON) -m tools.fetch --diag
 
+##@ Tenant gates
+
 test-modules: ## Run mock-provider terraform tests across all generated modules
 	@set -e; for d in modules/*/; do \
 		echo "== $$d"; \
@@ -145,6 +153,8 @@ validate-imports: ## Validate fixture import addresses against a tenant's roots 
 			echo "skip $$rt (no fixture imports)"; \
 		fi; \
 	done
+
+##@ Plan / apply / state ops
 
 lock: ## Pin provider HASHES per env root (TENANT=<label>; one registry fetch per product, copied to sibling roots; commit the lock files)
 	@test -n "$(TENANT)" || { echo "usage: make lock TENANT=<label>"; exit 2; }
@@ -361,6 +371,8 @@ drift: ## Fetch + transform + report config diff (TENANT=<label> [RESOURCE="<typ
 		echo "no drift: tenant matches committed config"; \
 	fi
 
+##@ Consistency & demo
+
 check-envs: ## Regenerate committed tenants' env roots and fail on drift
 	@set -e; regenerated=0; for d in envs/*/; do \
 		test -d "$$d" || continue; \
@@ -390,6 +402,8 @@ check-demo: ## Fail if the committed demo tenant drifts from the pipeline output
 		git status --porcelain -- config/demo imports/demo; \
 		echo "Run 'make demo' and commit (or fix the regression it reveals)."; exit 1; }
 
+##@ Config gates
+
 lint: ## Semantic config lint — pasted chars, URL/IP syntax, set duplicates, order collisions, category shadowing (TENANT=<label>)
 	@test -n "$(TENANT)" || { echo "usage: make lint TENANT=<label>"; exit 2; }
 	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
@@ -417,6 +431,8 @@ validate-config: ## Validate config/ against generated JSON Schemas (dev-only; j
 		echo "WARNING: no python 'jsonschema' and no uv - skipping config validation"; \
 		echo "(dev-only check; never required in restricted environments)"; \
 	fi
+
+##@ Template authoring (dev)
 
 update-goldens: ## Re-bless generator golden fixtures from current output
 	$(PYTHON) -m tools.gen_module

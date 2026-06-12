@@ -7,7 +7,7 @@ from tools.validate_config import config_pairs
 class ConfigPairsTest(unittest.TestCase):
     def test_pairs_existing_config_to_schema(self):
         pairs = config_pairs()
-        # zs2 sample config exists for the four original resources at least
+        # the committed demo tenant carries config for every generated type
         rts = sorted(rt for (_t, rt, _c, _s) in pairs)
         self.assertIn("zpa_segment_group", rts)
         for tenant, rt, cfg, schema in pairs:

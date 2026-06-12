@@ -11,7 +11,7 @@ The landscape is three pipelines:
 
 | Pipeline | Trigger | Credentials | State | Make targets |
 |---|---|---|---|---|
-| **Validation** (PR gate) | every PR | none | never touched (`-backend=false` everywhere) | `test`, `validate`, `typecheck`, `lint`, `test-envs`, `validate-imports` |
+| **Validation** (PR gate) | every PR | none | never touched (`-backend=false` everywhere) | `test`, `validate`, `typecheck`, `lint`, `test-envs`, `validate-imports` (the ADO example ships `test-envs`/`validate-imports` commented — tenant-specific wiring is an adopter choice; the GitHub/Bitbucket examples run all six) |
 | **Plan → Apply** (delivery) | merge / manual | real API creds + state auth | locked during plan/apply | `plan-changed SAVE=1` → approval → `apply` |
 | **Bootstrap** (manual, per tenant/wave) | run-pipeline button | real API creds + state auth | locked; writes the FIRST state (imports only — never mutates the tenant) | `stage-imports` → `plan SAVE=1` → `assert-clean` (imports-only proof, BEFORE approval) → approval → `apply` |
 | **Bump check** (scheduled) | weekly cron | none (public registries) | not used | `bump-check` → orange run (`SucceededWithIssues`) + deduplicated ADO work item on a board (no webhooks/email needed); red = the check itself failed |
