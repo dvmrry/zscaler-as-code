@@ -1,4 +1,9 @@
 {
+  "defaults": {
+    "url_categories": [
+      "ANY"
+    ]
+  },
   "divide": {
     "size_quota": 1024
   },
