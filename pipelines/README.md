@@ -37,7 +37,11 @@ Notes that apply to every platform:
   persist between runs, so a cancelled run's tfplans would ride into
   the next apply (apply's scope IS the artifacts). `plan-changed`
   clears stale plans automatically; pipelines calling bare `make plan
-  SAVE=1` (bootstrap) run `make clean-plans` first.
+  SAVE=1` (bootstrap) run `make clean-plans` first. **And the apply
+  stage passes the SAME tenant/scope to `make apply`** — defense in
+  depth: even a contaminated artifact cannot apply outside the run's
+  declared scope (field-hit: a ZIA-targeted run applied stale ZPA
+  plans from a previous cancelled run).
 - **Apply scope is the saved-plan artifacts.** Stage 1 publishes
   `envs/**/tfplan` (and the plan text for the approval screen); stage 2
   runs `make apply`, which only ever applies those artifacts. There is
