@@ -253,7 +253,18 @@ lives in two places, both now mechanized:
    maintainer-answered weeks before it reached this pipeline; the
    watcher catches it (recall-validated). Wired into the bump
    pipeline as an orange-run step.
-3. **Vendor release notes are the manual lane.** Tenant-side rollouts
+3. **The SDK surface sweep needs no data at all.** `make surface
+   [APPLY=1]` parses every json tag from the pinned SDK structs,
+   synthesizes a maximal item per resource (every field the vendor
+   models, populated), runs it through the real transform, and
+   classifies every drop — the drop report for a tenant that uses
+   every feature, before any tenant exists. First live run found a
+   real silent-wrong-data bug with zero data: the API's
+   `ipv6Dns64Prefix` snake-cases to `ipv6_dns64_prefix` but the
+   provider schema spells it `ipv6_dns_64prefix` — without a rename
+   the setting dropped from config and an update would have written
+   `false` over it. Run at every provider/SDK bump.
+4. **Vendor release notes are the manual lane.** Tenant-side rollouts
    are announced in the ZPA/ZIA release-upgrade summaries on
    help.zscaler.com — unstructured, so no tool; skim them when the
    bump pipeline goes orange or before enabling a new feature.

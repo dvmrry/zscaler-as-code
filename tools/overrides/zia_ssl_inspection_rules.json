@@ -2,9 +2,13 @@
   "acknowledged_drops": [
     "access_control",
     "action[].id",
+    "action[].ssl_interception_cert[].default_certificate",
     "action[].ssl_interception_cert[].name",
     "default_rule",
+    "departments.name",
+    "dest_ip_groups.name",
     "device_groups.name",
+    "devices.name",
     "end_point_application_groups",
     "end_point_applications",
     "groups.name",
@@ -15,8 +19,11 @@
     "location_groups.name",
     "locations.name",
     "predefined",
+    "proxy_gateways.name",
     "source_ip_groups.name",
-    "users.name"
+    "time_windows.name",
+    "users.name",
+    "zpa_app_segments[].id"
   ],
   "import_id": "{id}",
   "skip_if": [

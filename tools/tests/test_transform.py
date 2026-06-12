@@ -1437,5 +1437,23 @@ class EstateDropTriageTest(unittest.TestCase):
             self.assertEqual(reported, [], "%s reports: %r" % (rt, reported))
 
 
+
+class Ipv6Dns64PrefixRenameTest(unittest.TestCase):
+    def test_api_spelling_lands_in_schema_spelling(self):
+        # Found by the SDK surface sweep with ZERO tenant data: the API
+        # tag ipv6Dns64Prefix snake-cases to ipv6_dns64_prefix but the
+        # provider schema spells it ipv6_dns_64prefix — without the
+        # rename the setting drops from config and a provider update
+        # writes d.Get(...)=false, silently FLIPPING IT OFF.
+        from tools.transform import load_override, transform_items
+
+        raw = [{"id": 1, "name": "L", "ipv6Dns64Prefix": True}]
+        ov = load_override("zia_location_management")
+        items, _, reported = transform_items(
+            raw, "zia_location_management", ov)
+        self.assertIs(items["l"]["ipv6_dns_64prefix"], True)
+        self.assertEqual(reported, [])
+
+
 if __name__ == "__main__":
     unittest.main()

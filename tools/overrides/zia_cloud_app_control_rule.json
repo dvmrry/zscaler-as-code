@@ -1,9 +1,15 @@
 {
   "acknowledged_drops": [
     "access_control",
+    "cbi_profile[].default_profile",
     "cbi_profile[].profile_seq",
+    "cbi_profile[].sandbox_mode",
+    "cloud_app_instances.name",
+    "cloud_app_instances.type",
+    "cloud_app_risk_profile[].name",
     "departments.name",
     "device_groups.name",
+    "devices.name",
     "groups.name",
     "id",
     "labels.name",
@@ -12,9 +18,11 @@
     "location_groups.name",
     "locations.is_name_l10n_tag",
     "locations.name",
+    "number_of_applications",
     "predefined",
     "prompt_capture_enabled",
     "tenancy_profile_ids.name",
+    "time_windows.name",
     "users.name"
   ],
   "divide": {

@@ -38,6 +38,10 @@ from tools.transform import OVERRIDES_DIR, load_override, transform_items
 
 SDK_TAG = "v3.8.37"
 SDK_PATHS = {
+    "zcc_failopen_policy": "zscaler/zcc/services/failopen_policy/failopen_policy.go",
+    "zcc_forwarding_profile": "zscaler/zcc/services/forwarding_profile/forwarding_profile.go",
+    "zcc_trusted_network": "zscaler/zcc/services/trusted_network_v2/trusted_network_v2.go",
+    "zcc_web_privacy": "zscaler/zcc/services/web_privacy/web_privacy.go",
     "zia_cloud_app_control_rule": "zscaler/zia/services/cloudappcontrol/cloudappcontrol.go",
     "zia_location_management": "zscaler/zia/services/location/locationmanagement/locationmanagement.go",
     "zia_rule_labels": "zscaler/zia/services/rule_labels/rule_labels.go",

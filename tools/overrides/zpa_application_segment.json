@@ -1,8 +1,13 @@
 {
   "acknowledged_drops": [
     "adp_enabled",
+    "app_recommendation_id",
+    "applications",
     "auto_app_protect_enabled",
+    "clientless_apps",
     "creation_time",
+    "default_idle_timeout",
+    "default_max_age",
     "extranet_enabled",
     "hbr_enabled",
     "id",
@@ -10,6 +15,7 @@
     "modified_by",
     "modified_time",
     "read_only",
+    "restriction_type",
     "server_groups[].config_space",
     "server_groups[].creation_time",
     "server_groups[].description",
@@ -19,8 +25,11 @@
     "server_groups[].modified_by",
     "server_groups[].modified_time",
     "server_groups[].name",
+    "shared_microtenant_details",
     "sticky_entity",
     "sticky_group",
+    "tags",
+    "zpn_er_id[].name",
     "zscaler_managed"
   ],
   "drop_if_default": {

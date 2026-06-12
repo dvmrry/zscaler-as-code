@@ -4,7 +4,8 @@
     "created_by",
     "edited_by",
     "guid",
-    "id"
+    "id",
+    "zpa_id"
   ],
   "import_id": "{id}",
   "renames": {

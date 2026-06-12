@@ -2,6 +2,8 @@
   "acknowledged_drops": [
     "category_group",
     "id",
+    "scopes[].scope_entities.name",
+    "scopes[].scope_group_member_entities.name",
     "val"
   ],
   "import_id": "{id}",
