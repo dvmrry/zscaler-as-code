@@ -32,6 +32,7 @@ whole time:
 | predefined/one-click rule import hung 10+ min | provider cannot manage service-owned objects | `skip_if` |
 | policy_style bool vs API string enum | read maps `DUAL_POLICY_EVAL`→true, `NONE`→false | `value_map` |
 | zpa policy rule diffs inside conditions[].operands | `operands.name` is Computed+Optional — the API rewrites it to the referenced object's display name (provider issue #287: "remove name from your operands"); nested `microtenant_id` "0" stub | dotted `drops` / `drop_if_default` (`conditions.operands.name`) |
+| ZPA plans show `&amp;`/`&gt;` updates on name/description | the Go SDK HTML-unescapes every ZPA and ZCC response — top-level name/description only, applied TWICE (`unescapeHTML` in zscaler-sdk-go `zscaler/utils.go`, called from `zparequests.go`/`zccrequests.go`; zia has no such call) — so state holds literals while the raw API carries entities | transform mirrors it (`_unescape_html_fields`); `make lint` warns on residual entities |
 
 ## The mechanical lanes (`make mine`)
 
@@ -169,6 +170,15 @@ repo:
    semantics (`*bool`/`*int` = absent-vs-zero matters — the provider
    may be hiding a default). The SDK is also where response envelopes
    live (pagination, wrappers) when fetch output looks truncated.
+   Crucially, the SDK's REQUEST PATH can rewrite every response before
+   the provider sees it — worked example: `unescapeHTML` in
+   `zscaler/utils.go` HTML-unescapes top-level name/description (twice)
+   on every ZPA and ZCC response, which is why raw-API pulls carry
+   `&amp;` where provider state has `&`. The miner does not scan the
+   SDK repo; when a value differs between a pull and provider state
+   with NO provider-source explanation, grep the SDK's
+   `*requests.go`/`utils.go` next. Pin: the provider's `go.mod` names
+   the exact SDK tag.
 3. **Python SDK** (`zscaler-sdk-python`): the docstrings frequently
    state UNITS, valid enums, and value meanings that appear nowhere in
    the Go code. Grep the snake_case field name. Treat it as

@@ -509,6 +509,28 @@ def derive_key(item, override):
     return slug
 
 
+# The Go SDK HTML-unescapes every ZPA and ZCC response entity — TOP-LEVEL
+# name/description only, applied TWICE (zscaler-sdk-go v3.8.37
+# zscaler/utils.go unescapeHTML, called from zparequests.go and
+# zccrequests.go after decode; the zia path has no such call). The raw API
+# carries HTML-escaped text (R&amp;D, &gt;), so the provider's state is the
+# UNESCAPED form — config built from raw pulls must mirror or every
+# affected name/description shows a phantom update in plans.
+_UNESCAPE_PRODUCTS = ("zpa_", "zcc_")
+_UNESCAPE_FIELDS = ("name", "description")
+
+
+def _unescape_html_fields(snake_raw, resource_type):
+    import html
+
+    if not resource_type.startswith(_UNESCAPE_PRODUCTS):
+        return
+    for field in _UNESCAPE_FIELDS:
+        value = snake_raw.get(field)
+        if isinstance(value, str):
+            snake_raw[field] = html.unescape(html.unescape(value))
+
+
 def transform_items(raw_items, resource_type, override):
     """Full per-item pipeline. Returns (items_map, originals_map, drops).
 
@@ -523,6 +545,7 @@ def transform_items(raw_items, resource_type, override):
     drops = []
     for raw in raw_items:
         snake_raw = snake_keys(raw)
+        _unescape_html_fields(snake_raw, resource_type)
         if _skip_item(snake_raw, override):
             sys.stderr.write(
                 "skipped %s item %r (skip_if matched)\n"

@@ -16,6 +16,7 @@ Stdlib-only, Python 3.6-floor — see AGENTS.md rule 5.
 """
 import json
 import os
+import re
 import sys
 
 from tools.registry import generated_types
@@ -29,6 +30,7 @@ IP_FIELDS = ("ip_ranges", "ip_ranges_retaining_parent_category", "ip_addresses")
 # Resources whose `order` must be unique — grouped by a field when listed.
 ORDER_GROUP_FIELD = {"zia_cloud_app_control_rule": "type"}
 
+_HTML_ENTITY = re.compile(r"&(?:[A-Za-z]+|#[0-9]+|#x[0-9A-Fa-f]+);")
 _INVISIBLE = ("​", "‌", "‍", "⁠", "﻿")
 _PASTED = {
     "‘": "'", "’": "'", "“": '"', "”": '"',
@@ -74,6 +76,11 @@ def check_string(value, rt, where, report):
     if "  " in value.strip():
         report.warn(rt, where, "doubled internal spaces",
                     "collapse to one if unintended")
+    m = _HTML_ENTITY.search(value)
+    if m:
+        report.warn(rt, where, "HTML entity %r in value" % m.group(0),
+                    "use the literal character (ZPA/ZCC reads unescape "
+                    "name/description -> perma-diff)")
 
 
 def walk_strings(value, rt, where, report):
