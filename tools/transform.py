@@ -351,6 +351,15 @@ def apply_overrides(item, override):
             if isinstance(value, bool) or not isinstance(value, int):
                 continue
             out[field] = value // divisor
+    for field, default in sorted((override.get("defaults") or {}).items()):
+        # Fill required-on-write fields the API omits when "unset means
+        # everything": e.g. ZIA url_filtering rules matching ANY category
+        # come back with urlCategories empty/absent, the write API rejects
+        # an empty list, and the provider's own read normalizes empty to
+        # ["ANY"] — so ["ANY"] is the canonical, round-trip-stable value.
+        # json round-trip = deep copy: items must never share the default.
+        if field not in out or out[field] in (None, "", []):
+            out[field] = json.loads(json.dumps(default))
     for field, default in sorted((override.get("drop_if_default") or {}).items()):
         # Compare against the default after the same string-int coercion the
         # divide step does, so an API number-as-string (quirk 5) like

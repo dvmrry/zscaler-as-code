@@ -393,6 +393,40 @@ class OverrideTest(unittest.TestCase):
             apply_overrides(item, ov), {"dns_server_ips": ["1.1.1.1", "2.2.2.2"]}
         )
 
+    def test_defaults_fill_absent_and_empty(self):
+        # ZIA "ANY category" rules: GET omits/empties urlCategories, the
+        # write API rejects an empty list, and the provider's own read
+        # normalizes empty to ["ANY"] — the canonical stable value.
+        ov = {"defaults": {"url_categories": ["ANY"]}}
+        self.assertEqual(
+            apply_overrides({"name": "r"}, ov),
+            {"name": "r", "url_categories": ["ANY"]},
+        )
+        self.assertEqual(
+            apply_overrides({"name": "r", "url_categories": []}, ov),
+            {"name": "r", "url_categories": ["ANY"]},
+        )
+        self.assertEqual(
+            apply_overrides({"name": "r", "url_categories": None}, ov),
+            {"name": "r", "url_categories": ["ANY"]},
+        )
+
+    def test_defaults_leave_real_values(self):
+        ov = {"defaults": {"url_categories": ["ANY"]}}
+        self.assertEqual(
+            apply_overrides({"url_categories": ["NEWS_AND_MEDIA"]}, ov),
+            {"url_categories": ["NEWS_AND_MEDIA"]},
+        )
+
+    def test_defaults_are_deep_copied_per_item(self):
+        # A shared mutable default would let one item's later mutation
+        # bleed into every other item.
+        ov = {"defaults": {"url_categories": ["ANY"]}}
+        a = apply_overrides({"name": "a"}, ov)
+        b = apply_overrides({"name": "b"}, ov)
+        a["url_categories"].append("MUTATED")
+        self.assertEqual(b["url_categories"], ["ANY"])
+
     def test_divide_converts_units(self):
         # ZIA size_quota: API returns KB, the provider schema value is MB
         # (the provider does resp.SizeQuota / 1024 on read; its validator
