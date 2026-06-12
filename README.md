@@ -79,6 +79,29 @@ CHECK=1` is the authoring-side pre-commit guard for pin bumps; extraction
 output can legitimately vary with the local terraform and provider
 versions, which is exactly why it happens in one place.
 
+## Deploying privately while consuming template updates
+
+Run a private deployment repo as a downstream of this template (clone +
+private remote; `git pull <template-remote> main` to update). Merges stay
+trivial as long as the PATH CONTRACT holds:
+
+- **Template-owned (never edit downstream):** `Makefile`, `tools/`,
+  `modules/`, `schemas/`, `envs/demo/`, `config/demo/`, `pipelines/*.example.yml`,
+  the docs. A local edit here is a future merge conflict and a fork —
+  change the template via PR instead, or extend via the seams below.
+- **Deployment-owned (never shipped by the template):** `config/<your-tenants>/`,
+  `imports/<your-tenants>/`, `envs/<your-tenants>/`, `pulls/` (gitignored),
+  `backend.conf`, your operative pipeline yamls (repo root or your own
+  directory), and:
+  - **`local.mk`** — custom make targets and variable overrides; the
+    template Makefile `-include`s it and never ships it.
+  - **`company/` (or any directory the template doesn't use)** — your
+    scripts, docs, runbooks.
+- **Derived-by-ritual:** operative pipeline yamls are adapted FROM the
+  examples and do not update automatically — after pulling template
+  updates, diff them against `pipelines/*.example.yml` (see
+  pipelines/README.md).
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

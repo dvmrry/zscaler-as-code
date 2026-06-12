@@ -10,6 +10,12 @@ SCOPE_GLOB = $(if $(RESOURCE),$(if $(word 2,$(RESOURCE)),$(RESOURCE),$(if $(filt
 
 .PHONY: help env install-tf bump-check plan-report clean clean-plans unlock forget stage-imports unstage-imports lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck conformance
 
+# Company/deployment extensions: a private repo adds its own targets and
+# variable overrides in local.mk — NEVER by editing this file, which is
+# template-owned and overwritten on template updates. local.mk is not
+# shipped by the template and is yours to commit privately.
+-include local.mk
+
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
 
