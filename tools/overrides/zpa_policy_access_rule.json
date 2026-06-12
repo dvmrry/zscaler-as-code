@@ -1,8 +1,4 @@
 {
-  "import_id": "{id}",
-  "skip_if": [
-    {"default_rule": true}
-  ],
   "acknowledged_drops": [
     "app_connector_groups[].city_country",
     "app_connector_groups[].connector_group_type",
@@ -46,5 +42,22 @@
     "policy_type",
     "read_only",
     "zscaler_managed"
+  ],
+  "drop_if_default": {
+    "microtenant_id": "0"
+  },
+  "drops": [
+    "priority",
+    "rule_order"
+  ],
+  "import_id": "{id}",
+  "merge_blocks": [
+    "app_server_groups",
+    "app_connector_groups"
+  ],
+  "skip_if": [
+    {
+      "default_rule": true
+    }
   ]
 }

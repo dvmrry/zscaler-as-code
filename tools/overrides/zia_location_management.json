@@ -1,3 +1,13 @@
 {
-  "import_id": "{id}"
+  "import_id": "{id}",
+  "ranges": {
+    "dn_bandwidth": [
+      0,
+      99999999
+    ],
+    "up_bandwidth": [
+      0,
+      99999999
+    ]
+  }
 }

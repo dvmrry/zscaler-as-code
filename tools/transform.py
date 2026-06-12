@@ -369,6 +369,34 @@ def apply_overrides(item, override):
             if isinstance(value, bool) or not isinstance(value, int):
                 continue
             out[field] = value // divisor
+    for field in sorted(override.get("invert_bool") or []):
+        # Inverted boolean APIs (ZCC failopen: 0 = ENABLED, per the
+        # provider's own boolToInvertedInt helpers): coerce to bool with
+        # the normal rules, then flip. Without this the config silently
+        # carries the OPPOSITE of every setting.
+        if field in out:
+            b = _coerce_primitive(out[field], "bool")
+            if isinstance(b, bool):
+                out[field] = not b
+    for field, mapping in sorted((override.get("value_map") or {}).items()):
+        # String-enum <-> schema-type bridges (zpa policy_style: the API
+        # speaks NONE/DUAL_POLICY_EVAL, the schema is bool). Unmapped
+        # values pass through for typecheck to flag.
+        if field in out and isinstance(out[field], str) and out[field] in mapping:
+            out[field] = mapping[out[field]]
+    for field, prefix in sorted((override.get("strip_prefix") or {}).items()):
+        # Read-side prefix stripping the provider performs (zia
+        # source_countries: API speaks COUNTRY_US, config speaks US; the
+        # write re-adds the prefix).
+        if field in out:
+            v = out[field]
+            if isinstance(v, str) and v.startswith(prefix):
+                out[field] = v[len(prefix):]
+            elif isinstance(v, list):
+                out[field] = [
+                    e[len(prefix):] if isinstance(e, str) and e.startswith(prefix) else e
+                    for e in v
+                ]
     for field, default in sorted((override.get("defaults") or {}).items()):
         # Fill required-on-write fields the API omits when "unset means
         # everything": e.g. ZIA url_filtering rules matching ANY category

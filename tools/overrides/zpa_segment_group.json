@@ -1,5 +1,4 @@
 {
-  "import_id": "{id}",
   "acknowledged_drops": [
     "config_space",
     "creation_time",
@@ -11,5 +10,9 @@
     "read_only",
     "tcp_keep_alive_enabled",
     "zscaler_managed"
-  ]
+  ],
+  "drops": [
+    "applications"
+  ],
+  "import_id": "{id}"
 }

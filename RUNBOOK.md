@@ -379,10 +379,16 @@ catalog — before any tenant contact.
 3. `make schemas && make generate`
 4. Review the git diff — drop-report changes mean coverage changed; update
    `acknowledged_drops` entries as needed.
-5. `make test`
-6. `make lock TENANT=<label>` for each committed tenant — version pins
+5. `make mine` — scans the NEW pinned provider source for behavioral
+   quirks (runtime validators, unit conversions, inverted booleans,
+   merge flattens, …) against override coverage. Exits 4 when the bump
+   introduced a quirk no override encodes; each MISSING line names the
+   override key to add. `tools/MINING.md` is the per-class verification
+   procedure — follow it before encoding anything.
+6. `make test`
+7. `make lock TENANT=<label>` for each committed tenant — version pins
    alone don't pin artifact hashes; the per-root lock files do.
-7. Commit the lock files, `schemas/provider/`, generated modules, and any
+8. Commit the lock files, `schemas/provider/`, generated modules, and any
    override changes together.
 
 ---
