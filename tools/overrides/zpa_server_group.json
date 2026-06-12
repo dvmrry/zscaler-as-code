@@ -28,6 +28,7 @@
     "app_connector_groups[].use_in_dr_mode",
     "app_connector_groups[].version_profile_id",
     "app_connector_groups[].waf_disabled",
+    "applications[].enabled",
     "applications[].name",
     "creation_time",
     "id",
