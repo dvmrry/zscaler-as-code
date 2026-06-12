@@ -7,6 +7,8 @@ modules/**/.terraform.lock.hcl
 *.tfstate.*
 crash.log
 crash.*.log
+# statefill temp state copies (recipe uses mktemp, this is the belt)
+.statefill.*.json
 
 # Remote-state settings — work-specific values, never committed here
 backend.conf

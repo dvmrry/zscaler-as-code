@@ -8,7 +8,7 @@ TF     ?= terraform
 # the python side expands those.
 SCOPE_GLOB = $(if $(RESOURCE),$(if $(word 2,$(RESOURCE)),$(RESOURCE),$(if $(filter zia zpa zcc,$(RESOURCE)),$(RESOURCE)_*,$(RESOURCE))),*)
 
-.PHONY: help env install-tf bump-check mine issue-watch triage surface shape plan-report clean clean-plans unlock forget stage-imports unstage-imports lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck conformance
+.PHONY: help env install-tf bump-check mine issue-watch triage surface shape plan-report clean clean-plans unlock forget stage-imports unstage-imports statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck conformance
 
 # Company/deployment extensions: a private repo adds its own targets and
 # variable overrides in local.mk — NEVER by editing this file, which is
@@ -328,6 +328,20 @@ unlock: ## Break a stale state lock after a killed run (TENANT=<label> RESOURCE=
 	@echo "If a pipeline run is currently active on this root, cancel it instead."
 	$(TF) -chdir=envs/$(TENANT)/$(RESOURCE) init -input=false $(if $(BACKEND_CONFIG),-reconfigure -backend-config="$(abspath $(BACKEND_CONFIG))" -backend-config="key=$(TENANT)/$(RESOURCE).tfstate") > /dev/null
 	$(TF) -chdir=envs/$(TENANT)/$(RESOURCE) force-unlock -force "$(LOCK_ID)"
+
+statefill: ## Fill ONE config-carried field into STATE, zero tenant writes (TENANT= RESOURCE= KEY= FIELD= [BACKEND_CONFIG=]) — for provider reads that cannot return a required field (ISOLATE cbi_profile class); RE-FETCH+RE-TRANSFORM FIRST (the fill copies committed config); preview by default, STATE_FILL=1 pushes
+	@test -n "$(TENANT)" -a -n "$(RESOURCE)" -a -n "$(KEY)" -a -n "$(FIELD)" || { echo "usage: make statefill TENANT=<label> RESOURCE=<type> KEY=<config key> FIELD=<field> [BACKEND_CONFIG=<file>] [STATE_FILL=1]"; exit 2; }
+	@test -d "envs/$(TENANT)/$(RESOURCE)" || { echo "error: envs/$(TENANT)/$(RESOURCE) is not an env root — RESOURCE must be ONE concrete type"; exit 2; }
+	$(TF) -chdir=envs/$(TENANT)/$(RESOURCE) init -input=false $(if $(BACKEND_CONFIG),-reconfigure -backend-config="$(abspath $(BACKEND_CONFIG))" -backend-config="key=$(TENANT)/$(RESOURCE).tfstate") > /dev/null
+	@set -e; tmp=$$(mktemp -d); trap 'rm -rf "$$tmp"' EXIT; \
+	$(TF) -chdir=envs/$(TENANT)/$(RESOURCE) state pull > "$$tmp/pulled.json"; \
+	$(PYTHON) -m tools.statefill "$$tmp/pulled.json" '$(RESOURCE)' '$(KEY)' '$(FIELD)' '$(TENANT)' > "$$tmp/filled.json"; \
+	if [ "$(STATE_FILL)" = "1" ]; then \
+		$(TF) -chdir=envs/$(TENANT)/$(RESOURCE) state push "$$tmp/filled.json"; \
+		echo "state filled — next: make stage-imports TENANT=$(TENANT) RESOURCE=$(RESOURCE) STATE_AWARE=1, then re-plan; the plan must now be imports-only/no-op"; \
+	else \
+		echo "PREVIEW ONLY (summary above) — confirm config is FRESH (re-fetch + re-transform first; the fill copies committed config), then re-run with STATE_FILL=1"; \
+	fi
 
 forget: ## Remove an item from STATE without destroying it (TENANT=<label> RESOURCE=<one type> KEY=<config key> [BACKEND_CONFIG=<file>]) — the right way to de-scope an imported item; never ALLOW_DESTROY for this
 	@test -n "$(TENANT)" -a -n "$(RESOURCE)" -a -n "$(KEY)" || { echo "usage: make forget TENANT=<label> RESOURCE=<type> KEY=<config-map key> [BACKEND_CONFIG=<file>]"; exit 2; }
