@@ -76,9 +76,6 @@ def check_string(value, rt, where, report, allow_entities=False):
             report.warn(rt, where, "pasted punctuation U+%04X" % ord(ch),
                         "replace with plain %r if unintended" % plain)
             break
-    if "  " in value.strip():
-        report.warn(rt, where, "doubled internal spaces",
-                    "collapse to one if unintended")
     m = _HTML_ENTITY.search(value)
     if m and not allow_entities:
         report.warn(rt, where, "HTML entity %r in value" % m.group(0),
@@ -103,7 +100,7 @@ def walk_strings(value, rt, where, report, allow_entities=False):
 # Field-specific syntax
 # ---------------------------------------------------------------------------
 
-def check_url_entry(entry, rt, where, report):
+def check_url_entry(entry, rt, where, report, field=None):
     low = entry.lower()
     if low.startswith("http://") or low.startswith("https://"):
         report.error(rt, where, "URL entry carries a scheme: %r" % entry,
@@ -113,9 +110,13 @@ def check_url_entry(entry, rt, where, report):
                      "one entry per list element (CSV paste?)")
     if ".." in entry:
         report.error(rt, where, "consecutive dots in %r" % entry, "fix the typo")
-    if entry != low:
+    if entry != low and field == "domain_names":
+        # ZPA lowercases domain_names on response (provider-documented)
+        # -> uppercase hand-edits perma-diff. ZIA url entries keep the
+        # tenant's casing and round-trip fine — no warning there
+        # (field-hit: tenant-scale noise).
         report.warn(rt, where, "uppercase in %r" % entry,
-                    "hosts are case-insensitive; lowercase for stable diffs")
+                    "the API lowercases this on read -> perma-diff; lowercase it")
 
 
 def check_ip_entry(entry, rt, where, report):
@@ -387,7 +388,8 @@ def lint_config_file(rt, path, report):
                 for i, entry in enumerate(value):
                     if isinstance(entry, str):
                         check_url_entry(
-                            entry, rt, "%s.%s[%d]" % (where, field, i), report)
+                            entry, rt, "%s.%s[%d]" % (where, field, i),
+                            report, field)
             if field in IP_FIELDS and isinstance(value, list):
                 for i, entry in enumerate(value):
                     if isinstance(entry, str):

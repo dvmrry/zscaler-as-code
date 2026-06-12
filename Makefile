@@ -8,7 +8,7 @@ TF     ?= terraform
 # the python side expands those.
 SCOPE_GLOB = $(if $(RESOURCE),$(if $(word 2,$(RESOURCE)),$(RESOURCE),$(if $(filter zia zpa zcc,$(RESOURCE)),$(RESOURCE)_*,$(RESOURCE))),*)
 
-.PHONY: help env install-tf bump-check mine issue-watch triage surface shape plan-report clean clean-plans unlock forget stage-imports unstage-imports statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck conformance
+.PHONY: help env install-tf bump-check mine issue-watch triage surface plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck conformance
 
 # Company/deployment extensions: a private repo adds its own targets and
 # variable overrides in local.mk — NEVER by editing this file, which is
@@ -47,6 +47,10 @@ surface: ## Sweep the ENTIRE SDK<->terraform surface with synthetic maximal item
 triage: ## Classify unacknowledged drop-report fields (IN=pulls/<tenant> [APPLY=1 writes safe classes to acknowledged_drops]; exit 4 = SYNONYM/UNKNOWN paths need eyes; SDK lane needs network)
 	@test -n "$(IN)" || { echo "usage: make triage IN=pulls/<tenant> [APPLY=1]"; exit 2; }
 	$(PYTHON) -m tools.triage "$(IN)"
+
+plan-checks: ## Policy gates over a plan's NEW url-category additions (FILE=plan.json TENANT=<label> [SSL_EXEMPT_CATEGORY=<config key>]) — subdomain redundancy vs wildcards; SSL-bypass exact-entry requirement; exit 1 = violations
+	@test -n "$(FILE)" -a -n "$(TENANT)" || { echo "usage: make plan-checks FILE=plan.json TENANT=<label> [SSL_EXEMPT_CATEGORY=<config key>]"; exit 2; }
+	$(PYTHON) -m tools.plan_checks "$(FILE)" "$(TENANT)"
 
 shape: ## Sanitized structural digest of a plan JSON / config / pull (FILE=<path> [ONLY=<resource type>]) — values become tokens; output is safe to relay out of restricted environments
 	@test -n "$(FILE)" || { echo "usage: make shape FILE=plan.json [ONLY=zpa_policy_access_rule]"; exit 2; }

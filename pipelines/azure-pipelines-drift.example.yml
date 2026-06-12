@@ -87,15 +87,15 @@ steps:
       git -c user.name=drift-bot -c user.email=drift-bot@invalid \
         commit -m "Backfill drift: $(TENANT)"
       git push -u origin "$branch"
-      # Requires: az devops CLI on the agent + the build service identity
-      # granted, on this repository:
+      # Requires the build service identity granted, on this repository:
       #   - "Contribute" -- needed by `git push -u origin "$branch"` to create
       #     the backfill branch (without it the push fails 403/TF401027 and no
-      #     PR is created). NOTE: "Contribute" alone also suffices for
-      #     `az repos pr create`.
-      #   - "Contribute to pull requests" -- the narrower PR permission; list
-      #     it only if you scope the identity down and rely on it for the
-      #     PR-create step.
+      #     PR is created); it also covers PR creation.
+      # PR creation uses plain curl + System.AccessToken (same idiom as the
+      # plan-comment pipeline) — NOT the az CLI: on restricted agents
+      # `az extension add` hangs on egress and `az repos pr create` hangs
+      # waiting for a token on stdin when the PAT env is missing. Both are
+      # silent; curl fails loud or works.
       # A HUMAN merges -- the PR carries the diff summary + audit attribution,
       # and the plan build policy shows merge-readiness; review is
       # read-and-click, not investigate.
@@ -105,13 +105,23 @@ steps:
       _desc="${_desc}
 
 _Full report in pipeline artifact: drift-report_"
-      az repos pr create --source-branch "$branch" --target-branch main \
-        --title "Drift backfill: $(TENANT)" \
-        --description "$_desc"
+      python3 - "$branch" "$_desc" > /tmp/pr.json <<'PYEOF'
+      import json, sys
+      print(json.dumps({
+          "sourceRefName": "refs/heads/" + sys.argv[1],
+          "targetRefName": "refs/heads/main",
+          "title": "Drift backfill: $(TENANT)",
+          "description": sys.argv[2],
+      }))
+      PYEOF
+      curl -sf -X POST \
+        -H "Authorization: Bearer $(System.AccessToken)" \
+        -H "Content-Type: application/json" \
+        -d @/tmp/pr.json \
+        "$(System.CollectionUri)$(System.TeamProject)/_apis/git/repositories/$(Build.Repository.ID)/pullrequests?api-version=7.0" \
+        > /dev/null && echo "backfill PR opened from $branch"
     displayName: Open backfill PR
     condition: eq(variables.DRIFTED, 'true')
-    env:
-      AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
 
 # Merge-readiness build policy for drift/* PR branches (REAL creds):
 #   - script: make plan-changed BASE=origin/main SAVE=1 BACKEND_CONFIG=backend.conf

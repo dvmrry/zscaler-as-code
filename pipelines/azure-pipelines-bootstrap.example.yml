@@ -108,13 +108,18 @@ variables:
 #               git -c user.name=bootstrap-bot -c user.email=bootstrap-bot@invalid \
 #                 commit -m "bootstrap refresh: ${{ parameters.tenant }}"
 #               git push -u origin "$branch"
-#               az repos pr create --source-branch "$branch" --target-branch main \
-#                 --title "bootstrap refresh: ${{ parameters.tenant }}" \
-#                 --description "Agent-generated config/imports backing this bootstrap run." \
-#                 --only-show-errors > /dev/null
+#               printf '{"sourceRefName":"refs/heads/%s","targetRefName":"refs/heads/main","title":"bootstrap refresh: ${{ parameters.tenant }}","description":"Agent-generated config/imports backing this bootstrap run."}' "$branch" > /tmp/pr.json
+#               curl -sf -X POST \
+#                 -H "Authorization: Bearer $(System.AccessToken)" \
+#                 -H "Content-Type: application/json" \
+#                 -d @/tmp/pr.json \
+#                 "$(System.CollectionUri)$(System.TeamProject)/_apis/git/repositories/$(Build.Repository.ID)/pullrequests?api-version=7.0" \
+#                 > /dev/null && echo "commit-back PR opened from $branch"
 #             displayName: Commit-back (the durable record of what was imported)
-#             env:
-#               AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
+#           # curl + System.AccessToken, NOT az: on restricted agents
+#           # `az extension add` hangs on egress and `az repos pr create`
+#           # hangs waiting for a token on stdin -- both silently. curl
+#           # fails loud or works (field-hit: branch pushed, PR step hung).
 #           # pulls/ contains REAL tenant data -- never publish it as a
 #           # pipeline artifact; it dies with the workspace by design.
 # ---------------------------------------------------------------------------
@@ -140,6 +145,11 @@ stages:
           #     printf 'storage_account_name = "%s"\ncontainer_name       = "%s"\n' \
           #       "$(STATE_STORAGE_ACCOUNT)" "$(STATE_CONTAINER)" > backend.conf
           #   displayName: Materialize backend.conf
+          # Optional policy gates over the saved plans' NEW url-category adds
+          # (subdomain redundancy vs wildcards; SSL-bypass exact-entry rule —
+          # set SSL_EXEMPT_CATEGORY to your exemptions category's config key):
+          #   terraform -chdir=envs/${{ parameters.tenant }}/zia_url_categories show -json tfplan > plan.json
+          #   make plan-checks FILE=plan.json TENANT=${{ parameters.tenant }}
           - script: |
               eval "$(python3 -m tools.cred_env ${{ parameters.tenant }})"
               # Stale-plan hygiene: self-hosted agents REUSE workspaces, so a
