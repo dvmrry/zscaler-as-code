@@ -782,6 +782,29 @@ class QuirkClosureTest(unittest.TestCase):
         items, _, _ = transform_items(raw, "zia_cloud_app_control_rule", ov)
         self.assertEqual(sorted(items), ["streaming_media_custom"])
 
+    def test_signing_cert_renamed_to_enrollment_cert(self):
+        # OAuth2-migrated ZPA tenants REQUIRE the connector signing cert
+        # on app connector group writes; the API names it signingCertId,
+        # the provider schema names it enrollment_cert_id (zpa#650). The
+        # provider auto-resolves it on CREATE only — updates send exactly
+        # what config carries, so config must carry it.
+        from tools.transform import load_override, transform_items
+
+        ov = load_override("zpa_app_connector_group")
+        raw = [{"id": "1", "name": "ACG", "signingCertId": "9001"}]
+        items, _, _ = transform_items(raw, "zpa_app_connector_group", ov)
+        self.assertEqual(items["acg"]["enrollment_cert_id"], "9001")
+
+        # tenants whose GET already speaks the schema name keep working
+        raw = [{"id": "2", "name": "ACG2", "enrollmentCertId": "9002"}]
+        items, _, _ = transform_items(raw, "zpa_app_connector_group", ov)
+        self.assertEqual(items["acg2"]["enrollment_cert_id"], "9002")
+
+        # absent stays absent (provider auto-resolves on create)
+        raw = [{"id": "3", "name": "ACG3"}]
+        items, _, _ = transform_items(raw, "zpa_app_connector_group", ov)
+        self.assertNotIn("enrollment_cert_id", items["acg3"])
+
     def test_zpa_microtenant_stub_dropped_everywhere(self):
         # Survey finding: only policy_access_rule had the "0" stub drop;
         # the audit closed the other five ZPA resources. Real ids survive.

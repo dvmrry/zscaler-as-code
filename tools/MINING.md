@@ -35,6 +35,7 @@ whole time:
 | ZPA plans show `&amp;`/`&gt;` updates on name/description | the Go SDK HTML-unescapes every ZPA and ZCC response — top-level name/description only, applied TWICE (`unescapeHTML` in zscaler-sdk-go `zscaler/utils.go`, called from `zparequests.go`/`zccrequests.go`; zia has no such call) — so state holds literals while the raw API carries entities | transform mirrors it (`_unescape_html_fields`); `make lint` warns on residual entities |
 | zia_url_categories drift PRs churn with no-op `urls` reorders | `suppressURLCategoriesReorderDiff` treats `urls` as a SET at plan time despite the TypeList schema — order is meaningless but the API returns it unstably (found by auditing the miner's suppressed DiffSuppressFunc lane, `MINE_VERBOSE=1`) | `sort_lists` |
 | uppercase domain_names perma-diff (hand-edit only) | the ZPA API lowercases `domain_names` on response (provider troubleshooting guide — same documented-normalization class as unescapeHTML) | `make lint` case warn (`domain_names` in URL_ENTRY_FIELDS) |
+| ZPA app connector group updates 400 naming `signingCertId` | TENANT-side rollout (OAuth2 connector enrollment) made a field required mid-adoption with zero provider/pin change; the API speaks `signingCertId`, the schema speaks `enrollment_cert_id`, and the provider auto-resolves it on CREATE only (provider issue #650 — found via the issue-tracker lane; the drop report had been flagging the unknown `signing_cert_id` field all along) | `renames` |
 
 ## The mechanical lanes (`make mine`)
 
