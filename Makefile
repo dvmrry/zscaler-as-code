@@ -8,7 +8,7 @@ TF     ?= terraform
 # the python side expands those.
 SCOPE_GLOB = $(if $(RESOURCE),$(if $(word 2,$(RESOURCE)),$(RESOURCE),$(if $(filter zia zpa zcc,$(RESOURCE)),$(RESOURCE)_*,$(RESOURCE))),*)
 
-.PHONY: help env install-tf bump-check mine issue-watch triage surface plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck conformance
+.PHONY: help env install-tf bump-check mine issue-watch triage surface plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck refresh-gates conformance
 
 # Company/deployment extensions: a private repo adds its own targets and
 # variable overrides in local.mk — NEVER by editing this file, which is
@@ -445,6 +445,14 @@ fmt-config: ## Rewrite a tenant's config files in canonical transform form (TENA
 typecheck: ## Type-check a tenant's config against the provider schemas (stdlib; TENANT=<label>)
 	@test -n "$(TENANT)" || { echo "usage: make typecheck TENANT=<label>"; exit 2; }
 	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
+	$(PYTHON) -m tools.typecheck "$(TENANT)"
+
+# Pipeline YAML is adapted per-shop and does not update on pull — gate
+# logic must live HERE so a repo pull is enough to change gate behavior.
+refresh-gates: ## Gates for freshly-FETCHED config: advisory lint + strict typecheck (TENANT=<label>)
+	@test -n "$(TENANT)" || { echo "usage: make refresh-gates TENANT=<label>"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
+	LINT_ADVISORY=1 $(PYTHON) -m tools.lint "$(TENANT)"
 	$(PYTHON) -m tools.typecheck "$(TENANT)"
 
 conformance: ## Schema-driven adversarial conformance report (synthesize -> transform -> typecheck) for every registry resource
