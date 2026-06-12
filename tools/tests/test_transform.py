@@ -1301,5 +1301,43 @@ class DropsCheckGateTest(unittest.TestCase):
         self.assertNotIn("NEW API surface", err)
 
 
+
+class ServerGroupDropTriageTest(unittest.TestCase):
+    def test_decorated_pull_reports_no_unacknowledged_drops(self):
+        # Field report: 29 unacknowledged drops on server groups — all
+        # triaged as read decoration (expandServerGroup builds the write
+        # payload from schema fields only; nested expands send IDs only,
+        # v4.4.4 source). The acknowledged set is the union of the SDK
+        # struct fields and what real pulls showed on the same nested
+        # ACG objects during policy-rule adoption.
+        from tools.transform import load_override, transform_items
+
+        raw = [{
+            "id": "sg1", "name": "SG", "creationTime": "1", "modifiedBy": "u",
+            "modifiedTime": "2", "readOnly": False, "restrictionType": "NONE",
+            "zscalerManaged": False, "microtenantName": "Default",
+            "appConnectorGroups": [{
+                "id": "acg1", "name": "ACG", "cityCountry": "x, y",
+                "countryCode": "US", "creationTime": "1", "enabled": True,
+                "dnsQueryType": "IPV4_IPV6", "geoLocationId": "9",
+                "latitude": "1", "longitude": "2", "location": "z",
+                "lssAppConnectorGroup": False, "praEnabled": False,
+                "upgradeDay": "SUNDAY", "upgradeTimeInSecs": "66600",
+                "versionProfileId": "0", "wafDisabled": False,
+            }],
+            "applications": [{"id": "app1", "name": "App One"}],
+            "servers": [{"id": "srv1", "name": "S", "address": "10.0.0.1",
+                         "enabled": True, "configSpace": "DEFAULT"}],
+        }]
+        ov = load_override("zpa_server_group")
+        items, _, reported = transform_items(raw, "zpa_server_group", ov)
+        self.assertEqual(reported, [])
+        it = items["sg"]
+        # write-carried associations keep their merged id shape
+        self.assertEqual(it["app_connector_groups"], [{"id": ["acg1"]}])
+        self.assertEqual(it["applications"], [{"id": ["app1"]}])
+        self.assertEqual(it["servers"], [{"id": ["srv1"]}])
+
+
 if __name__ == "__main__":
     unittest.main()
