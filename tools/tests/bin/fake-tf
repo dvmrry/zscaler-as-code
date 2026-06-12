@@ -36,13 +36,19 @@ case "$cmd" in
     # terraform/provider whose show prints an old-format document. The
     # gates must reject this, not read it as "0 changes".
     if [ -n "$FAKE_TF_NORC" ]; then
-      printf '{"format_version":"0.1"}'
+      # truly malformed: not plan JSON at all (no format_version)
+      printf '{"unexpected":"document"}'
+      exit 0
+    fi
+    if [ -n "$FAKE_TF_EMPTY" ]; then
+      # a legitimately EMPTY plan: terraform omits resource_changes
+      printf '{"format_version":"1.2","terraform_version":"1.15.4"}'
       exit 0
     fi
     n="${FAKE_TF_DESTROYS:-0}"
     u="${FAKE_TF_UPDATES:-0}"
     i2="${FAKE_TF_IMPORTS:-0}"
-    printf '{"resource_changes": [{"change":{"actions":["no-op"]}}'
+    printf '{"format_version":"1.2","resource_changes": [{"change":{"actions":["no-op"]}}'
     j=0
     while [ "$j" -lt "$i2" ]; do
       printf ',{"change":{"actions":["no-op"],"importing":{"id":"x"}}}'
