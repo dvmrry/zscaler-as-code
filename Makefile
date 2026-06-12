@@ -8,7 +8,7 @@ TF     ?= terraform
 # the python side expands those.
 SCOPE_GLOB = $(if $(RESOURCE),$(if $(word 2,$(RESOURCE)),$(RESOURCE),$(if $(filter zia zpa zcc,$(RESOURCE)),$(RESOURCE)_*,$(RESOURCE))),*)
 
-.PHONY: help env install-tf bump-check mine issue-watch triage shape plan-report clean clean-plans unlock forget stage-imports unstage-imports lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck conformance
+.PHONY: help env install-tf bump-check mine issue-watch triage surface shape plan-report clean clean-plans unlock forget stage-imports unstage-imports lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck conformance
 
 # Company/deployment extensions: a private repo adds its own targets and
 # variable overrides in local.mk — NEVER by editing this file, which is
@@ -40,6 +40,9 @@ mine: ## Mine pinned provider Go source for quirks vs override coverage (tool ex
 
 issue-watch: ## Watch provider issue trackers for problems with OUR resources (exits 4 on NEW items; UPDATE_BASELINE=1 blesses after triage; needs network — other operators hit problems before we do)
 	$(PYTHON) -m tools.issue_watch
+
+surface: ## Sweep the ENTIRE SDK<->terraform surface with synthetic maximal items — no tenant data ([APPLY=1]; exit 4 = paths need eyes; run at every provider/SDK bump; needs network)
+	$(PYTHON) -m tools.surface
 
 triage: ## Classify unacknowledged drop-report fields (IN=pulls/<tenant> [APPLY=1 writes safe classes to acknowledged_drops]; exit 4 = SYNONYM/UNKNOWN paths need eyes; SDK lane needs network)
 	@test -n "$(IN)" || { echo "usage: make triage IN=pulls/<tenant> [APPLY=1]"; exit 2; }

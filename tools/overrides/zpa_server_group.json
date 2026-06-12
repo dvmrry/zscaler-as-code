@@ -31,6 +31,8 @@
     "applications[].enabled",
     "applications[].name",
     "creation_time",
+    "extranet_dto[].id",
+    "extranet_dto[].name",
     "id",
     "microtenant_name",
     "modified_by",

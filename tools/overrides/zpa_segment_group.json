@@ -1,7 +1,10 @@
 {
   "acknowledged_drops": [
+    "added_apps",
+    "application_names",
     "config_space",
     "creation_time",
+    "deleted_apps",
     "id",
     "microtenant_name",
     "modified_by",

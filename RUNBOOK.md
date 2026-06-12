@@ -386,7 +386,10 @@ catalog — before any tenant contact.
    override key to add. `tools/MINING.md` is the per-class verification
    procedure — follow it before encoding anything. Run
    `make issue-watch` too — upstream issue reports often explain a new
-   quirk before any source reading does.
+   quirk before any source reading does — and `make surface APPLY=1`:
+   it diffs the ENTIRE new SDK surface against the schemas with
+   synthetic data, so fields the bump added are triaged before any
+   tenant returns them.
 6. `make test`
 7. `make lock TENANT=<label>` for each committed tenant — version pins
    alone don't pin artifact hashes; the per-root lock files do.

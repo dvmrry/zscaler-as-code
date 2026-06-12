@@ -5,6 +5,9 @@
     "child_count",
     "dynamiclocation_groups",
     "ec_location",
+    "extranet[].name",
+    "extranet_dns[].name",
+    "extranet_ip_pool[].name",
     "geo_override",
     "id",
     "jwt_auth",
@@ -18,8 +21,14 @@
     "shared_down_bandwidth",
     "shared_up_bandwidth",
     "static_location_groups.name",
+    "sub_loc_scope_enabled",
     "unused_dn_bandwidth",
-    "unused_up_bandwidth"
+    "unused_up_bandwidth",
+    "virtual_zen_clusters.name",
+    "virtual_zens.name",
+    "vpn_credentials[].comments",
+    "vpn_credentials[].location",
+    "vpn_credentials[].managed_by"
   ],
   "import_id": "{id}",
   "ranges": {
@@ -31,5 +40,8 @@
       0,
       99999999
     ]
+  },
+  "renames": {
+    "ipv6_dns64_prefix": "ipv6_dns_64prefix"
   }
 }

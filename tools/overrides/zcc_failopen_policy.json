@@ -1,5 +1,8 @@
 {
   "acknowledged_drops": [
+    "company_id",
+    "created_by",
+    "edited_by",
     "id"
   ],
   "import_id": "{id}",

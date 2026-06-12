@@ -1,4 +1,11 @@
 {
+  "acknowledged_drops": [
+    "creation_time",
+    "id",
+    "microtenant_name",
+    "modified_by",
+    "modified_time"
+  ],
   "drop_if_default": {
     "microtenant_id": "0"
   },
