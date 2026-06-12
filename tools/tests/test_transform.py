@@ -1325,7 +1325,8 @@ class ServerGroupDropTriageTest(unittest.TestCase):
                 "upgradeDay": "SUNDAY", "upgradeTimeInSecs": "66600",
                 "versionProfileId": "0", "wafDisabled": False,
             }],
-            "applications": [{"id": "app1", "name": "App One"}],
+            "applications": [{"id": "app1", "name": "App One",
+                              "enabled": True}],
             "servers": [{"id": "srv1", "name": "S", "address": "10.0.0.1",
                          "enabled": True, "configSpace": "DEFAULT"}],
         }]
