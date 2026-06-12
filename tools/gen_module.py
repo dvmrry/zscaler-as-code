@@ -242,13 +242,18 @@ def _sample_value(enc):
     """Return a minimal sample value for a required attribute type encoding."""
     if isinstance(enc, str):
         return _SAMPLE_VALUES.get(enc, "example")
-    # complex type: ["set"/"list"/"map", inner]
+    # complex type: ["set"/"list"/"map"/"object", inner]
     if isinstance(enc, list) and len(enc) == 2:
         kind, inner = enc
         if kind in ("set", "list"):
             return [_sample_value(inner)]
         if kind == "map":
             return {"example": _sample_value(inner)}
+        if kind == "object" and isinstance(inner, dict):
+            # without this, a required list-of-object attr sampled [[]]
+            # and the module smoke test failed with a cryptic type error
+            return dict((name, _sample_value(t))
+                        for name, t in sorted(inner.items()))
     return []
 
 

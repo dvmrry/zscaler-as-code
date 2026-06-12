@@ -24,6 +24,8 @@ envs/**/imports_check.tf
 # created/removed in setUp/teardown; ignored so a hard kill can't leak it
 envs/tmpchaintest/
 config/tmpchaintest/
+config/tmpfmttest/
+config/tmptypechktest/
 
 # make install-tf output
 bin/

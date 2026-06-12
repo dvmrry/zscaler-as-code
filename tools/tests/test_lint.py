@@ -313,5 +313,23 @@ class MainExitCodeTest(unittest.TestCase):
         self.assertIn("scheme", out)
 
 
+
+class NonStringSetDuplicateTest(unittest.TestCase):
+    def test_duplicate_ints_in_set_are_errors(self):
+        # terraform dedupes sets regardless of member type — perma-drift
+        from tools.lint import check_list_duplicates
+        r = report()
+        check_list_duplicates([3, 3], "rt", "w", r, is_set=True,
+                              is_url_field=False)
+        self.assertTrue(any("duplicate" in e for e in r.errors))
+
+    def test_unhashable_members_are_skipped_gracefully(self):
+        from tools.lint import check_list_duplicates
+        r = report()
+        check_list_duplicates([{"id": ["1"]}, {"id": ["1"]}], "rt", "w", r,
+                              is_set=False, is_url_field=False)
+        self.assertEqual(r.errors + r.warnings, [])
+
+
 if __name__ == "__main__":
     unittest.main()

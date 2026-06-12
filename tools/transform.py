@@ -366,6 +366,46 @@ def load_override(resource_type):
             raise ValueError(
                 "divide divisor for %r in %s must be non-zero" % (field, path)
             )
+    # Authoring traps that would otherwise be SILENT no-ops:
+    # 1. drops naming a rename's OLD field — renames run first, so the
+    #    field would survive under its new name.
+    old_names = set((data.get("renames") or {}))
+    conflict = old_names & set(
+        f for f in (data.get("drops") or []) if "." not in f)
+    if conflict:
+        raise ValueError(
+            "drops in %s uses pre-rename name(s) %s — renames run first; "
+            "drop the NEW name instead"
+            % (path, ", ".join(sorted(conflict))))
+    # 2. sort_lists is top-level only (it runs in apply_overrides on the
+    #    flat item) — a dotted path would never match a key.
+    dotted_sorts = [f for f in (data.get("sort_lists") or []) if "." in f]
+    if dotted_sorts:
+        raise ValueError(
+            "sort_lists in %s does not support nested (dotted) paths: %s"
+            % (path, ", ".join(sorted(dotted_sorts))))
+    # 3. dotted drops/drop_if_default paths must resolve to an ATTRIBUTE
+    #    through BLOCK segments in the provider schema — a typo'd or
+    #    block-targeting path silently never matches in filter_item.
+    dotted = [p for p in (data.get("drops") or []) if "." in p]
+    dotted += [p for p in (data.get("drop_if_default") or {}) if "." in p]
+    if dotted:
+        block = load_resource(resource_type)["block"]
+        for dpath in sorted(dotted):
+            cur = block
+            segs = dpath.split(".")
+            for seg in segs[:-1]:
+                bt = (cur.get("block_types") or {}).get(seg)
+                if bt is None:
+                    raise ValueError(
+                        "dotted path %r in %s: %r is not a nested block "
+                        "in the %s schema" % (dpath, path, seg, resource_type))
+                cur = bt["block"]
+            if segs[-1] not in (cur.get("attributes") or {}):
+                raise ValueError(
+                    "dotted path %r in %s: %r is not an attribute of "
+                    "that block in the %s schema"
+                    % (dpath, path, segs[-1], resource_type))
     return data
 
 
@@ -594,7 +634,14 @@ def render_imports(resource_type, originals, override):
     template = override.get("import_id", "{id}")
     blocks = []
     for key in sorted(originals):
-        import_id = template.format(**originals[key])
+        try:
+            import_id = template.format(**originals[key])
+        except KeyError as exc:
+            raise ValueError(
+                "import_id template %r for %s item %r references field %s "
+                "the item does not carry — fix import_id in "
+                "tools/overrides/%s.json"
+                % (template, resource_type, key, exc, resource_type))
         blocks.append(
             "import {\n"
             '  to = module.%s.%s.this["%s"]\n'
@@ -677,6 +724,16 @@ def main(argv=None):
     override = load_override(resource_type)
     with open(input_path, encoding="utf-8") as f:
         raw_items = json.load(f)
+    if not isinstance(raw_items, list):
+        # a paginated envelope ({"list": [...], "pageInfo": ...}) here
+        # means the fetcher wrote the wrong shape — say so instead of
+        # crashing on dict keys deep in the pipeline
+        sys.stderr.write(
+            "error: %s must be a JSON LIST of items (got %s) — re-run "
+            "make fetch TENANT=%s RESOURCE=%s; if it persists the "
+            "fetcher wrote an envelope instead of the item list\n"
+            % (input_path, type(raw_items).__name__, tenant, resource_type))
+        return 2
     _warn_if_slim(raw_items, load_resource(resource_type)["block"], resource_type)
     items, originals, drops = transform_items(raw_items, resource_type, override)
     config_dir = os.path.join("config", tenant)

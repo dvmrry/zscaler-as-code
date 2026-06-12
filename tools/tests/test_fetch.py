@@ -776,5 +776,57 @@ class DiagHostsZccTest(unittest.TestCase):
         self.assertIn("api-mobile.zscalertwo.net", hosts)
 
 
+
+class MalformedAuthResponseTest(unittest.TestCase):
+    """HTTP 200 with an unexpected body must become an actionable
+    per-product SystemExit — a bare KeyError here once escaped
+    fetch_all's per-product isolation and aborted every remaining
+    fetch."""
+
+    ENV = {
+        "ZSCALER_VANITY_DOMAIN": "acme", "ZSCALER_CLOUD": "",
+        "ZSCALER_CLIENT_ID": "cid", "ZSCALER_CLIENT_SECRET": "sec",
+    }
+
+    def test_200_missing_token_key_is_actionable_systemexit(self):
+        opener = FakeOpener({
+            "https://acme.zslogin.net/oauth2/v1/token": [
+                (200, {"token_type": "bearer"})
+            ]
+        })
+        with self.assertRaises(SystemExit) as ctx:
+            acquire_token("oneapi", "zia", self.ENV, {}, opener)
+        self.assertIn("access_token", str(ctx.exception))
+
+    def test_200_non_json_body_is_actionable_systemexit(self):
+        from tools.fetch import _token_field
+        with self.assertRaises(SystemExit) as ctx:
+            _token_field(b"<html>maintenance</html>", "access_token",
+                         "OneAPI token")
+        self.assertIn("not JSON", str(ctx.exception))
+
+    def test_200_json_string_body_is_actionable_systemexit(self):
+        # FakeOpener json-encodes payloads, so a bare string arrives as
+        # VALID JSON that is not a dict — the guard must catch that too
+        opener = FakeOpener({
+            "https://acme.zslogin.net/oauth2/v1/token": [
+                (200, "maintenance")
+            ]
+        })
+        with self.assertRaises(SystemExit) as ctx:
+            acquire_token("oneapi", "zia", self.ENV, {}, opener)
+        self.assertIn("access_token", str(ctx.exception))
+
+    def test_message_never_echoes_the_body(self):
+        opener = FakeOpener({
+            "https://acme.zslogin.net/oauth2/v1/token": [
+                (200, {"error": "secret-ish diagnostic"})
+            ]
+        })
+        with self.assertRaises(SystemExit) as ctx:
+            acquire_token("oneapi", "zia", self.ENV, {}, opener)
+        self.assertNotIn("secret-ish", str(ctx.exception))
+
+
 if __name__ == "__main__":
     unittest.main()

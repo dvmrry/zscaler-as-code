@@ -129,5 +129,25 @@ class CheckTest(unittest.TestCase):
         self.assertTrue(any("no versions" in l for l in lines))
 
 
+
+class TfReleasesFailureTest(unittest.TestCase):
+    def test_provider_results_survive_tf_index_failure(self):
+        # a terraform index failure after the provider phase must not
+        # discard the provider lines (partial output beats a bare
+        # "bump check failed")
+        from tools.bump_check import check
+
+        def boom():
+            raise RuntimeError("connection reset")
+
+        reg = lambda provider: ["4.7.24"] if provider == "zia" else ["9.9.9"]
+        lines, updates = check(
+            {"zia": "4.7.24", "zpa": "4.4.4", "zcc": "0.1.0-beta.1"},
+            registry=reg, tf_releases=boom, tf_current="1.15.4")
+        self.assertTrue(any("zia" in l for l in lines))
+        self.assertTrue(any("release index unreachable" in l for l in lines))
+        self.assertGreaterEqual(updates, 1)
+
+
 if __name__ == "__main__":
     unittest.main()

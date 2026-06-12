@@ -99,5 +99,16 @@ class ShellQuoteTest(unittest.TestCase):
         self.assertEqual(shell_quote("a'b"), "'a'\"'\"'b'")
 
 
+
+class EmptyValueTest(unittest.TestCase):
+    def test_set_but_empty_var_is_not_resolved(self):
+        # resolving '' would push the failure to the fetch layer, whose
+        # "missing required env var" message misleads when the var IS set
+        from tools.cred_env import resolve
+        pairs, conflicts = resolve({"ZS2_ZIA_PASSWORD": ""}, "zs2")
+        self.assertEqual(pairs, [])
+        self.assertEqual(conflicts, [])
+
+
 if __name__ == "__main__":
     unittest.main()

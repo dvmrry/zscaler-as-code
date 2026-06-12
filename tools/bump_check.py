@@ -163,7 +163,15 @@ def check(pins, registry=provider_versions, tf_releases=terraform_versions,
                     "stable pin)" % (provider, latest_any)
                 )
 
-    tf_latest = latest_of(tf_releases(), False)
+    try:
+        tf_latest = latest_of(tf_releases(), False)
+    except Exception as exc:
+        # the provider results above are already computed — a terraform
+        # index failure must not discard them (partial output beats a
+        # bare "bump check failed" with nothing to act on)
+        lines.append("?? terraform: release index unreachable (%s) — "
+                     "provider results above are still valid" % exc)
+        return lines, updates + 1
     if tf_latest is None:
         lines.append("?? terraform: release index returned no versions")
         updates += 1

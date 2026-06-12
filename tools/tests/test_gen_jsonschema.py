@@ -50,5 +50,21 @@ class EditorSettingsTest(unittest.TestCase):
             self.assertTrue(m["url"].startswith("./schemas/tfvars/"))
 
 
+
+class SingleSetBlockTest(unittest.TestCase):
+    def test_set_block_with_max_items_one_is_object_not_array(self):
+        # block_is_single must take priority over set handling: the ZIA
+        # ID-group pattern (40+ blocks) is ONE object with list members
+        from tools.gen_jsonschema import build_schema
+        from tools.tfschema import load_resource
+        schema = build_schema("zia_ssl_inspection_rules",
+                              load_resource("zia_ssl_inspection_rules"))
+        item_props = schema["properties"]["items"][
+            "additionalProperties"]["properties"]
+        departments = item_props["departments"]
+        self.assertEqual(departments.get("type"), "object")
+        self.assertNotIn("uniqueItems", departments)
+
+
 if __name__ == "__main__":
     unittest.main()

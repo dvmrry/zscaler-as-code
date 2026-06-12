@@ -370,6 +370,28 @@ def _require(env, name):
     return value
 
 
+def _token_field(raw, key, label):
+    """Extract a token field from an auth response body, LOUDLY.
+
+    A 200 with an unexpected body (maintenance HTML, an error envelope
+    without the token) must become an actionable per-product SystemExit
+    — a bare KeyError here once escaped fetch_all's per-product
+    isolation and aborted every remaining fetch. The body is NOT echoed
+    (auth responses are a credential-adjacent surface)."""
+    try:
+        doc = json.loads(raw.decode())
+    except ValueError:
+        raise SystemExit(
+            "%s: HTTP 200 but the response is not JSON (maintenance page? "
+            "proxy interception?) — re-try, then check the auth endpoint "
+            "with make fetch-diag" % label)
+    if not isinstance(doc, dict) or key not in doc:
+        raise SystemExit(
+            "%s: HTTP 200 but no %r in the response — check the API "
+            "client's permissions/credentials for this product" % (label, key))
+    return doc[key]
+
+
 def auth_mode_from_env(env):
     """oneapi unless ZSCALER_USE_LEGACY_CLIENT is truthy."""
     flag = (env.get("ZSCALER_USE_LEGACY_CLIENT") or "").strip().lower()
@@ -406,7 +428,7 @@ def acquire_token(auth_mode, product, env, ctx, opener, now_ms=None):
         )
         if status != 200:
             raise SystemExit("OneAPI token request failed: HTTP %d" % status)
-        return json.loads(raw.decode())["access_token"]
+        return _token_field(raw, "access_token", "OneAPI token")
 
     if auth_mode == "legacy":
         if product == "zpa":
@@ -421,7 +443,7 @@ def acquire_token(auth_mode, product, env, ctx, opener, now_ms=None):
             )
             if status != 200:
                 raise SystemExit("ZPA signin failed: HTTP %d" % status)
-            return json.loads(raw.decode())["access_token"]
+            return _token_field(raw, "access_token", "ZPA signin")
         if product == "zia":
             ts = str(now_ms if now_ms is not None else int(time.time() * 1000))
             url = "https://zsapi.%s.net/api/v1/authenticatedSession" % ctx["cloud"]
@@ -451,7 +473,7 @@ def acquire_token(auth_mode, product, env, ctx, opener, now_ms=None):
             )
             if status != 200:
                 raise SystemExit("ZCC login failed: HTTP %d" % status)
-            return json.loads(raw.decode())["jwtToken"]
+            return _token_field(raw, "jwtToken", "ZCC login")
     raise SystemExit("unknown auth mode %r" % auth_mode)
 
 

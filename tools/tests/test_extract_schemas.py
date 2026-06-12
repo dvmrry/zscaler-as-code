@@ -49,5 +49,29 @@ class SplitSchemasTest(unittest.TestCase):
             split_schemas(only_zia)
 
 
+
+class MainLoudFailureTest(unittest.TestCase):
+    def _run(self, stdin_text):
+        import io, sys
+        from tools.extract_schemas import main
+        old_in, old_err = sys.stdin, sys.stderr
+        sys.stdin, sys.stderr = io.StringIO(stdin_text), io.StringIO()
+        try:
+            code = main()
+            return code, sys.stderr.getvalue()
+        finally:
+            sys.stdin, sys.stderr = old_in, old_err
+
+    def test_non_json_stdin_exits_1_with_next_command(self):
+        code, err = self._run("not json")
+        self.assertEqual(code, 1)
+        self.assertIn("make schemas", err)
+
+    def test_missing_provider_exits_1_naming_pins(self):
+        code, err = self._run('{"provider_schemas": {}}')
+        self.assertEqual(code, 1)
+        self.assertIn("schema-extract/main.tf", err)
+
+
 if __name__ == "__main__":
     unittest.main()

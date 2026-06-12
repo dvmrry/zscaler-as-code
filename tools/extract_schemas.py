@@ -36,16 +36,29 @@ def split_schemas(combined):
 
 
 def main():
-    combined = json.load(sys.stdin)
+    try:
+        combined = json.load(sys.stdin)
+        schemas = split_schemas(combined)
+    except ValueError as exc:
+        sys.stderr.write(
+            "error: stdin is not terraform schema JSON (%s) — re-run "
+            "make schemas (it pipes `terraform providers schema -json` "
+            "here)\n" % exc)
+        return 1
+    except KeyError as exc:
+        sys.stderr.write(
+            "error: %s — check the provider pins in "
+            "tools/schema-extract/main.tf, then re-run make schemas\n" % exc)
+        return 1
     os.makedirs(OUT_DIR, exist_ok=True)
-    schemas = split_schemas(combined)
     for name in sorted(schemas):
         path = os.path.join(OUT_DIR, name + ".json")
         with open(path, "w", encoding="utf-8") as f:
             json.dump(schemas[name], f, indent=2, sort_keys=True)
             f.write("\n")
         sys.stderr.write("wrote %s\n" % path)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

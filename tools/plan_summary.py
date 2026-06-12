@@ -13,7 +13,18 @@ import sys
 
 
 def summarize(plan, label):
-    """(plan JSON dict, label) -> (markdown_row, destroy_count)."""
+    """(plan JSON dict, label) -> (markdown_row, destroy_count).
+
+    Raises ValueError when the document is not plan JSON — a version-
+    skewed `terraform show` emits a different shape, and without this
+    guard the reviewer's approval table silently shows all zeros. The
+    apply/assert-clean recipes carry the same guard; the summary the
+    human approves on must not be the one layer that can lie.
+    """
+    if not isinstance(plan, dict) or "format_version" not in plan:
+        raise ValueError(
+            "stdin is not plan JSON (no format_version — terraform "
+            "version skew between agents?); re-run the plan stage")
     imports = adds = changes = destroys = 0
     for rc in plan.get("resource_changes") or []:
         change = rc.get("change") or {}
@@ -36,8 +47,12 @@ def main(argv=None):
         sys.stderr.write("usage: terraform show -json tfplan | "
                          "python -m tools.plan_summary <label>\n")
         return 2
-    plan = json.load(sys.stdin)
-    row, destroys = summarize(plan, argv[0])
+    try:
+        plan = json.load(sys.stdin)
+        row, destroys = summarize(plan, argv[0])
+    except ValueError as exc:
+        sys.stderr.write("error: %s\n" % exc)
+        return 1
     sys.stdout.write(row + "\n")
     sys.stdout.write("%d\n" % destroys)
     return 0

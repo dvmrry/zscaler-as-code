@@ -1151,5 +1151,84 @@ class SkipIfTest(unittest.TestCase):
         self.assertIn("a", items)
 
 
+
+class LoudFailureTest(unittest.TestCase):
+    """Error paths must name the problem and the next command."""
+
+    def test_main_rejects_non_list_input(self):
+        import io, sys, tempfile, os, json as _json
+        from tools.transform import main
+        with tempfile.TemporaryDirectory() as td:
+            src = os.path.join(td, "in.json")
+            with open(src, "w", encoding="utf-8") as f:
+                _json.dump({"list": [], "pageInfo": {}}, f)
+            old_err, sys.stderr = sys.stderr, io.StringIO()
+            try:
+                code = main(["zpa_segment_group", src, "tmpxform"])
+                err = sys.stderr.getvalue()
+            finally:
+                sys.stderr = old_err
+        self.assertEqual(code, 2)
+        self.assertIn("JSON LIST", err)
+        self.assertIn("make fetch", err)
+
+    def test_render_imports_names_override_on_missing_field(self):
+        from tools.transform import render_imports
+        with self.assertRaises(ValueError) as ctx:
+            render_imports("zia_rule_labels", {"k": {"id": "1"}},
+                           {"import_id": "{type}:{id}"})
+        msg = str(ctx.exception)
+        self.assertIn("tools/overrides/zia_rule_labels.json", msg)
+        self.assertIn("'k'", msg)
+
+
+class OverrideAuthoringValidationTest(unittest.TestCase):
+    """load_override rejects the silent-no-op authoring traps at load
+    time, naming the file (mirrors the divide-by-zero validation)."""
+
+    def _load_with(self, data, rt="zpa_segment_group"):
+        import json as _json
+        import tempfile
+        import tools.transform as transform_mod
+        from tools.transform import load_override
+        with tempfile.TemporaryDirectory() as tmp:
+            with open(os.path.join(tmp, rt + ".json"), "w",
+                      encoding="utf-8") as f:
+                _json.dump(data, f)
+            old_dir = transform_mod.OVERRIDES_DIR
+            transform_mod.OVERRIDES_DIR = tmp
+            try:
+                return load_override(rt)
+            finally:
+                transform_mod.OVERRIDES_DIR = old_dir
+
+    def test_drops_using_pre_rename_name_rejected(self):
+        with self.assertRaises(ValueError) as ctx:
+            self._load_with({"renames": {"oldname": "newname"},
+                             "drops": ["oldname"]})
+        self.assertIn("pre-rename", str(ctx.exception))
+
+    def test_dotted_sort_lists_rejected(self):
+        with self.assertRaises(ValueError) as ctx:
+            self._load_with({"sort_lists": ["conditions.urls"]})
+        self.assertIn("nested", str(ctx.exception))
+
+    def test_dotted_drop_path_must_resolve_in_schema(self):
+        with self.assertRaises(ValueError) as ctx:
+            self._load_with({"drops": ["conditions.operands.nope"]},
+                            rt="zpa_policy_access_rule")
+        self.assertIn("not an attribute", str(ctx.exception))
+        with self.assertRaises(ValueError) as ctx2:
+            self._load_with({"drops": ["nonblock.field"]},
+                            rt="zpa_policy_access_rule")
+        self.assertIn("not a nested block", str(ctx2.exception))
+
+    def test_real_overrides_all_load(self):
+        from tools.registry import generated_types
+        from tools.transform import load_override
+        for rt in generated_types():
+            load_override(rt)
+
+
 if __name__ == "__main__":
     unittest.main()

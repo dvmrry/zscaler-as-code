@@ -32,7 +32,7 @@ def main(argv=None):
         if not os.path.exists(path):
             continue
         checked += 1
-        with open(path, "rb", encoding="utf-8") as f:
+        with open(path, "rb") as f:
             raw_bytes = f.read()
         # Decode as PLAIN utf-8 (not utf-8-sig) for the comparison: a
         # leading BOM stays in `original`, so a BOM-only file compares

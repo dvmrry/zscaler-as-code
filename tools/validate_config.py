@@ -40,17 +40,34 @@ def config_pairs(config_root=CONFIG_ROOT, schemas_root=SCHEMAS_ROOT):
 def main():
     import jsonschema  # dev-only; Makefile warn-skips when missing
     failures = 0
+    checked = 0
     for tenant, rt, cfg_path, schema_path in config_pairs():
-        with open(cfg_path, encoding="utf-8") as f:
-            data = json.load(f)
-        with open(schema_path, encoding="utf-8") as f:
-            schema = json.load(f)
+        checked += 1
+        try:
+            with open(cfg_path, encoding="utf-8") as f:
+                data = json.load(f)
+            with open(schema_path, encoding="utf-8") as f:
+                schema = json.load(f)
+        except (ValueError, OSError) as e:
+            # an unparseable file is a FAILURE, and the remaining files
+            # must still be checked — never abort the gate mid-run
+            failures += 1
+            sys.stderr.write(
+                "FAIL %s/%s: cannot parse: %s — run make fmt-config "
+                "TENANT=%s\n" % (tenant, rt, e, tenant))
+            continue
         try:
             jsonschema.validate(data, schema)
             sys.stderr.write("ok %s/%s\n" % (tenant, rt))
         except jsonschema.ValidationError as e:
             failures += 1
             sys.stderr.write("FAIL %s/%s: %s\n" % (tenant, rt, e.message))
+    if not checked:
+        # checking nothing is never success (mirrors lint/typecheck)
+        sys.stderr.write("error: no config files found under config/\n")
+        return 1
+    sys.stderr.write("%d config file(s) schema-validated, %d failure(s)\n"
+                     % (checked, failures))
     return 1 if failures else 0
 
 

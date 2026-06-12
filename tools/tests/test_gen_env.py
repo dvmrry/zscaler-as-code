@@ -131,5 +131,15 @@ class GenerateEnvWritesTest(unittest.TestCase):
             )))
 
 
+
+class ReadmeContentTest(unittest.TestCase):
+    def test_readme_names_tenant_resource_and_regen_command(self):
+        from tools.gen_env import render_env_readme
+        text = render_env_readme("acme", "zpa_segment_group")
+        self.assertIn("acme", text)
+        self.assertIn("zpa_segment_group", text)
+        self.assertIn("make gen-env", text)
+
+
 if __name__ == "__main__":
     unittest.main()
