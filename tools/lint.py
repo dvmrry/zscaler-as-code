@@ -57,7 +57,7 @@ class Report(object):
 # String hygiene (every string value, recursively)
 # ---------------------------------------------------------------------------
 
-def check_string(value, rt, where, report):
+def check_string(value, rt, where, report, allow_entities=False):
     for ch in value:
         if ch in _INVISIBLE:
             report.error(rt, where, "invisible character U+%04X" % ord(ch),
@@ -80,21 +80,23 @@ def check_string(value, rt, where, report):
         report.warn(rt, where, "doubled internal spaces",
                     "collapse to one if unintended")
     m = _HTML_ENTITY.search(value)
-    if m:
+    if m and not allow_entities:
         report.warn(rt, where, "HTML entity %r in value" % m.group(0),
                     "use the literal character (ZPA/ZCC reads unescape "
                     "name/description -> perma-diff)")
 
 
-def walk_strings(value, rt, where, report):
+def walk_strings(value, rt, where, report, allow_entities=False):
     if isinstance(value, str):
-        check_string(value, rt, where, report)
+        check_string(value, rt, where, report, allow_entities)
     elif isinstance(value, list):
         for i, v in enumerate(value):
-            walk_strings(v, rt, "%s[%d]" % (where, i), report)
+            walk_strings(v, rt, "%s[%d]" % (where, i), report,
+                         allow_entities)
     elif isinstance(value, dict):
         for k in sorted(value):
-            walk_strings(value[k], rt, "%s.%s" % (where, k), report)
+            walk_strings(value[k], rt, "%s.%s" % (where, k), report,
+                         allow_entities)
 
 
 # ---------------------------------------------------------------------------
@@ -324,7 +326,10 @@ def lint_config_file(rt, path, report):
     for key in sorted(items):
         item = items[key]
         where = "items.%s" % key
-        walk_strings(item, rt, where, report)
+        # no_html_unescape resources legitimately carry entities in
+        # config (their reads keep escaped state) — don't warn there
+        walk_strings(item, rt, where, report,
+                     allow_entities=bool(override.get("no_html_unescape")))
         check_ranges(item, key, rt, override, report)
         for field in sorted(item):
             value = item[field]

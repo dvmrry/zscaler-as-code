@@ -4,5 +4,6 @@
     "unified_tunnel[].id",
     "unified_tunnel[].send_trusted_network_result_to_zpa"
   ],
-  "import_id": "{id}"
+  "import_id": "{id}",
+  "no_html_unescape": true
 }

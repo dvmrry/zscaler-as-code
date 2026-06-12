@@ -45,7 +45,11 @@ boolToInverted helpers), `value_map` (field→{api_value: config_value}
 bridges for string-enum APIs behind bool/other schemas, e.g.
 policy_style NONE/DUAL_POLICY_EVAL→bool), `strip_prefix`
 (field→prefix the provider's read strips and its write re-adds, e.g.
-source_countries COUNTRY_), `merge_blocks` (list of block names whose API elements the provider's
+source_countries COUNTRY_), `no_html_unescape` (boolean: skip the product-wide ZPA/ZCC HTML
+unescape of top-level name/description for THIS resource — for reads
+that go through GetAll/list responses, where the SDK's unescapeHTML is
+a no-op on the pagination wrapper and STATE keeps the escaped bytes;
+e.g. zpa_app_connector_group), `merge_blocks` (list of block names whose API elements the provider's
 READ collapses into ONE block with merged list members even though the
 schema declares a plain list — the schema lies, the flatten tells the
 truth; verify in provider source before adding, e.g. zpa
