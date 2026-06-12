@@ -11,6 +11,9 @@
     "tcp_keep_alive_enabled",
     "zscaler_managed"
   ],
+  "drop_if_default": {
+    "microtenant_id": "0"
+  },
   "drops": [
     "applications"
   ],

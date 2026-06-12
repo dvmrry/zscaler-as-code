@@ -26,8 +26,13 @@ e.g. `["type", "name"]` where names are only unique within a type),
 `renames` (post-snake-case API→schema names), `drops` (fields
 always removed; a DOTTED path like `conditions.operands.name` reaches
 inside nested blocks — for fields the API rewrites so a config copy can
-never round-trip, e.g. operand display names, zpa#287), `references`
-(force `{id,...}` unwrapping), `drop_if_default` (remove a field when it
+never round-trip, e.g. operand display names, zpa#287; `make lint`
+ERRORS when a dropped field reappears in config, so hand-edits that
+re-add one fail the PR gate instead of perma-diffing), `references`
+(force `{id,...}` unwrapping), `sort_lists` (list-of-string fields
+whose ORDER the provider itself diff-suppresses — zia url_categories
+`urls` — sorted so unstable API ordering can't churn drift PRs;
+plan-invisible because the provider absorbs order differences), `drop_if_default` (remove a field when it
 equals the given value — perma-diff suppression; dotted paths reach
 nested blocks the same way), `divide` (field→integer divisor: unit conversion
 for fields where the provider schema stores a larger unit than the API

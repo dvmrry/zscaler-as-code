@@ -198,7 +198,8 @@ def scan_resource(rt, source, shared, override, findings, block_types=None):
                              "merge_blocks", covered))
 
 
-def report(findings, fetch_failures, baseline_path, update_baseline, out):
+def report(findings, fetch_failures, baseline_path, update_baseline, out,
+           verbose=False):
     """Print the worklist, apply the baseline, return the exit code.
 
     Baseline semantics mirror acknowledged_drops: a signature in
@@ -206,6 +207,12 @@ def report(findings, fetch_failures, baseline_path, update_baseline, out):
     priority, or informational) — still printed, never fatal. Only a
     MISSING finding that is NOT in the baseline exits 4, so a provider
     bump that introduces a new quirk is the only thing that goes red.
+
+    Info-class findings (DiffSuppressFunc, enums) print only with
+    verbose (MINE_VERBOSE=1) and never affect the exit code — but DO
+    audit them after bumps: a DiffSuppressFunc body is where provider
+    normalizations hide (the unescapeHTML class bit live because no
+    list ever surfaced it).
     """
     baseline = set()
     if os.path.exists(baseline_path):
@@ -215,6 +222,9 @@ def report(findings, fetch_failures, baseline_path, update_baseline, out):
     missing = 0
     for rt, field, klass, detail, enc, covered in findings:
         if covered == "info":
+            if verbose:
+                out.write("MINE %s: %s: %s %s -> %s [info]\n"
+                          % (rt, field, klass, detail, enc))
             continue
         sig = "%s|%s|%s|%s" % (rt, field, klass, enc)
         signatures.append(sig)
@@ -284,7 +294,8 @@ def main(argv=None):
     return report(
         findings, fetch_failures,
         os.path.join("tools", "overrides", "mine-baseline.json"),
-        bool(os.environ.get("UPDATE_BASELINE")), sys.stdout)
+        bool(os.environ.get("UPDATE_BASELINE")), sys.stdout,
+        verbose=bool(os.environ.get("MINE_VERBOSE")))
 
 
 if __name__ == "__main__":

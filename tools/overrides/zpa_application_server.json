@@ -1,1 +1,6 @@
-{"import_id": "{id}"}
+{
+  "drop_if_default": {
+    "microtenant_id": "0"
+  },
+  "import_id": "{id}"
+}

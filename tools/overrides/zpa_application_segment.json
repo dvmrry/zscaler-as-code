@@ -1,5 +1,6 @@
 {
   "drop_if_default": {
+    "microtenant_id": "0",
     "policy_style": "NONE"
   },
   "import_id": "{id}",

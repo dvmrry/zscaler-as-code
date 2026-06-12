@@ -782,6 +782,39 @@ class QuirkClosureTest(unittest.TestCase):
         items, _, _ = transform_items(raw, "zia_cloud_app_control_rule", ov)
         self.assertEqual(sorted(items), ["streaming_media_custom"])
 
+    def test_zpa_microtenant_stub_dropped_everywhere(self):
+        # Survey finding: only policy_access_rule had the "0" stub drop;
+        # the audit closed the other five ZPA resources. Real ids survive.
+        from tools.transform import load_override, transform_items
+
+        raw = [{"id": "a", "name": "A", "domainNames": ["a.test"],
+                "microtenantId": "0"},
+               {"id": "b", "name": "B", "domainNames": ["b.test"],
+                "microtenantId": "7"}]
+        ov = load_override("zpa_application_segment")
+        items, _, _ = transform_items(raw, "zpa_application_segment", ov)
+        self.assertNotIn("microtenant_id", items["a"])
+        self.assertEqual(items["b"]["microtenant_id"], "7")
+        for rt in ("zpa_app_connector_group", "zpa_application_server",
+                   "zpa_server_group", "zpa_segment_group"):
+            self.assertEqual(
+                load_override(rt).get("drop_if_default", {}).get(
+                    "microtenant_id"), "0", rt)
+
+    def test_url_category_urls_sorted(self):
+        # zia suppressURLCategoriesReorderDiff treats urls as a SET at
+        # plan time; the API returns unstable order. Sorting makes
+        # re-fetches byte-stable (plan-invisible: provider absorbs it).
+        from tools.transform import load_override, transform_items
+
+        raw = [{"id": "CUSTOM_01", "configuredName": "Cat",
+                "superCategory": "USER_DEFINED",
+                "urls": ["zeta.test", "alpha.test", "mid.test"]}]
+        ov = load_override("zia_url_categories")
+        items, _, _ = transform_items(raw, "zia_url_categories", ov)
+        self.assertEqual(items["cat"]["urls"],
+                         ["alpha.test", "mid.test", "zeta.test"])
+
     def test_zpa_html_entities_unescaped(self):
         # The Go SDK unescapes TOP-LEVEL name/description on every ZPA/ZCC
         # response, applied twice (zscaler-sdk-go v3.8.37 unescapeHTML), so

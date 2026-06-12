@@ -322,6 +322,21 @@ class BaselineTest(unittest.TestCase):
         self.assertIn("zpa_ghost", out.getvalue())
         self.assertIn("1 resource(s) unfetchable", out.getvalue())
 
+    def test_info_findings_print_only_with_verbose(self):
+        # The unescapeHTML incident hid in an unprinted class — info
+        # findings must be surfaceable (MINE_VERBOSE) without ever
+        # affecting the exit code.
+        info = ("zia_thing", "description", "diff_suppress",
+                "DiffSuppressFunc: suppressDescription", "(informational)",
+                "info")
+        quiet, loud = io.StringIO(), io.StringIO()
+        self.assertEqual(report([info], [], self.baseline, False, quiet), 0)
+        self.assertNotIn("diff_suppress", quiet.getvalue())
+        self.assertEqual(
+            report([info], [], self.baseline, False, loud, verbose=True), 0)
+        self.assertIn("diff_suppress", loud.getvalue())
+        self.assertIn("[info]", loud.getvalue())
+
 
 if __name__ == "__main__":
     unittest.main()

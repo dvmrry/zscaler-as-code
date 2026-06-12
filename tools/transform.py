@@ -382,6 +382,16 @@ def apply_overrides(item, override):
         # strings; split into real lists, dropping empties.
         if field in out and isinstance(out[field], str):
             out[field] = [v.strip() for v in out[field].split(",") if v.strip()]
+    for field in sorted(override.get("sort_lists") or []):
+        # Fields whose order the provider itself diff-suppresses (zia
+        # suppressURLCategoriesReorderDiff treats urls as a SET despite
+        # the TypeList schema): order is semantically meaningless, but
+        # the API returns it unstably — sort so re-fetches don't churn
+        # drift PRs with no-op reorder commits. Plan-invisible: the
+        # provider absorbs order differences.
+        if field in out and isinstance(out[field], list) and all(
+                isinstance(v, str) for v in out[field]):
+            out[field] = sorted(out[field])
     for field in sorted(override.get("drops") or []):
         # dotted entries ("conditions.operands.name") are nested-block
         # paths handled in filter_item; here they pop nothing.
