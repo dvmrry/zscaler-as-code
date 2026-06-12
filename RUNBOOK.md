@@ -401,6 +401,29 @@ modes are supported; the fetcher resolves mode from
 
 ---
 
+## Relaying Diagnostics Out (shape reports)
+
+When plans or configs can't leave a restricted environment but a
+diagnosis needs outside eyes, relay a **shape report** instead of the
+artifact:
+
+```sh
+# from the repo root; the plan lives in the env root
+terraform -chdir=envs/<label>/<type> show -json tfplan > plan.json
+make shape FILE=plan.json [ONLY=<resource_type>]
+```
+
+Every value is replaced by a deterministic per-run token (`s1`, `id3`,
+`n2`, item keys `k1`…); field names stay readable (they come from the
+provider schema, not tenant data). Equal values share a token, so the
+report still distinguishes the cases that matter — `REORDER only`
+(same values, new positions) vs a value rewrite at a named path — and
+a self-check refuses to emit if any input value would survive into the
+output. Works on plan JSON, `config/*.auto.tfvars.json`, and raw pull
+files. The output is small and safe to paste.
+
+---
+
 ## Troubleshooting
 
 | Symptom | Action |
