@@ -3,6 +3,9 @@
     "microtenant_id": "0"
   },
   "import_id": "{id}",
+  "renames": {
+    "signing_cert_id": "enrollment_cert_id"
+  },
   "ranges": {
     "latitude": [
       -90,
