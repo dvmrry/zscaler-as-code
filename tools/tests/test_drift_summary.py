@@ -51,6 +51,25 @@ class RenderSummaryTest(unittest.TestCase):
         # the merged-but-never-applied tell, pre-interpreted for the reviewer
         self.assertIn("merged but never APPLIED", out)
 
+    def test_mass_change_banner_on_many_items(self):
+        changed = {"r%d" % i: ["description"] for i in range(12)}
+        out = render_summary("t1", {"zia_url_filtering_rules": ([], [], changed)})
+        self.assertIn("MASS CHANGE", out)
+        self.assertIn("12 item(s)", out)
+
+    def test_same_field_cascade_banner(self):
+        # the ZIA order-cascade shape: one field across many items
+        changed = {"r%d" % i: ["order"] for i in range(8)}
+        out = render_summary("t1", {"zia_url_filtering_rules": ([], [], changed)})
+        self.assertIn("`order` changed on 8 item(s)", out)
+        self.assertIn("re-shuffle", out)
+
+    def test_small_drift_has_no_banner(self):
+        out = render_summary("t1", {
+            "zia_url_categories": (["x"], [], {"y": ["urls"]})})
+        self.assertNotIn("MASS CHANGE", out)
+        self.assertNotIn(":warning:", out)
+
     def test_untouched_resources_omitted(self):
         out = render_summary("t1", {
             "zia_rule_labels": ([], [], {}),

@@ -304,6 +304,21 @@ class ApplyChainTest(unittest.TestCase):
         with open(log, encoding="utf-8") as f:
             self.assertIn("force-unlock -force abc-123", f.read())
 
+    def test_forget_runs_state_rm_on_the_exact_address(self):
+        log = os.path.join(self.config_dir, "forget.log")
+        rc, out = _run(
+            ["make", "forget", "TENANT=" + TENANT, "RESOURCE=fake_rt",
+             "KEY=office_365_one_click", "TF=" + FAKE_TF],
+            {"FAKE_TF_LOG": log},
+        )
+        self.assertEqual(rc, 0, out)
+        self.assertIn("still exists in the tenant", out)
+        with open(log, encoding="utf-8") as f:
+            content = f.read()
+        self.assertIn("state rm", content)
+        self.assertIn(
+            'module.fake_rt.fake_rt.this["office_365_one_click"]', content)
+
     def test_unlock_requires_all_args(self):
         rc, out = _run(["make", "unlock", "TENANT=" + TENANT, "TF=" + FAKE_TF])
         self.assertNotEqual(rc, 0)

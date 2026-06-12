@@ -59,6 +59,11 @@ case "$cmd" in
     exit 0 ;;
   state)
     # `state list`: managed addresses from $FAKE_TF_STATE (newline-sep)
+    # `state rm <addr>`: logged for assertions
+    if [ "$2" = "rm" ] || [ "$3" = "rm" ]; then
+      [ -n "$FAKE_TF_LOG" ] && echo "state rm $*" >> "$FAKE_TF_LOG"
+      exit 0
+    fi
     [ -n "$FAKE_TF_STATE" ] && printf '%s\n' "$FAKE_TF_STATE"
     exit 0 ;;
   apply)
