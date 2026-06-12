@@ -326,6 +326,28 @@ def check_category_shadowing(items, rt, report):
                     )
     if verbose:
         return
+    if not pairs:
+        return
+    if not os.environ.get("LINT_SHADOWING"):
+        # Default: a PULSE, not a report. Dense tenants legitimately
+        # carry hundreds of overlapping category pairs (field-hit: 497
+        # rollup lines, all describing the tenant's standing shape) —
+        # and the operational hazard (a NEW add breaking SSL bypass) is
+        # gated where it belongs, in make plan-checks on the plan diff.
+        total = sum(c for c, _ in pairs.values())
+        (skey, bkey) = sorted(pairs)[0]
+        _, (sraw, braw, _f) = pairs[(skey, bkey)]
+        report.warn(
+            rt, "items",
+            "cross-category shadowing: %d more-specific entr%s across %d "
+            "category pair(s) (e.g. %r in %r shadows %r in %r)"
+            % (total, "y" if total == 1 else "ies", len(pairs),
+               sraw, skey, braw, bkey),
+            "informational for standing config — NEW additions are gated "
+            "by make plan-checks; LINT_SHADOWING=1 lists per-pair detail, "
+            "LINT_SHADOWING_VERBOSE=1 per-entry",
+        )
+        return
     for (skey, bkey) in sorted(pairs):
         count, (sraw, braw, sfield) = pairs[(skey, bkey)]
         report.warn(
