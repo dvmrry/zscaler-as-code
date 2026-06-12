@@ -331,5 +331,15 @@ class NonStringSetDuplicateTest(unittest.TestCase):
         self.assertEqual(r.errors + r.warnings, [])
 
 
+
+class EntityAllowanceTest(unittest.TestCase):
+    def test_opted_out_resources_carry_entities_without_warning(self):
+        from tools.lint import check_string
+        r = report()
+        check_string("old ----&gt; new", "zpa_app_connector_group", "w", r,
+                     allow_entities=True)
+        self.assertEqual(r.errors + r.warnings, [])
+
+
 if __name__ == "__main__":
     unittest.main()

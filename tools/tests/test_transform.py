@@ -1455,5 +1455,44 @@ class Ipv6Dns64PrefixRenameTest(unittest.TestCase):
         self.assertEqual(reported, [])
 
 
+
+class UnescapeOptOutTest(unittest.TestCase):
+    def test_acg_descriptions_stay_escaped(self):
+        # zpa_app_connector_group's provider Read uses GetAll (a paginated
+        # wrapper), and the SDK's unescapeHTML is a NO-OP on wrappers — so
+        # STATE keeps the escaped bytes and config must too. Unescaping
+        # here created the perpetual "---->" vs "----&gt;" diff (field-hit
+        # under legacy keys; the call path is auth-independent).
+        from tools.transform import load_override, transform_items
+
+        raw = [{"id": "1", "name": "ACG &amp; Edge",
+                "description": "old ----&gt; new"}]
+        ov = load_override("zpa_app_connector_group")
+        items, _, _ = transform_items(raw, "zpa_app_connector_group", ov)
+        acg = items["acg_amp_edge"]
+        self.assertEqual(acg["description"], "old ----&gt; new")
+        self.assertEqual(acg["name"], "ACG &amp; Edge")
+
+    def test_forwarding_profile_stays_escaped(self):
+        # zcc forwarding profile reads return a SLICE — same SDK no-op
+        from tools.transform import _unescape_html_fields, load_override
+
+        item = {"name": "P &gt; Q"}
+        _unescape_html_fields(item, "zcc_forwarding_profile",
+                              load_override("zcc_forwarding_profile"))
+        self.assertEqual(item["name"], "P &gt; Q")
+
+    def test_single_get_resources_still_unescape(self):
+        # the other five zpa resources read via single-object GET where
+        # the SDK unescape DOES fire — they keep the #68 behavior
+        from tools.transform import load_override, transform_items
+
+        raw = [{"id": "s", "name": "R&amp;D &gt; Segment",
+                "domainNames": ["a.test"]}]
+        ov = load_override("zpa_application_segment")
+        items, _, _ = transform_items(raw, "zpa_application_segment", ov)
+        self.assertEqual(items["r_d_segment"]["name"], "R&D > Segment")
+
+
 if __name__ == "__main__":
     unittest.main()

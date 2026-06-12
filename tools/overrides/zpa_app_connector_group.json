@@ -25,6 +25,7 @@
     "microtenant_id": "0"
   },
   "import_id": "{id}",
+  "no_html_unescape": true,
   "ranges": {
     "latitude": [
       -90,

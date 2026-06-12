@@ -559,21 +559,32 @@ def derive_key(item, override):
     return slug
 
 
-# The Go SDK HTML-unescapes every ZPA and ZCC response entity — TOP-LEVEL
+# The Go SDK HTML-unescapes ZPA and ZCC response entities — TOP-LEVEL
 # name/description only, applied TWICE (zscaler-sdk-go v3.8.37
 # zscaler/utils.go unescapeHTML, called from zparequests.go and
 # zccrequests.go after decode; the zia path has no such call). The raw API
 # carries HTML-escaped text (R&amp;D, &gt;), so the provider's state is the
 # UNESCAPED form — config built from raw pulls must mirror or every
 # affected name/description shows a phantom update in plans.
+#
+# PER-RESOURCE EXCEPTION (no_html_unescape override): the SDK unescape is
+# a NO-OP when the read's `v` is a pagination wrapper or a slice — it only
+# inspects top-level name/description of the marshaled map. Resources
+# whose provider Read goes through GetAll/list (zpa_app_connector_group —
+# deliberately, to dodge a detail-endpoint bug; zcc list-shaped reads)
+# keep the ESCAPED bytes in state, so their config must stay escaped too.
+# Field-hit: unescaping ACG descriptions created a perpetual
+# "---->" vs "----&gt;" diff.
 _UNESCAPE_PRODUCTS = ("zpa_", "zcc_")
 _UNESCAPE_FIELDS = ("name", "description")
 
 
-def _unescape_html_fields(snake_raw, resource_type):
+def _unescape_html_fields(snake_raw, resource_type, override=None):
     import html
 
     if not resource_type.startswith(_UNESCAPE_PRODUCTS):
+        return
+    if (override or {}).get("no_html_unescape"):
         return
     for field in _UNESCAPE_FIELDS:
         value = snake_raw.get(field)
@@ -595,7 +606,7 @@ def transform_items(raw_items, resource_type, override):
     drops = []
     for raw in raw_items:
         snake_raw = snake_keys(raw)
-        _unescape_html_fields(snake_raw, resource_type)
+        _unescape_html_fields(snake_raw, resource_type, override)
         if _skip_item(snake_raw, override):
             sys.stderr.write(
                 "skipped %s item %r (skip_if matched)\n"
