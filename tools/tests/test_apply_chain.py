@@ -141,6 +141,21 @@ class ApplyChainTest(unittest.TestCase):
         self.assertIn("Plan:", body)
         self.assertIn("```", body)
 
+    def test_plan_report_summary_table_and_destroy_banner(self):
+        self._plan_save()
+        self.addCleanup(lambda: os.path.exists("reports/plan.md") and os.remove("reports/plan.md"))
+        rc, out = _run(
+            ["make", "plan-report", "TENANT=" + TENANT, "TF=" + FAKE_TF],
+            {"FAKE_TF_DESTROYS": "2", "FAKE_TF_IMPORTS": "3"},
+        )
+        self.assertEqual(rc, 0, out)
+        with open(os.path.join("reports", "plan.md"), encoding="utf-8") as f:
+            body = f.read()
+        # counts-first: the table appears BEFORE the fenced detail
+        self.assertLess(body.index("| root |"), body.index("```"))
+        self.assertIn("| %s/fake_rt | 3 | 0 | 0 | 2 |" % TENANT, body)
+        self.assertIn("2 DESTROY(S)", body)
+
     def test_plan_report_without_plans_fails_loudly(self):
         rc, out = _run(
             ["make", "plan-report", "TENANT=" + TENANT, "TF=" + FAKE_TF])

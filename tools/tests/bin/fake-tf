@@ -41,7 +41,13 @@ case "$cmd" in
     fi
     n="${FAKE_TF_DESTROYS:-0}"
     u="${FAKE_TF_UPDATES:-0}"
+    i2="${FAKE_TF_IMPORTS:-0}"
     printf '{"resource_changes": [{"change":{"actions":["no-op"]}}'
+    j=0
+    while [ "$j" -lt "$i2" ]; do
+      printf ',{"change":{"actions":["no-op"],"importing":{"id":"x"}}}'
+      j=$((j+1))
+    done
     i=0
     while [ "$i" -lt "$n" ]; do
       printf ',{"change":{"actions":["delete"]}}'

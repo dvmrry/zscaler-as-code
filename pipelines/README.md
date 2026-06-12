@@ -62,6 +62,14 @@ Notes that apply to every platform:
   require a human to opt in per run, on purpose.
 - **Plan artifacts can contain sensitive values.** Restrict artifact
   visibility/retention; never publish them outside the pipeline.
+- **The approval gate is PORTAL configuration, not yaml.** Naming an
+  ADO environment in a deployment job does nothing by itself — add an
+  Approvals check (and Exclusive Lock) on the environment in the
+  Environments UI, or the apply stage runs unreviewed. The reviewer's
+  first read is the counts-first summary table at the top of
+  `reports/plan.md` (run Summary tab / artifact): per-root
+  import/add/change/destroy counts with a loud banner when any destroys
+  are present.
 - **Serialize applies** per tenant (ADO environment exclusive lock /
   GitHub environment concurrency) so two merges can't interleave.
 - **Manual scoped runs**: every platform's manual-run parameters map
