@@ -17,11 +17,13 @@
     "last_modified_by",
     "last_modified_time",
     "location_groups.name",
+    "locations.is_name_l10n_tag",
     "locations.name",
     "predefined",
     "proxy_gateways.name",
     "source_ip_groups.name",
     "time_windows.name",
+    "users.deleted",
     "users.name",
     "zpa_app_segments[].id"
   ],

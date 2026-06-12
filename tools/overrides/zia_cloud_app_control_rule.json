@@ -23,6 +23,7 @@
     "prompt_capture_enabled",
     "tenancy_profile_ids.name",
     "time_windows.name",
+    "users.deleted",
     "users.name"
   ],
   "divide": {
