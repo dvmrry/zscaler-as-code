@@ -100,9 +100,14 @@ stages:
           vmImage: ubuntu-latest
         workspace:
           clean: all
-        # Approvals + exclusive lock live on this environment. The reviewer
-        # reads the plan summary from the plan stage: expect
-        # "N to import, 0 to add, 0 to change, 0 to destroy".
+        # THE MANUAL REVIEW GATE LIVES HERE — and it is PORTAL CONFIG,
+        # not yaml: naming an environment does NOTHING by itself. In ADO:
+        # Pipelines > Environments > <this environment> > Approvals and
+        # checks > add Approvals (reviewers) + Exclusive Lock. Without
+        # that, this stage runs straight through. Suggested approval
+        # instructions text: "Open the run's Summary tab — the plan
+        # summary table is at the top. Bootstrap expects import-only
+        # rows (0 add / 0 change / 0 destroy)."
         environment: FILL-protected-environment-name
         strategy:
           runOnce:

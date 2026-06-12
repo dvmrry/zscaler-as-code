@@ -251,19 +251,31 @@ unstage-imports: ## Remove staged import/moved blocks from env roots after apply
 	done; \
 	echo "$$removed file(s) removed"
 
-plan-report: ## Render saved plans to reports/plan.md (markdown, for PR comments) ([TENANT=<label>] [RESOURCE=<type>])
-	@set -e; mkdir -p reports; out="reports/plan.md"; found=0; \
-	printf '## Terraform plan\n\n' > "$$out"; \
+plan-report: ## Render saved plans to reports/plan.md — counts-first summary table for the approval reviewer, full plan text below ([TENANT=<label>] [RESOURCE=<type>])
+	@set -e; mkdir -p reports; out="reports/plan.md"; body="reports/.body.tmp"; rows="reports/.rows.tmp"; \
+	: > "$$body"; : > "$$rows"; found=0; destroys_total=0; \
 	for d in envs/$(or $(TENANT),*)/$(SCOPE_GLOB)/; do \
 		test -f "$$d/tfplan" || continue; \
 		rt=$$(basename "$$d"); t=$$(basename "$$(dirname "$$d")"); \
 		found=$$((found+1)); \
-		printf '### %s/%s\n\n```\n' "$$t" "$$rt" >> "$$out"; \
-		$(TF) -chdir="$$d" show -no-color tfplan >> "$$out"; \
-		printf '\n```\n\n' >> "$$out"; \
+		$(TF) -chdir="$$d" show -json tfplan > "$$d/.plan.json"; \
+		info=$$($(PYTHON) -m tools.plan_summary "$$t/$$rt" < "$$d/.plan.json"); \
+		rm -f "$$d/.plan.json"; \
+		echo "$$info" | head -1 >> "$$rows"; \
+		n=$$(echo "$$info" | tail -1); destroys_total=$$((destroys_total+n)); \
+		printf '### %s/%s\n\n```\n' "$$t" "$$rt" >> "$$body"; \
+		$(TF) -chdir="$$d" show -no-color tfplan >> "$$body"; \
+		printf '\n```\n\n' >> "$$body"; \
 	done; \
-	test $$found -gt 0 || { rm -f "$$out"; echo "error: no saved plans — run make plan-changed SAVE=1 (or make plan SAVE=1) first"; exit 1; }; \
-	echo "wrote $$out ($$found plan(s))"
+	test $$found -gt 0 || { rm -f "$$body" "$$rows"; echo "error: no saved plans — run make plan-changed SAVE=1 (or make plan SAVE=1) first"; exit 1; }; \
+	{ printf '## Terraform plan\n\n'; \
+	  if [ "$$destroys_total" -gt 0 ]; then \
+		printf '> :warning: **%d DESTROY(S) in this plan set — read those roots first. Applies refuse destroys without ALLOW_DESTROY=1.**\n\n' "$$destroys_total"; \
+	  fi; \
+	  printf '| root | import | add | change | destroy |\n|---|---|---|---|---|\n'; \
+	  cat "$$rows"; printf '\n'; cat "$$body"; } > "$$out"; \
+	rm -f "$$body" "$$rows"; \
+	echo "wrote $$out ($$found plan(s), $$destroys_total destroy(s))"
 
 assert-clean: ## Exit 0 only when every saved plan is no-op (imports allowed) — the drift-PR merge-readiness check ([TENANT=<label>] [RESOURCE=<type>])
 	@set -e; checked=0; dirty=0; for d in envs/$(or $(TENANT),*)/$(SCOPE_GLOB)/; do \
