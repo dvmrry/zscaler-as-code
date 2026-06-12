@@ -38,7 +38,20 @@ def slugify(text):
     return _SLUG_BAD.sub("_", text.lower()).strip("_")
 
 
-def filter_item(item, block, path, drops, merge_blocks=frozenset()):
+def _matches_default(val, default):
+    """drop_if_default comparison: same string-int coercion the top-level
+    branch does, so an API number-as-string ('0') matches an int 0."""
+    if (isinstance(default, int) and not isinstance(default, bool)
+            and isinstance(val, str)):
+        try:
+            val = int(val)
+        except ValueError:
+            pass
+    return val == default
+
+
+def filter_item(item, block, path, drops, merge_blocks=frozenset(),
+                override_drops=frozenset(), override_drop_defaults=None):
     """Keep only schema-input attrs and blocks, recursively.
 
     Computed-only and unknown keys are dropped and their paths recorded in
@@ -47,6 +60,13 @@ def filter_item(item, block, path, drops, merge_blocks=frozenset()):
     max_items=1) carry one dict (kept as a bare object, NOT wrapped in a
     list — the generator wraps [x] at plan time); multi-instance blocks
     carry a list of dicts.
+
+    override_drops / override_drop_defaults are the DOTTED-path entries of
+    the `drops` / `drop_if_default` override keys ("conditions.operands.
+    name") — fields inside nested blocks that must not round-trip (e.g.
+    computed display names the API rewrites, zpa#287). Matching is on the
+    full path with "[]" markers stripped; drops requested by the operator
+    are intentional, so they are NOT added to the coverage-gap report.
     """
     cls = classify_attributes(block)
     keep_attrs = set(cls["required"] + cls["optional"])
@@ -56,6 +76,13 @@ def filter_item(item, block, path, drops, merge_blocks=frozenset()):
         child_path = path + key if not path else path + "." + key
         value = item[key]
         if key in keep_attrs:
+            dotted = child_path.replace("[]", "")
+            if dotted in override_drops:
+                continue
+            if (override_drop_defaults and dotted in override_drop_defaults
+                    and _matches_default(
+                        value, override_drop_defaults[dotted])):
+                continue
             out[key] = value
         elif key in block_types:
             inner_block = block_types[key]["block"]
@@ -86,7 +113,10 @@ def filter_item(item, block, path, drops, merge_blocks=frozenset()):
                         # provider-mirror: the "not configured" stub is
                         # absence of data, omitted silently.
                         continue
-                    out[key] = filter_item(single, inner_block, child_path, drops)
+                    out[key] = filter_item(
+                        single, inner_block, child_path, drops,
+                        override_drops=override_drops,
+                        override_drop_defaults=override_drop_defaults)
                 else:
                     drops.append(child_path)
             else:
@@ -108,11 +138,17 @@ def filter_item(item, block, path, drops, merge_blocks=frozenset()):
                             elems, inner_block, child_path, drops
                         )
                         out[key] = [
-                            filter_item(merged, inner_block, inner_path, drops)
+                            filter_item(
+                                merged, inner_block, inner_path, drops,
+                                override_drops=override_drops,
+                                override_drop_defaults=override_drop_defaults)
                         ]
                         continue
                     out[key] = [
-                        filter_item(v, inner_block, inner_path, drops)
+                        filter_item(
+                            v, inner_block, inner_path, drops,
+                            override_drops=override_drops,
+                            override_drop_defaults=override_drop_defaults)
                         for v in elems
                     ]
                 elif isinstance(value, dict):
@@ -120,7 +156,10 @@ def filter_item(item, block, path, drops, merge_blocks=frozenset()):
                         out[key] = []
                     else:
                         out[key] = [
-                            filter_item(value, inner_block, inner_path, drops)
+                            filter_item(
+                                value, inner_block, inner_path, drops,
+                                override_drops=override_drops,
+                                override_drop_defaults=override_drop_defaults)
                         ]
                 else:
                     drops.append(child_path)
@@ -344,6 +383,8 @@ def apply_overrides(item, override):
         if field in out and isinstance(out[field], str):
             out[field] = [v.strip() for v in out[field].split(",") if v.strip()]
     for field in sorted(override.get("drops") or []):
+        # dotted entries ("conditions.operands.name") are nested-block
+        # paths handled in filter_item; here they pop nothing.
         out.pop(field, None)
     for field in sorted(override.get("references") or {}):
         if field in out:
@@ -498,6 +539,12 @@ def transform_items(raw_items, resource_type, override):
         filtered = filter_item(
             normalized, block, "", drops,
             merge_blocks=frozenset(override.get("merge_blocks") or []),
+            override_drops=frozenset(
+                f for f in (override.get("drops") or []) if "." in f),
+            override_drop_defaults=dict(
+                (k, v)
+                for k, v in (override.get("drop_if_default") or {}).items()
+                if "." in k),
         )
         items[key] = coerce_item(filtered, block)
         originals[key] = normalized

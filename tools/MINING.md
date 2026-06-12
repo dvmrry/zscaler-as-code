@@ -31,6 +31,7 @@ whole time:
 | source_countries perma-diff | `strings.TrimPrefix(c, "COUNTRY_")` in the read | `strip_prefix` |
 | predefined/one-click rule import hung 10+ min | provider cannot manage service-owned objects | `skip_if` |
 | policy_style bool vs API string enum | read maps `DUAL_POLICY_EVAL`→true, `NONE`→false | `value_map` |
+| zpa policy rule diffs inside conditions[].operands | `operands.name` is Computed+Optional — the API rewrites it to the referenced object's display name (provider issue #287: "remove name from your operands"); nested `microtenant_id` "0" stub | dotted `drops` / `drop_if_default` (`conditions.operands.name`) |
 
 ## The mechanical lanes (`make mine`)
 
@@ -129,6 +130,27 @@ These are the known traps — each one burned an hour live:
 - **Field attribution drift.** The nearest-preceding-field heuristic
   mislabels when validators sit in nested blocks or shared schema
   funcs. Step 2 above is not optional.
+- **Nested flattens are invisible to the battery.** The `d.Set` lane
+  only sees top-level flattens; helpers invoked INSIDE another flatten
+  (operands inside `flattenPolicyConditions`) never appear. When a
+  resource has nested blocks, read the whole flatten chain by hand.
+- **Computed+Optional attributes inside nested blocks are drift
+  surfaces.** Anything the schema marks computed can be rewritten by
+  the API (operand `name` becomes the referenced object's display
+  name). If config carries it, it is compared; if the API rewrites it,
+  it never round-trips. Drop such fields with a dotted `drops` path
+  unless they are required on write (operand `idp_id` IS sent on
+  write — keep it).
+- **Ordered schema, unordered backend.** zpa policy `conditions`/
+  `operands` are `TypeList` (positional compare) while the backend
+  treats them as an unordered grouped structure — that mismatch is WHY
+  the provider's v2 policy resources moved to `TypeSet` with operands
+  grouped by `object_type`. No override can fix ordering; if the API
+  returns a different order than config captured, the drift pipeline
+  is the reconciliation (re-fetch adopts the API's current order).
+  Related trap: v1 `rhs_list` is Computed but never set by the read —
+  config using it can never converge; always use per-value `rhs`
+  operands (which is what the transform emits).
 
 ## The non-mechanical lanes
 
