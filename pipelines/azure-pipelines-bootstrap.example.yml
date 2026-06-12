@@ -112,7 +112,12 @@ stages:
                     eval "$(python3 -m tools.cred_env ${{ parameters.tenant }})"
                     # Imports only mutate STATE, never the tenant; the
                     # destroy guard still applies (nothing to allow here).
-                    make apply BACKEND_CONFIG=backend.conf
+                    # TENANT + $(SCOPE) on apply too — DEFENSE IN DEPTH:
+                    # even a contaminated artifact (stale tfplans from a
+                    # reused workspace published alongside) cannot apply
+                    # outside the run's declared scope. Field-hit: a
+                    # ZIA-targeted run applied stale ZPA plans.
+                    make apply TENANT=${{ parameters.tenant }} BACKEND_CONFIG=backend.conf $(SCOPE)
                   displayName: Apply (state-only import adoption)
                   env:
                     ARM_SAS_TOKEN: $(ARM_SAS_TOKEN)
