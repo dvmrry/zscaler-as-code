@@ -105,8 +105,17 @@ class DroppedFieldGateTest(unittest.TestCase):
         self.assertIn("domain_names", URL_ENTRY_FIELDS)
         r = report()
         check_url_entry("App.Example.COM", "zpa_application_segment",
-                        "items.k.domain_names[0]", r)
+                        "items.k.domain_names[0]", r, field="domain_names")
         self.assertTrue(any("uppercase" in w for w in r.warnings))
+
+    def test_uppercase_zia_url_entries_is_quiet(self):
+        # field verdict: tenant-scale noise — ZIA keeps the tenant's
+        # casing and it round-trips fine
+        from tools.lint import check_url_entry
+        r = report()
+        check_url_entry("WWW.Example.COM", "zia_url_categories",
+                        "items.k.urls[0]", r, field="urls")
+        self.assertEqual(r.warnings, [])
 
 
 class UrlEntryTest(unittest.TestCase):
