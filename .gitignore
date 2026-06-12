@@ -29,6 +29,7 @@ config/tmpchaintest/
 config/tmpfmttest/
 config/tmptypechktest/
 config/tmpdropschk/
+config/tmplintadv/
 imports/tmpdropschk/
 
 # make install-tf output

@@ -425,5 +425,51 @@ class ShadowingScaleTest(unittest.TestCase):
         self.assertIn("5000 more-specific", r.warnings[0])
 
 
+
+class AdvisoryModeTest(unittest.TestCase):
+    """Fetched tenant data must REPORT errors without BLOCKING adoption
+    (field-hit: the agent-side refresh ran lint against the tenant's own
+    pre-existing whitespace/NBSP data and stopped the bootstrap)."""
+
+    def _error_tenant(self, advisory):
+        import json as _json
+        import os
+        import shutil
+        from tools.lint import main
+        from tools.transform import render_tfvars
+        config_dir = os.path.join("config", "tmplintadv")
+        shutil.rmtree(config_dir, ignore_errors=True)
+        os.makedirs(config_dir)
+        items = {"k": {"name": " padded ", "enabled": True}}
+        with open(os.path.join(config_dir,
+                               "zpa_segment_group.auto.tfvars.json"),
+                  "w", encoding="utf-8") as f:
+            f.write(render_tfvars(items))
+        if advisory:
+            os.environ["LINT_ADVISORY"] = "1"
+        import io
+        import sys
+        old_out, sys.stdout = sys.stdout, io.StringIO()
+        try:
+            code = main(["tmplintadv"])
+            out = sys.stdout.getvalue()
+        finally:
+            sys.stdout = old_out
+            os.environ.pop("LINT_ADVISORY", None)
+            shutil.rmtree(config_dir, ignore_errors=True)
+        return code, out
+
+    def test_strict_default_still_blocks(self):
+        code, out = self._error_tenant(advisory=False)
+        self.assertEqual(code, 1)
+        self.assertIn("whitespace", out)
+
+    def test_advisory_reports_everything_but_exits_0(self):
+        code, out = self._error_tenant(advisory=True)
+        self.assertEqual(code, 0)
+        self.assertIn("whitespace", out)        # finding still printed
+        self.assertIn("ADVISORY MODE", out)     # suppression is LOUD
+
+
 if __name__ == "__main__":
     unittest.main()
