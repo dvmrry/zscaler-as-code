@@ -1339,5 +1339,102 @@ class ServerGroupDropTriageTest(unittest.TestCase):
         self.assertEqual(it["servers"], [{"id": ["srv1"]}])
 
 
+
+# Field-observed dropped paths per resource (estate-wide drop triage,
+# 2026-06-12): every path verified as read decoration or provider-less
+# surface — the provider write paths are built from schema fields only,
+# so none of these can be write-relevant. Synthetic items carrying all
+# of them must report ZERO unacknowledged drops.
+ESTATE_DROPS = {
+ "zcc_failopen_policy": ["id"],
+ "zcc_forwarding_profile": ["id", "unified_tunnel[].id",
+                            "unified_tunnel[].send_trusted_network_result_to_zpa"],
+ "zcc_trusted_network": ["id", "guid"],
+ "zcc_web_privacy": ["id", "name"],
+ "zia_cloud_app_control_rule": ["access_control", "cbi_profile[].profile_seq",
+    "departments.name", "device_groups.name", "groups.name", "id",
+    "labels.name", "last_modified_by", "last_modified_time",
+    "location_groups.name", "locations.is_name_l10n_tag", "locations.name",
+    "predefined", "prompt_capture_enabled", "tenancy_profile_ids.name",
+    "users.name"],
+ "zia_location_management": ["bc_location", "cc_location", "child_count",
+    "dynamiclocation_groups", "ec_location", "geo_override", "id",
+    "jwt_auth", "language", "latitude", "longitude", "match_in_child",
+    "non_editable", "override_dn_bandwidth", "override_up_bandwidth",
+    "shared_down_bandwidth", "shared_up_bandwidth",
+    "static_location_groups.name", "unused_dn_bandwidth",
+    "unused_up_bandwidth"],
+ "zia_rule_labels": ["created_by", "id", "last_modified_by",
+                     "last_modified_time", "referenced_rule_count"],
+ "zia_ssl_inspection_rules": ["access_control", "action[].id",
+    "action[].ssl_interception_cert[].name", "default_rule",
+    "device_groups.name", "end_point_application_groups",
+    "end_point_applications", "groups.name", "id", "labels.name",
+    "last_modified_by", "last_modified_time", "location_groups.name",
+    "locations.name", "predefined", "source_ip_groups.name", "users.name"],
+ "zia_url_categories": ["category_group", "id", "val"],
+ "zia_url_filtering_rules": ["access_control", "capture_pcap",
+    "cbi_profile_id", "device_groups.name", "exclude_src_countries",
+    "groups.name", "groups_and_departments_set", "http_header_action_profiles",
+    "http_header_profiles", "id", "labels.name", "last_modified_by",
+    "last_modified_time", "location_groups.name",
+    "locations.is_name_l10n_tag", "locations.name", "predefined",
+    "source_ip_groups.name", "users.name", "users_and_groups_set"],
+ "zpa_app_connector_group": ["connector_group_type", "connectors",
+    "creation_time", "id", "microtenant_name", "modified_by",
+    "modified_time", "read_only", "upgrade_priorities", "upgrade_priority",
+    "version", "version_profile_visibility_scope", "zscaler_managed"],
+ "zpa_application_segment": ["adp_enabled", "auto_app_protect_enabled",
+    "creation_time", "extranet_enabled", "hbr_enabled", "id",
+    "microtenant_name", "modified_by", "modified_time", "read_only",
+    "server_groups[].config_space", "server_groups[].creation_time",
+    "server_groups[].description", "server_groups[].dynamic_discovery",
+    "server_groups[].enabled", "server_groups[].extranet_enabled",
+    "server_groups[].modified_by", "server_groups[].modified_time",
+    "server_groups[].name", "sticky_entity", "sticky_group",
+    "zscaler_managed"],
+ "zpa_policy_access_rule": ["conditions[].operands[].referenced_object_deleted"],
+}
+
+ESTATE_BASE = {
+ "zcc_failopen_policy": {"id": 9},
+ "zcc_forwarding_profile": {"id": 9, "name": "P"},
+ "zcc_trusted_network": {"id": 9, "name": "T"},
+ "zcc_web_privacy": {"id": 9, "name": "W"},
+ "zia_cloud_app_control_rule": {"id": 1, "name": "R",
+    "type": "STREAMING_MEDIA", "order": 1, "predefined": False},
+ "zia_location_management": {"id": 1, "name": "L"},
+ "zia_rule_labels": {"id": 1, "name": "Lab"},
+ "zia_ssl_inspection_rules": {"id": 1, "name": "R", "order": 1,
+    "predefined": False, "default_rule": False},
+ "zia_url_categories": {"id": "CUSTOM_01", "configured_name": "C",
+    "super_category": "USER_DEFINED"},
+ "zia_url_filtering_rules": {"id": 1, "name": "R", "order": 1,
+    "protocols": ["ANY_RULE"], "predefined": False},
+ "zpa_app_connector_group": {"id": "1", "name": "ACG"},
+ "zpa_application_segment": {"id": "1", "name": "S",
+    "domain_names": ["a.test"]},
+ "zpa_policy_access_rule": {"id": "1", "name": "R", "default_rule": False},
+}
+
+
+class EstateDropTriageTest(unittest.TestCase):
+    def test_all_field_observed_drops_are_acknowledged(self):
+        from tools.transform import load_override, transform_items
+
+        for rt in sorted(ESTATE_DROPS):
+            item = dict(ESTATE_BASE[rt])
+            for path in ESTATE_DROPS[rt]:
+                segs = path.replace("[]", "").split(".")
+                cur = item
+                for seg in segs[:-1]:
+                    if not isinstance(cur.get(seg), list):
+                        cur[seg] = [{"id": "1"}]
+                    cur = cur[seg][0]
+                cur.setdefault(segs[-1], "synthval")
+            _, _, reported = transform_items([item], rt, load_override(rt))
+            self.assertEqual(reported, [], "%s reports: %r" % (rt, reported))
+
+
 if __name__ == "__main__":
     unittest.main()

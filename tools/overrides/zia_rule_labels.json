@@ -1,1 +1,10 @@
-{"import_id": "{id}"}
+{
+  "acknowledged_drops": [
+    "created_by",
+    "id",
+    "last_modified_by",
+    "last_modified_time",
+    "referenced_rule_count"
+  ],
+  "import_id": "{id}"
+}

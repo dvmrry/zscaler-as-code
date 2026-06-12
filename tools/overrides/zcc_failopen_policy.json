@@ -1,4 +1,7 @@
 {
+  "acknowledged_drops": [
+    "id"
+  ],
   "import_id": "{id}",
   "invert_bool": [
     "active",

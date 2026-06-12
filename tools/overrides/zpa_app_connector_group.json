@@ -1,11 +1,23 @@
 {
+  "acknowledged_drops": [
+    "connector_group_type",
+    "connectors",
+    "creation_time",
+    "id",
+    "microtenant_name",
+    "modified_by",
+    "modified_time",
+    "read_only",
+    "upgrade_priorities",
+    "upgrade_priority",
+    "version",
+    "version_profile_visibility_scope",
+    "zscaler_managed"
+  ],
   "drop_if_default": {
     "microtenant_id": "0"
   },
   "import_id": "{id}",
-  "renames": {
-    "signing_cert_id": "enrollment_cert_id"
-  },
   "ranges": {
     "latitude": [
       -90,
@@ -15,5 +27,8 @@
       -180,
       180
     ]
+  },
+  "renames": {
+    "signing_cert_id": "enrollment_cert_id"
   }
 }

@@ -1,4 +1,23 @@
 {
+  "acknowledged_drops": [
+    "access_control",
+    "action[].id",
+    "action[].ssl_interception_cert[].name",
+    "default_rule",
+    "device_groups.name",
+    "end_point_application_groups",
+    "end_point_applications",
+    "groups.name",
+    "id",
+    "labels.name",
+    "last_modified_by",
+    "last_modified_time",
+    "location_groups.name",
+    "locations.name",
+    "predefined",
+    "source_ip_groups.name",
+    "users.name"
+  ],
   "import_id": "{id}",
   "skip_if": [
     {

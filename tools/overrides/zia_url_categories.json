@@ -1,4 +1,9 @@
 {
+  "acknowledged_drops": [
+    "category_group",
+    "id",
+    "val"
+  ],
   "import_id": "{id}",
   "key_field": "configured_name",
   "sort_lists": [
