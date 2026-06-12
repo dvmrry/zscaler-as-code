@@ -23,8 +23,11 @@ from tools.registry import generated_types
 from tools.tfschema import load_resource
 from tools.transform import load_override, render_tfvars
 
-# Fields holding ZIA URL-category entries (domains / URLs with paths).
-URL_ENTRY_FIELDS = ("urls", "db_categorized_urls")
+# Fields holding host-shaped entries (domains / URLs with paths). zpa
+# domain_names is included for the case check: the ZPA API lowercases
+# domain names on response (provider troubleshooting guide), so an
+# uppercase hand-edit perma-diffs.
+URL_ENTRY_FIELDS = ("urls", "db_categorized_urls", "domain_names")
 # Fields holding IPs / CIDRs / dash ranges.
 IP_FIELDS = ("ip_ranges", "ip_ranges_retaining_parent_category", "ip_addresses")
 # Resources whose `order` must be unique — grouped by a field when listed.
@@ -180,6 +183,39 @@ def check_ranges(item, key, rt, override, report):
 # Cross-item checks
 # ---------------------------------------------------------------------------
 
+def check_dropped_fields(items, rt, override, report):
+    """Fields named in the override's `drops` can never round-trip — the
+    transform strips them from fetched data because the provider's read
+    rewrites or never returns them (operand display names, rhs_list,
+    computed orders). They are still IN the schema, so a hand-edit that
+    re-adds one passes typecheck and then perma-diffs; gate it here.
+    Dotted entries reach inside nested blocks, mirroring the transform."""
+
+    def walk(value, segs, where):
+        if isinstance(value, dict):
+            head = segs[0]
+            if head in value:
+                if len(segs) == 1:
+                    report.error(
+                        rt, "%s.%s" % (where, head),
+                        "field %r is transform-dropped (the provider "
+                        "rewrites or never returns it — it cannot "
+                        "round-trip)" % head,
+                        "remove it; see drops in tools/overrides/%s.json"
+                        % rt,
+                    )
+                else:
+                    walk(value[head], segs[1:], "%s.%s" % (where, head))
+        elif isinstance(value, list):
+            for i, v in enumerate(value):
+                walk(v, segs, "%s[%d]" % (where, i))
+
+    for path in sorted(override.get("drops") or []):
+        segs = path.split(".")
+        for key in sorted(items):
+            walk(items[key], segs, "items.%s" % key)
+
+
 def check_order_collisions(items, rt, report):
     group_field = ORDER_GROUP_FIELD.get(rt)
     seen = {}
@@ -307,6 +343,7 @@ def lint_config_file(rt, path, report):
                         check_ip_entry(
                             entry, rt, "%s.%s[%d]" % (where, field, i), report)
 
+    check_dropped_fields(items, rt, override, report)
     check_order_collisions(items, rt, report)
     if rt == "zia_url_categories":
         check_category_shadowing(items, rt, report)

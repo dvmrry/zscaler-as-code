@@ -1,4 +1,7 @@
 {
+  "drop_if_default": {
+    "microtenant_id": "0"
+  },
   "import_id": "{id}",
   "ranges": {
     "latitude": [

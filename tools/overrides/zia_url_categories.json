@@ -1,4 +1,7 @@
 {
   "import_id": "{id}",
-  "key_field": "configured_name"
+  "key_field": "configured_name",
+  "sort_lists": [
+    "urls"
+  ]
 }

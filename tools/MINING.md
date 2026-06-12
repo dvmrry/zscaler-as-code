@@ -33,6 +33,8 @@ whole time:
 | policy_style bool vs API string enum | read maps `DUAL_POLICY_EVAL`→true, `NONE`→false | `value_map` |
 | zpa policy rule diffs inside conditions[].operands | `operands.name` is Computed+Optional — the API rewrites it to the referenced object's display name (provider issue #287: "remove name from your operands"); nested `microtenant_id` "0" stub | dotted `drops` / `drop_if_default` (`conditions.operands.name`) |
 | ZPA plans show `&amp;`/`&gt;` updates on name/description | the Go SDK HTML-unescapes every ZPA and ZCC response — top-level name/description only, applied TWICE (`unescapeHTML` in zscaler-sdk-go `zscaler/utils.go`, called from `zparequests.go`/`zccrequests.go`; zia has no such call) — so state holds literals while the raw API carries entities | transform mirrors it (`_unescape_html_fields`); `make lint` warns on residual entities |
+| zia_url_categories drift PRs churn with no-op `urls` reorders | `suppressURLCategoriesReorderDiff` treats `urls` as a SET at plan time despite the TypeList schema — order is meaningless but the API returns it unstably (found by auditing the miner's suppressed DiffSuppressFunc lane, `MINE_VERBOSE=1`) | `sort_lists` |
+| uppercase domain_names perma-diff (hand-edit only) | the ZPA API lowercases `domain_names` on response (provider troubleshooting guide — same documented-normalization class as unescapeHTML) | `make lint` case warn (`domain_names` in URL_ENTRY_FIELDS) |
 
 ## The mechanical lanes (`make mine`)
 
@@ -47,13 +49,13 @@ Exit 0 = covered; exit 4 = new missing coverage (make flattens it to 2
 | Class | Go idiom (SDKv2: zia/zpa) | Go idiom (plugin framework: zcc) | Override |
 |---|---|---|---|
 | `range_validator` | `validation.IntBetween(a, b)` | `int64validator.Between(a, b)` | `ranges` (enforced by `make lint`) |
-| `enum_validator` | `validation.StringInSlice([...])` | `stringvalidator.OneOf(...)` | informational (enum lint is backlog) |
+| `enum_validator` | `validation.StringInSlice([...])` | `stringvalidator.OneOf(...)` | informational (enum lint is backlog; print with `MINE_VERBOSE=1`) |
 | `unit_conversion` | `resp.Field / 1024` in the read | — | `divide` |
 | `literal_default` | `if len(resp.X) == 0 { d.Set("x", []string{"ANY"}) }` | — | `defaults` |
 | `int_bool_inverted` | `boolToInvertedInt(d.Get("x").(bool))` | `boolToInvertedStr(plan.X.ValueBool())` / `invertedIntToBool(p.X)` | `invert_bool` |
 | `strip_prefix` | `strings.TrimPrefix(v, "COUNTRY_")` | — | `strip_prefix` |
 | `merge_flatten` | slice-param helper that returns `[]interface{}{map{...}}` | — | `merge_blocks` (schema-aware, see below) |
-| `diff_suppress` | `DiffSuppressFunc: name` | — | informational — read the named func; it usually reveals a normalization worth a transform rule |
+| `diff_suppress` | `DiffSuppressFunc: name` | — | informational (`MINE_VERBOSE=1` to print) — READ each named func after a bump; suppress bodies are where normalizations hide (this lane surfaced the `urls`-is-a-set finding) |
 
 Source layout per dialect (encoded in `LAYOUTS` in `tools/mine.py`):
 

@@ -69,6 +69,46 @@ class StringHygieneTest(unittest.TestCase):
         self.assertEqual(r.errors + r.warnings, [])
 
 
+class DroppedFieldGateTest(unittest.TestCase):
+    """Hand-edits re-adding transform-dropped fields perma-diff (the
+    provider rewrites or never returns them) — lint must gate, at both
+    nesting levels."""
+
+    def _lint(self, items, override):
+        from tools.lint import check_dropped_fields
+        r = report()
+        check_dropped_fields(items, "zpa_policy_access_rule", override, r)
+        return r
+
+    def test_top_level_dropped_field_is_error(self):
+        r = self._lint({"k": {"name": "R", "priority": "3"}},
+                       {"drops": ["priority"]})
+        self.assertTrue(any("priority" in e for e in r.errors))
+
+    def test_nested_dropped_field_is_error(self):
+        items = {"k": {"conditions": [{"operands": [
+            {"object_type": "APP", "rhs_list": ["a", "b"]}]}]}}
+        r = self._lint(items, {"drops": ["conditions.operands.rhs_list"]})
+        self.assertEqual(len(r.errors), 1)
+        self.assertIn("rhs_list", r.errors[0])
+        self.assertIn("items.k.conditions[0].operands[0]", r.errors[0])
+
+    def test_clean_config_passes(self):
+        items = {"k": {"conditions": [{"operands": [
+            {"object_type": "APP", "rhs": "1"}]}]}}
+        r = self._lint(items, {"drops": ["conditions.operands.rhs_list",
+                                         "priority"]})
+        self.assertEqual(r.errors, [])
+
+    def test_uppercase_domain_names_warned(self):
+        from tools.lint import URL_ENTRY_FIELDS, check_url_entry
+        self.assertIn("domain_names", URL_ENTRY_FIELDS)
+        r = report()
+        check_url_entry("App.Example.COM", "zpa_application_segment",
+                        "items.k.domain_names[0]", r)
+        self.assertTrue(any("uppercase" in w for w in r.warnings))
+
+
 class UrlEntryTest(unittest.TestCase):
     def test_plain_domain_passes(self):
         r = report()

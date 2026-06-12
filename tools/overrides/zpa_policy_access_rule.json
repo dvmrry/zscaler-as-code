@@ -50,6 +50,7 @@
   },
   "drops": [
     "conditions.operands.name",
+    "conditions.operands.rhs_list",
     "priority",
     "rule_order"
   ],

@@ -33,7 +33,7 @@ install-tf: ## Download+checksum-verify a pinned terraform (VERSION=<v> [DEST=bi
 bump-check: ## Check pinned providers + terraform for newer releases (tool exits 4 on updates; make flattens to 2 — a red scheduled run IS the notification)
 	TF="$(TF)" $(PYTHON) -m tools.bump_check
 
-mine: ## Mine pinned provider Go source for quirks vs override coverage (tool exits 4 on NEW missing; UPDATE_BASELINE=1 blesses current findings; needs network — see tools/MINING.md)
+mine: ## Mine pinned provider Go source for quirks vs override coverage (tool exits 4 on NEW missing; UPDATE_BASELINE=1 blesses current findings; MINE_VERBOSE=1 also prints info-class DiffSuppress/enum findings; needs network — see tools/MINING.md)
 	$(PYTHON) -m tools.mine
 
 shape: ## Sanitized structural digest of a plan JSON / config / pull (FILE=<path> [ONLY=<resource type>]) — values become tokens; output is safe to relay out of restricted environments
