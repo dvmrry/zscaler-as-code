@@ -59,13 +59,19 @@ variables:
 # HANDOFF — the part that makes this NOT awkward: the run is fully
 # self-contained; the PR merge never blocks it and nothing re-runs.
 # Two correct shapes:
-#   (a) RECOMMENDED: put these steps at the TOP OF THE PLAN JOB itself
+#   (a) SIMPLEST: put these steps at the TOP OF THE PLAN JOB itself
 #       (same job as stage-imports/plan) — workspace continuity is
 #       automatic and the branch push is a pure side-effect, or
-#   (b) keep a separate refresh stage and have the plan job check out
-#       the pushed bootstrap/* BRANCH (stages get fresh workspaces; a
-#       plain `checkout: self` in a later stage would read the OLD
-#       committed config and silently plan from stale files).
+#   (b) separate refresh stage: publish config/ + imports/ as a
+#       PIPELINE ARTIFACT and download it in the plan job — the same
+#       publish/download idiom the plan->apply tfplans handoff below
+#       already uses, and it keeps the run independent of the branch
+#       push succeeding (the PR stays the durable record without being
+#       load-bearing for the run). Do NOT rely on a plain
+#       `checkout: self` in a later stage — fresh workspaces would
+#       silently plan from the OLD committed config. (Checking out the
+#       pushed bootstrap/* branch also works, but couples the run to
+#       push permissions; prefer the artifact.)
 # The PR is the durable record a human merges at leisure — the only
 # consumer of the MERGED repo is the next scheduled drift run, and
 # even a forgotten merge self-heals (drift re-proposes the same
