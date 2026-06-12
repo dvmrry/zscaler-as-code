@@ -246,6 +246,31 @@ class ShadowingTest(unittest.TestCase):
         # suffix without a dot boundary is NOT a subdomain
         self.assertFalse(_shadows(("notexample.com", ""), ("example.com", "")))
 
+    def _with_detail(self, items):
+        import os
+        r = report()
+        os.environ["LINT_SHADOWING"] = "1"
+        try:
+            check_category_shadowing(items, "zia_url_categories", r)
+        finally:
+            del os.environ["LINT_SHADOWING"]
+        return r
+
+    def test_default_is_a_single_summary_pulse(self):
+        # field verdict: 497 rollup lines on a dense tenant is still a
+        # report when a pulse is wanted — NEW adds are gated by
+        # plan-checks where it matters
+        items = {
+            "broad_a": {"urls": ["dom1.com"]},
+            "broad_b": {"urls": ["dom2.com"]},
+            "spec": {"urls": ["s.dom1.com", "s.dom2.com"]},
+        }
+        r = report()
+        check_category_shadowing(items, "zia_url_categories", r)
+        self.assertEqual(len(r.warnings), 1)
+        self.assertIn("2 category pair(s)", r.warnings[0])
+        self.assertIn("plan-checks", r.warnings[0])
+
     def test_ssl_bypass_scenario_is_flagged(self):
         # The field case: example.com sits in an SSL-bypass category; an
         # operator adds sub.example.com to some other category. ZIA
@@ -255,8 +280,7 @@ class ShadowingTest(unittest.TestCase):
             "ssl_bypass_list": {"urls": ["example.com"]},
             "marketing_block": {"urls": ["sub.example.com"]},
         }
-        r = report()
-        check_category_shadowing(items, "zia_url_categories", r)
+        r = self._with_detail(items)
         self.assertEqual(len(r.warnings), 1)
         self.assertIn("sub.example.com", r.warnings[0])
         self.assertIn("ssl_bypass_list", r.warnings[0])
@@ -360,9 +384,14 @@ class ShadowingScaleTest(unittest.TestCase):
             "broad": {"urls": ["dom%d.com" % i for i in range(50)]},
             "specific": {"urls": ["sub.dom%d.com" % i for i in range(50)]},
         }
+        import os
         r = report()
         from tools.lint import check_category_shadowing
-        check_category_shadowing(items, "zia_url_categories", r)
+        os.environ["LINT_SHADOWING"] = "1"
+        try:
+            check_category_shadowing(items, "zia_url_categories", r)
+        finally:
+            del os.environ["LINT_SHADOWING"]
         self.assertEqual(len(r.warnings), 1)
         self.assertIn("50 entries", r.warnings[0])
         self.assertIn("broad", r.warnings[0])
@@ -392,8 +421,8 @@ class ShadowingScaleTest(unittest.TestCase):
         r = report()
         from tools.lint import check_category_shadowing
         check_category_shadowing(items, "zia_url_categories", r)
-        self.assertEqual(len(r.warnings), 1)
-        self.assertIn("5000 entries", r.warnings[0])
+        self.assertEqual(len(r.warnings), 1)  # the default summary pulse
+        self.assertIn("5000 more-specific", r.warnings[0])
 
 
 if __name__ == "__main__":
