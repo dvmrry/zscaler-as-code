@@ -27,6 +27,14 @@ steps:
   #     terraformVersion: "1.15.4"
   - script: make validate
     displayName: Terraform format check
+  # Config gates run against a committed tenant; `demo` ships with the
+  # template so these pass verbatim — point them at your tenant label once
+  # real config is committed (these catch hand-edit mistakes the plan
+  # stage would otherwise hit much later).
+  - script: make typecheck TENANT=demo
+    displayName: Config typecheck
+  - script: make lint TENANT=demo
+    displayName: Config semantic lint
   # Drift detection, env-root consistency, and import-address validation are
   # adopter concerns: scheduling, credential injection, and failure routing
   # depend on your ADO setup. Commented-out examples for reference:
@@ -57,6 +65,12 @@ steps:
 #   - stage: plan
 #     jobs:
 #       - job: plan
+#         workspace:
+#           clean: all   # self-hosted agents reuse workspaces; a stale tfplan
+#                        # from a cancelled run must never survive into this
+#                        # one (field incident — see the bootstrap pipeline's
+#                        # layering note). plan-changed also runs the in-band
+#                        # layer (make clean-plans) itself.
 #         steps:
 #           - checkout: self
 #             fetchDepth: 0
@@ -74,6 +88,12 @@ steps:
 #     jobs:
 #       - deployment: apply
 #         environment: <protected-environment>   # approvals + exclusive lock HERE
+#         workspace:
+#           clean: all   # same guard for the apply workspace; the artifact
+#                        # download below defines EXACTLY which plans exist.
+#                        # If you materialize backend.conf from variables
+#                        # (instead of committing it), re-materialize it in
+#                        # THIS job — the clean wipes generated files.
 #         strategy:
 #           runOnce:
 #             deploy:
