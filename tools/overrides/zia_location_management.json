@@ -1,4 +1,26 @@
 {
+  "acknowledged_drops": [
+    "bc_location",
+    "cc_location",
+    "child_count",
+    "dynamiclocation_groups",
+    "ec_location",
+    "geo_override",
+    "id",
+    "jwt_auth",
+    "language",
+    "latitude",
+    "longitude",
+    "match_in_child",
+    "non_editable",
+    "override_dn_bandwidth",
+    "override_up_bandwidth",
+    "shared_down_bandwidth",
+    "shared_up_bandwidth",
+    "static_location_groups.name",
+    "unused_dn_bandwidth",
+    "unused_up_bandwidth"
+  ],
   "import_id": "{id}",
   "ranges": {
     "dn_bandwidth": [

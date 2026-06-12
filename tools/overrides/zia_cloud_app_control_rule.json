@@ -1,4 +1,22 @@
 {
+  "acknowledged_drops": [
+    "access_control",
+    "cbi_profile[].profile_seq",
+    "departments.name",
+    "device_groups.name",
+    "groups.name",
+    "id",
+    "labels.name",
+    "last_modified_by",
+    "last_modified_time",
+    "location_groups.name",
+    "locations.is_name_l10n_tag",
+    "locations.name",
+    "predefined",
+    "prompt_capture_enabled",
+    "tenancy_profile_ids.name",
+    "users.name"
+  ],
   "divide": {
     "size_quota": 1024
   },

@@ -1,4 +1,26 @@
 {
+  "acknowledged_drops": [
+    "access_control",
+    "capture_pcap",
+    "cbi_profile_id",
+    "device_groups.name",
+    "exclude_src_countries",
+    "groups.name",
+    "groups_and_departments_set",
+    "http_header_action_profiles",
+    "http_header_profiles",
+    "id",
+    "labels.name",
+    "last_modified_by",
+    "last_modified_time",
+    "location_groups.name",
+    "locations.is_name_l10n_tag",
+    "locations.name",
+    "predefined",
+    "source_ip_groups.name",
+    "users.name",
+    "users_and_groups_set"
+  ],
   "defaults": {
     "url_categories": [
       "ANY"

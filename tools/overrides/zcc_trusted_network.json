@@ -3,7 +3,8 @@
     "company_id",
     "created_by",
     "edited_by",
-    "guid"
+    "guid",
+    "id"
   ],
   "import_id": "{id}",
   "renames": {

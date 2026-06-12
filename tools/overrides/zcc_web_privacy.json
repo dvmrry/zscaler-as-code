@@ -1,4 +1,8 @@
 {
+  "acknowledged_drops": [
+    "id",
+    "name"
+  ],
   "import_id": "{id}",
   "key_field": "id"
 }

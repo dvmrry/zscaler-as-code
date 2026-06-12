@@ -1,4 +1,28 @@
 {
+  "acknowledged_drops": [
+    "adp_enabled",
+    "auto_app_protect_enabled",
+    "creation_time",
+    "extranet_enabled",
+    "hbr_enabled",
+    "id",
+    "microtenant_name",
+    "modified_by",
+    "modified_time",
+    "read_only",
+    "server_groups[].config_space",
+    "server_groups[].creation_time",
+    "server_groups[].description",
+    "server_groups[].dynamic_discovery",
+    "server_groups[].enabled",
+    "server_groups[].extranet_enabled",
+    "server_groups[].modified_by",
+    "server_groups[].modified_time",
+    "server_groups[].name",
+    "sticky_entity",
+    "sticky_group",
+    "zscaler_managed"
+  ],
   "drop_if_default": {
     "microtenant_id": "0",
     "policy_style": "NONE"
