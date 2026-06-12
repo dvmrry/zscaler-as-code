@@ -25,6 +25,11 @@ for fields where the provider schema stores a larger unit than the API
 returns and converts internally — e.g. ZIA `size_quota` is KB on the API
 but MB in config, so `"divide": {"size_quota": 1024}`; integer division,
 applied before `drop_if_default` so a converted 0 still drops),
+`merge_blocks` (list of block names whose API elements the provider's
+READ collapses into ONE block with merged list members even though the
+schema declares a plain list — the schema lies, the flatten tells the
+truth; verify in provider source before adding, e.g. zpa
+`server_groups`: N `{id,...}` API objects → `[{id: [all ids]}]`),
 `defaults` (field→literal: fill when the API omitted the field or
 returned it empty — for required-on-write fields where "unset means
 everything", e.g. `"defaults": {"url_categories": ["ANY"]}` on URL

@@ -1,3 +1,8 @@
 {
-  "import_id": "{id}"
+  "import_id": "{id}",
+  "merge_blocks": [
+    "app_connector_groups",
+    "applications",
+    "servers"
+  ]
 }

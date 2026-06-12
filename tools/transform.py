@@ -38,7 +38,7 @@ def slugify(text):
     return _SLUG_BAD.sub("_", text.lower()).strip("_")
 
 
-def filter_item(item, block, path, drops):
+def filter_item(item, block, path, drops, merge_blocks=frozenset()):
     """Keep only schema-input attrs and blocks, recursively.
 
     Computed-only and unknown keys are dropped and their paths recorded in
@@ -92,10 +92,28 @@ def filter_item(item, block, path, drops):
             else:
                 inner_path = child_path + "[]"
                 if isinstance(value, list):
+                    elems = [
+                        v for v in value
+                        if isinstance(v, dict) and not _is_null_object(v)
+                    ]
+                    if key in merge_blocks and len(elems) > 1:
+                        # Schema-lies-flatten-merges: the provider declares
+                        # a plain list block but its READ collapses all API
+                        # elements into ONE block with merged list members
+                        # (zpa server_groups/app_connector_groups/...,
+                        # verified in provider source). Mirror it: merge,
+                        # then keep the single-element LIST shape the
+                        # generated list(object) type expects.
+                        merged = _merge_block_elements(
+                            elems, inner_block, child_path, drops
+                        )
+                        out[key] = [
+                            filter_item(merged, inner_block, inner_path, drops)
+                        ]
+                        continue
                     out[key] = [
                         filter_item(v, inner_block, inner_path, drops)
-                        for v in value
-                        if isinstance(v, dict) and not _is_null_object(v)
+                        for v in elems
                     ]
                 elif isinstance(value, dict):
                     if _is_null_object(value):
@@ -449,7 +467,10 @@ def transform_items(raw_items, resource_type, override):
                 "duplicate derived key %r for %s; set a different key_field "
                 "in the override map" % (key, resource_type)
             )
-        filtered = filter_item(normalized, block, "", drops)
+        filtered = filter_item(
+            normalized, block, "", drops,
+            merge_blocks=frozenset(override.get("merge_blocks") or []),
+        )
         items[key] = coerce_item(filtered, block)
         originals[key] = normalized
     acknowledged = set(override.get("acknowledged_drops") or [])
