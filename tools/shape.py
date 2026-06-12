@@ -176,9 +176,33 @@ def diff_lines(before, after, tok, allow, path, lines):
         lines.append("  ~ %s: %s -> %s" % (path, b, a))
 
 
+_ADDRESS_BRACKET = re.compile(r"\[([^\]]*)\]")
+
+
 def _sanitize_address(address, tok):
-    return _ADDRESS_KEY.sub(
+    """Tokenize EVERY for_each/index bracket in a resource address.
+
+    Simple string keys (["finance"]) keep the quoted shape; anything
+    else — object for_each keys like [{"group":"Finance"}], unexpected
+    syntax — is data and gets tokenized WHOLE. Only bare integer
+    indexes pass through (count indexes carry no tenant data)."""
+    address = _ADDRESS_KEY.sub(
         lambda m: '["%s"]' % tok.token(m.group(1), prefix="k"), address)
+
+    def _bracket(m):
+        inner = m.group(1)
+        # after the pass above, quoted brackets hold only our k-tokens
+        if inner.isdigit() or re.match(r'^"k\d+"$', inner):
+            return m.group(0)
+        return "[%s]" % tok.token(inner, prefix="k")
+
+    sanitized = _ADDRESS_BRACKET.sub(_bracket, address)
+    # belt: a pathological key (e.g. "]" inside an object for_each value)
+    # can defeat bracket matching — if anything beyond address syntax
+    # survives, tokenize the WHOLE address rather than risk a fragment
+    if re.search(r'[^\w.\[\]"-]', sanitized):
+        return "<address %s>" % tok.token(address, prefix="k")
+    return sanitized
 
 
 def shape_plan(doc, tok, allow, only=None):
@@ -281,8 +305,18 @@ def _plan_data_regions(doc, allow):
         index = rc.get("index")
         if isinstance(index, str):
             secrets.add(index)
-        for m in _ADDRESS_KEY.finditer(rc.get("address") or ""):
+        elif isinstance(index, (dict, list)):
+            # object/tuple for_each keys carry tenant data in both keys
+            # and values — none of it is schema vocabulary
+            collect_strings(index, secrets, frozenset(), 0)
+        address = rc.get("address") or ""
+        for m in _ADDRESS_KEY.finditer(address):
             secrets.add(m.group(1))
+        for m in _ADDRESS_BRACKET.finditer(address):
+            inner = m.group(1)
+            if not inner.isdigit():
+                secrets.add(inner)
+                secrets.add(inner.strip('"'))
     for change in (doc.get("output_changes") or {}).values():
         collect_strings(change.get("before"), secrets, allow, -1)
         collect_strings(change.get("after"), secrets, allow, -1)

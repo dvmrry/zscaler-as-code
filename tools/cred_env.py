@@ -71,7 +71,11 @@ def resolve(environ, tenant):
     for name in STANDARD_VARS:
         names = candidate_names(name, tenant)
         values = [environ.get(n) for n in names]
-        present = [v for v in values if v is not None]
+        # set-but-EMPTY is missing: resolving '' would satisfy this layer
+        # and push the failure to the fetch layer's "missing required env
+        # var" — misleading when the var IS set, just blank (a common
+        # secret-injection slip in pipelines)
+        present = [v for v in values if v]
         if not present:
             continue
         out.append((name, present[0]))

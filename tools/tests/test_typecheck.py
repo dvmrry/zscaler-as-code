@@ -500,5 +500,31 @@ class MainTest(unittest.TestCase):
         self.assertNotEqual(result, 0)
 
 
+
+class UnreadableFileGateTest(unittest.TestCase):
+    def test_corrupt_config_fails_the_gate_on_stdout(self):
+        # writing only to stderr and exiting 0 once let a corrupted file
+        # print "type-check clean" in CI
+        import io, shutil, sys
+        from tools.typecheck import main
+        config_dir = os.path.join("config", "tmptypechktest")
+        shutil.rmtree(config_dir, ignore_errors=True)
+        os.makedirs(config_dir)
+        path = os.path.join(config_dir,
+                            "zpa_segment_group.auto.tfvars.json")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("{not json")
+        old_out, sys.stdout = sys.stdout, io.StringIO()
+        try:
+            code = main(["tmptypechktest"])
+            out = sys.stdout.getvalue()
+        finally:
+            sys.stdout = old_out
+            shutil.rmtree(config_dir, ignore_errors=True)
+        self.assertNotEqual(code, 0)
+        self.assertIn("unreadable", out)
+        self.assertNotIn("type-check clean", out)
+
+
 if __name__ == "__main__":
     unittest.main()

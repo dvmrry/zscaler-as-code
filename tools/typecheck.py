@@ -239,7 +239,14 @@ def main(argv=None):
         try:
             mismatches = check_config_file(rt, path)
         except Exception as exc:
-            sys.stderr.write("error reading %s: %s\n" % (path, exc))
+            # An unreadable file FAILS the gate — it must never count as
+            # clean. (Writing only to stderr and continuing once let a
+            # corrupted file print "type-check clean" with exit 0; CI
+            # surfaces stdout, stderr is easy to lose.)
+            line = ("%s: %s unreadable: %s — fix the file or re-run "
+                    "make transform" % (rt, path, exc))
+            sys.stdout.write(line + "\n")
+            all_mismatches.append(line)
             continue
         for item_key, field_path, expected, got_repr in mismatches:
             suggestion = suggest(expected, got_repr, field_path.split(".")[-1])

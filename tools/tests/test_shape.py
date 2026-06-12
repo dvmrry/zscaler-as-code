@@ -227,5 +227,41 @@ class SanitizeShapeTest(unittest.TestCase):
         self.assertEqual(out["order"], "n1")
 
 
+
+class ObjectForEachKeyTest(unittest.TestCase):
+    """Leak-hunt follow-up: object for_each keys put tenant data in the
+    ADDRESS and the INDEX — both must tokenize, and self_check must hold."""
+
+    def test_object_key_in_address_is_tokenized(self):
+        addr = ('module.rule.rule.this'
+                '[{"group": "Finance", "dept": "Accounting"}]')
+        doc = _plan([{
+            "address": addr, "type": "zpa_x", "name": "this",
+            "index": {"group": "Finance", "dept": "Accounting"},
+            "change": {"actions": ["update"], "before": {"name": "a"},
+                       "after": {"name": "b"}},
+        }])
+        text, secrets, kept = build_report(doc)
+        self.assertNotIn("Finance", text)
+        self.assertNotIn("Accounting", text)
+        self.assertIn("Finance", secrets)
+        self.assertTrue(self_check(text, secrets, kept))
+
+    def test_simple_keys_and_count_indexes_still_render(self):
+        from tools.shape import Tokenizer, _sanitize_address
+        tok = Tokenizer()
+        out = _sanitize_address('module.a.b.this["finance"]', tok)
+        self.assertNotIn("finance", out)
+        self.assertIn('["k1"]', out)
+        self.assertEqual(_sanitize_address("module.a.b.this[3]", Tokenizer()),
+                         "module.a.b.this[3]")
+
+    def test_pathological_bracket_tokenizes_whole_address(self):
+        from tools.shape import Tokenizer, _sanitize_address
+        out = _sanitize_address(
+            'module.a.this[{"k": "x]y_secret"}]', Tokenizer())
+        self.assertNotIn("secret", out)
+
+
 if __name__ == "__main__":
     unittest.main()

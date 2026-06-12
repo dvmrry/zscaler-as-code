@@ -3,7 +3,12 @@
 For agents and fresh machines without terraform: downloads the zip for
 the detected (or overridden) platform, verifies its SHA256 against the
 published SHA256SUMS file, and extracts the binary to the destination
-directory. Proxy comes from HTTPS_PROXY (urllib default behavior);
+directory. Trust anchor (accepted risk): the SHA256SUMS file itself is
+fetched over TLS from releases.hashicorp.com and is NOT GPG-verified —
+stdlib-only Python cannot check the .sig. The hash check protects
+against corrupt/truncated downloads and mirror tampering, not against
+a compromise of the release host itself; pin-and-commit the binary (or
+verify the GPG signature out of band) if that is in your threat model. Proxy comes from HTTPS_PROXY (urllib default behavior);
 corporate TLS inspection is handled the same way as the fetcher —
 point REQUESTS_CA_BUNDLE/SSL_CERT_FILE at the exported proxy root.
 

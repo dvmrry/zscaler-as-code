@@ -222,8 +222,11 @@ def main(argv=None):
         # Advisory only — the drift PR proceeds without attribution.
         # SystemExit included: missing-credential helpers in the fetch
         # plumbing raise it, and it must not escape this contract.
+        # a multi-line message (fetch hints carry \n) would break the
+        # italic span and strand the hint as stray markdown
         sys.stdout.write(
-            "## Who changed it\n\n_Audit attribution unavailable: %s_\n" % exc)
+            "## Who changed it\n\n_Audit attribution unavailable: %s_\n"
+            % str(exc).replace("\n", " "))
     return 0
 
 

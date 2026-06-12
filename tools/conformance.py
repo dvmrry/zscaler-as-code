@@ -412,6 +412,12 @@ def main(argv=None):
         argv = sys.argv[1:]
     failures = 0
     types = generated_types()
+    if not types:
+        # checking nothing is never success — a broken registry must not
+        # render as "0 failures" green
+        sys.stdout.write("error: registry has no generated types — check "
+                         "tools/registry.json\n")
+        return 1
     for rt in types:
         ok, detail = conformance_check(rt)
         if ok:

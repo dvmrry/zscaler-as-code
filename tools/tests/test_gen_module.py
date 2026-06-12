@@ -334,5 +334,67 @@ class AllComputedBlockTest(unittest.TestCase):
             render_variables("zpa_fake", self.FAKE)
 
 
+
+class SampleValueObjectTest(unittest.TestCase):
+    def test_list_of_object_samples_object_members_not_nested_list(self):
+        # the [[]] shape failed `terraform test` with a cryptic type error
+        from tools.gen_module import _sample_value
+        self.assertEqual(
+            _sample_value(["list", ["object", {"key": "string",
+                                               "value": "string"}]]),
+            [{"key": "example", "value": "example"}])
+        self.assertEqual(
+            _sample_value(["set", ["object", {"name": "string"}]]),
+            [{"name": "example"}])
+
+
+class PinsNoVersionTest(unittest.TestCase):
+    def test_pins_file_without_version_lines_fails_loud(self):
+        import tempfile
+        from tools.gen_module import _load_provider_pins
+        with tempfile.NamedTemporaryFile("w", suffix=".tf", delete=False,
+                                         encoding="utf-8") as f:
+            f.write('zia = { source = "zscaler/zia" }')
+            path = f.name
+        try:
+            with self.assertRaises(ValueError) as ctx:
+                _load_provider_pins(path)
+            self.assertIn("no versioned providers", str(ctx.exception))
+        finally:
+            os.unlink(path)
+
+
+class UnknownNestingModeTest(unittest.TestCase):
+    def test_unknown_nesting_mode_fails_loud(self):
+        from tools.gen_module import _block_input_type
+        with self.assertRaises(ValueError) as ctx:
+            _block_input_type({"nesting_mode": "group", "block": {
+                "attributes": {"id": {"type": "string",
+                                      "optional": True}}}}, 2)
+        self.assertIn("unsupported nesting_mode", str(ctx.exception))
+
+
+class SampleGoldenTest(unittest.TestCase):
+    """render_sample output must match the COMMITTED module fixtures for
+    every generated type — the modules tree is already CHECK-gated, so
+    this pins sample generation without new fixture machinery (and runs
+    everywhere: samples are JSON, no terraform fmt involved)."""
+
+    def test_samples_match_committed_modules(self):
+        from tools.gen_module import render_sample
+        from tools.registry import generated_types
+        from tools.tfschema import load_resource
+        from tools.transform import load_override
+        for rt in generated_types():
+            committed = os.path.join("modules", rt, "tests",
+                                     "sample.auto.tfvars.json")
+            self.assertTrue(os.path.exists(committed), committed)
+            with open(committed, encoding="utf-8") as f:
+                want = f.read()
+            got = render_sample(rt, load_resource(rt),
+                                load_override(rt).get("sample"))
+            self.assertEqual(got, want, rt)
+
+
 if __name__ == "__main__":
     unittest.main()

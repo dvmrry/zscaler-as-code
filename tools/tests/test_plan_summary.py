@@ -5,7 +5,7 @@ from tools.plan_summary import summarize
 
 
 def plan(*changes):
-    return {"resource_changes": [{"change": c} for c in changes]}
+    return {"format_version": "1.2", "resource_changes": [{"change": c} for c in changes]}
 
 
 class SummarizeTest(unittest.TestCase):
@@ -32,7 +32,25 @@ class SummarizeTest(unittest.TestCase):
         self.assertEqual(destroys, 1)
 
     def test_empty_plan(self):
-        row, destroys = summarize({}, "t/r")
+        row, destroys = summarize({"format_version": "1.2"}, "t/r")
+        self.assertEqual(row, "| t/r | 0 | 0 | 0 | 0 |")
+        self.assertEqual(destroys, 0)
+
+
+
+class FormatVersionGuardTest(unittest.TestCase):
+    """A version-skewed `terraform show` must error, never render an
+    all-zeros approval row (the apply/assert-clean recipes already guard
+    this; the reviewer-facing summary must not be the layer that lies)."""
+
+    def test_non_plan_json_raises(self):
+        from tools.plan_summary import summarize
+        with self.assertRaises(ValueError):
+            summarize({"unexpected": "document"}, "t/r")
+
+    def test_plan_with_format_version_passes(self):
+        from tools.plan_summary import summarize
+        row, destroys = summarize({"format_version": "1.2"}, "t/r")
         self.assertEqual(row, "| t/r | 0 | 0 | 0 | 0 |")
         self.assertEqual(destroys, 0)
 

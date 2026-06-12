@@ -146,16 +146,18 @@ def check_list_duplicates(values, rt, where, report, is_set, is_url_field):
     a semantic warning there."""
     seen = set()
     for v in values:
-        if not isinstance(v, str):
-            continue
-        if v in seen:
+        try:
+            dup = v in seen
+            seen.add(v)
+        except TypeError:
+            continue  # unhashable (dict block members) — not set-typed data
+        if dup:
             if is_set:
                 report.error(rt, where, "duplicate entry %r in a set" % v,
                              "remove it (terraform dedupes sets -> perma-drift)")
             elif is_url_field:
                 report.warn(rt, where, "duplicate entry %r" % v,
                             "remove it if unintended")
-        seen.add(v)
 
 
 def check_ranges(item, key, rt, override, report):

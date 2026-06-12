@@ -129,5 +129,30 @@ class MainContractTest(unittest.TestCase):
         self.assertIn("Audit attribution unavailable", out)
 
 
+
+class MultilineErrorRenderingTest(unittest.TestCase):
+    def test_newlines_in_failure_message_collapse_to_one_line(self):
+        # fetch-plumbing hints carry \n; a raw newline breaks the italic
+        # span and strands the hint as stray markdown in the PR body
+        import io, sys
+        import tools.audit as audit_mod
+
+        def boom(environ, hours):
+            raise SystemExit("cannot reach host\nhint: set REQUESTS_CA_BUNDLE")
+
+        old_fetch, audit_mod.fetch_audit_csv = audit_mod.fetch_audit_csv, boom
+        old_out, sys.stdout = sys.stdout, io.StringIO()
+        try:
+            code = audit_mod.main(["t", "24", "zia_url_filtering_rules"])
+            body = sys.stdout.getvalue()
+        finally:
+            audit_mod.fetch_audit_csv = old_fetch
+            sys.stdout = old_out
+        self.assertEqual(code, 0)
+        attribution = [l for l in body.splitlines() if "unavailable" in l]
+        self.assertEqual(len(attribution), 1)
+        self.assertIn("REQUESTS_CA_BUNDLE", attribution[0])
+
+
 if __name__ == "__main__":
     unittest.main()
