@@ -3,9 +3,11 @@
 # first apply (state-only import adoption) must run on a pipeline agent,
 # because plan/apply with the azurerm backend needs the state container.
 #
-# Everything stateless still happens on a workstation per the RUNBOOK
+# Everything stateless happens on a workstation per the RUNBOOK
 # (fetch -> transform -> typecheck/lint -> commit config/imports/envs to
-# the private repo); this pipeline does ONLY the state-touching half:
+# the private repo) — OR in the optional agent-side refresh stage below
+# when workstations can't run fetch. This pipeline's core is the
+# state-touching half:
 #   stage imports -> plan -> PROVE imports-only -> human approval -> apply
 #
 # assert-clean runs BEFORE the approval gate: the adoption signature is
@@ -42,6 +44,60 @@ variables:
       value: RESOURCE=${{ parameters.resource }}
     ${{ if eq(parameters.resource, 'all') }}:
       value: ""
+
+# ---------------------------------------------------------------------------
+# OPTIONAL refresh stage — generate config ON THE AGENT (for shops where
+# workstations can't run fetch: no creds, no proxy path). If you enable
+# this, the commit-back is NOT optional: the repo is the system of
+# record, and a bootstrap that plans from uncommitted config leaves no
+# reviewable record of what was imported — and the next drift run
+# reports your own missing commit as drift. This mirrors the drift
+# pipeline's backfill-branch pattern (same permissions: build identity
+# needs "Contribute" + "Create branch"; PR creation needs "Contribute
+# to pull requests"). The plan stage then runs from THIS run's
+# workspace; the PR is the durable record a human merges.
+#
+#   - stage: refresh
+#     jobs:
+#       - job: generate
+#         workspace:
+#           clean: all
+#         steps:
+#           - checkout: self
+#             persistCredentials: true # branch push uses the build token
+#           - script: make fetch TENANT=${{ parameters.tenant }} $(SCOPE)
+#             displayName: Fetch (creds from the variable group)
+#             env:
+#               ZSCALER_CLIENT_ID: $(ZSCALER_CLIENT_ID)
+#               ZSCALER_CLIENT_SECRET: $(ZSCALER_CLIENT_SECRET)
+#               ZSCALER_VANITY_DOMAIN: $(ZSCALER_VANITY_DOMAIN)
+#               ZSCALER_CLOUD: $(ZSCALER_CLOUD)
+#           - script: DROPS_CHECK=1 make transform IN=pulls/${{ parameters.tenant }} TENANT=${{ parameters.tenant }}
+#             displayName: Transform (red = new API surface; triage, commit, re-run)
+#           - script: |
+#               make lint TENANT=${{ parameters.tenant }}
+#               make typecheck TENANT=${{ parameters.tenant }}
+#             displayName: Inline gates (this config never sees a PR build first)
+#           - script: |
+#               if [ -z "$(git status --porcelain config/ imports/)" ]; then
+#                 echo "config unchanged -- nothing to commit"; exit 0
+#               fi
+#               branch="bootstrap/${{ parameters.tenant }}/$(date -u +%Y%m%dT%H%M)"
+#               git checkout -b "$branch"
+#               git add config/ imports/
+#               git -c user.name=bootstrap-bot -c user.email=bootstrap-bot@invalid \
+#                 commit -m "bootstrap refresh: ${{ parameters.tenant }}"
+#               git push -u origin "$branch"
+#               az repos pr create --source-branch "$branch" --target-branch main \
+#                 --title "bootstrap refresh: ${{ parameters.tenant }}" \
+#                 --description "Agent-generated config/imports backing this bootstrap run." \
+#                 --only-show-errors > /dev/null
+#             displayName: Commit-back (the durable record of what was imported)
+#             env:
+#               AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
+#           # pulls/ contains REAL tenant data -- never publish it as a
+#           # pipeline artifact; it dies with the workspace by design.
+# ---------------------------------------------------------------------------
 
 stages:
   - stage: plan
