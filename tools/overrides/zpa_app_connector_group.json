@@ -1,1 +1,13 @@
-{"import_id": "{id}"}
+{
+  "import_id": "{id}",
+  "ranges": {
+    "latitude": [
+      -90,
+      90
+    ],
+    "longitude": [
+      -180,
+      180
+    ]
+  }
+}

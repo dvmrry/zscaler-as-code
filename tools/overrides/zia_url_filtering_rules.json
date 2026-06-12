@@ -13,6 +13,10 @@
   },
   "import_id": "{id}",
   "ranges": {
+    "rank": [
+      0,
+      7
+    ],
     "size_quota": [
       10,
       100000
@@ -31,5 +35,8 @@
     {
       "predefined": true
     }
-  ]
+  ],
+  "strip_prefix": {
+    "source_countries": "COUNTRY_"
+  }
 }

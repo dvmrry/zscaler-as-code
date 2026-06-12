@@ -127,6 +127,16 @@ class RangesTest(unittest.TestCase):
         check_ranges({"size_quota": 100001}, "k", "rt", self.OV, r)
         self.assertTrue(any("provider-validated range" in e for e in r.errors))
 
+    def test_string_numeric_ranges_checked(self):
+        # zpa latitude/longitude are schema STRINGS holding numbers
+        ov = {"ranges": {"latitude": [-90, 90]}}
+        r = report()
+        check_ranges({"latitude": "137.2"}, "k", "rt", ov, r)
+        self.assertEqual(len(r.errors), 1)
+        r2 = report()
+        check_ranges({"latitude": "45.5"}, "k", "rt", ov, r2)
+        self.assertEqual(r2.errors, [])
+
     def test_absent_field_passes(self):
         r = report()
         check_ranges({}, "k", "rt", self.OV, r)

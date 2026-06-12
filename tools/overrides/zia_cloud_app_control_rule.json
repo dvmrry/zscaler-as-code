@@ -20,5 +20,13 @@
       15,
       600
     ]
-  }
+  },
+  "skip_if": [
+    {
+      "default_rule": true
+    },
+    {
+      "predefined": true
+    }
+  ]
 }

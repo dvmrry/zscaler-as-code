@@ -1,5 +1,11 @@
 # Generator overrides
 
+Most entries below encode a rule mined from the pinned provider's Go
+source. `make mine` scans that source and reports any quirk no override
+covers — run it after provider bumps and before adopting a new resource;
+`tools/MINING.md` is the verification procedure for its findings (and
+the full methodology, including the lanes no tool automates).
+
 Run `make typecheck TENANT=<label>` after every `make transform` to catch type
 mismatches before Terraform does. Each output line ends with a one-line
 remediation — follow that suggestion exactly; it is the authoritative decision
@@ -25,7 +31,13 @@ for fields where the provider schema stores a larger unit than the API
 returns and converts internally — e.g. ZIA `size_quota` is KB on the API
 but MB in config, so `"divide": {"size_quota": 1024}`; integer division,
 applied before `drop_if_default` so a converted 0 still drops),
-`merge_blocks` (list of block names whose API elements the provider's
+`invert_bool` (list of fields whose API booleans are INVERTED — ZCC
+failopen speaks 0=enabled; coerce-then-flip, mined from the provider's
+boolToInverted helpers), `value_map` (field→{api_value: config_value}
+bridges for string-enum APIs behind bool/other schemas, e.g.
+policy_style NONE/DUAL_POLICY_EVAL→bool), `strip_prefix`
+(field→prefix the provider's read strips and its write re-adds, e.g.
+source_countries COUNTRY_), `merge_blocks` (list of block names whose API elements the provider's
 READ collapses into ONE block with merged list members even though the
 schema declares a plain list — the schema lies, the flatten tells the
 truth; verify in provider source before adding, e.g. zpa

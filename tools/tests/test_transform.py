@@ -721,6 +721,68 @@ class PredefinedUrlFilteringSkipTest(unittest.TestCase):
         self.assertEqual(sorted(items), ["custom_deny"])
 
 
+class QuirkClosureTest(unittest.TestCase):
+    """Survey-verified gap closures (provider-source-mined), one e2e each."""
+
+    def test_failopen_inverted_bools(self):
+        # ZCC failopen API: 0 = ENABLED (provider boolToInvertedInt).
+        from tools.transform import load_override, transform_items
+
+        raw = [{"id": 9, "enableFailOpen": 0, "active": "0",
+                "enableCaptivePortalDetection": 1}]
+        ov = load_override("zcc_failopen_policy")
+        items, _, _ = transform_items(raw, "zcc_failopen_policy", ov)
+        it = items["9"]
+        self.assertIs(it["enable_fail_open"], True)
+        self.assertIs(it["active"], True)
+        self.assertIs(it["enable_captive_portal_detection"], False)
+
+    def test_policy_access_rule_drops_and_merges(self):
+        from tools.transform import load_override, transform_items
+
+        raw = [{"id": "r1", "name": "Rule", "priority": "3",
+                "ruleOrder": "3", "microtenantId": "0",
+                "appServerGroups": [{"id": "s1"}, {"id": "s2"}]}]
+        ov = load_override("zpa_policy_access_rule")
+        items, _, _ = transform_items(raw, "zpa_policy_access_rule", ov)
+        it = items["rule"]
+        self.assertNotIn("priority", it)
+        self.assertNotIn("rule_order", it)
+        self.assertNotIn("microtenant_id", it)
+        self.assertEqual(it["app_server_groups"], [{"id": ["s1", "s2"]}])
+
+    def test_policy_style_value_map(self):
+        from tools.transform import load_override, transform_items
+
+        raw = [{"id": "s", "name": "Seg", "domainNames": ["a.test"],
+                "policyStyle": "DUAL_POLICY_EVAL"}]
+        ov = load_override("zpa_application_segment")
+        items, _, _ = transform_items(raw, "zpa_application_segment", ov)
+        self.assertIs(items["seg"]["policy_style"], True)
+
+    def test_source_countries_prefix_stripped(self):
+        from tools.transform import load_override, transform_items
+
+        raw = [{"id": 1, "name": "R", "order": 1, "protocols": ["ANY_RULE"],
+                "sourceCountries": ["COUNTRY_US", "COUNTRY_CA"]}]
+        ov = load_override("zia_url_filtering_rules")
+        items, _, _ = transform_items(raw, "zia_url_filtering_rules", ov)
+        self.assertEqual(items["r"]["source_countries"], ["US", "CA"])
+
+    def test_predefined_cloud_app_rules_skipped(self):
+        from tools.transform import load_override, transform_items
+
+        raw = [
+            {"id": 1, "type": "STREAMING_MEDIA", "name": "One Click",
+             "order": 1, "predefined": True},
+            {"id": 2, "type": "STREAMING_MEDIA", "name": "Custom",
+             "order": 2, "predefined": False},
+        ]
+        ov = load_override("zia_cloud_app_control_rule")
+        items, _, _ = transform_items(raw, "zia_cloud_app_control_rule", ov)
+        self.assertEqual(sorted(items), ["streaming_media_custom"])
+
+
 class MergeBlocksTest(unittest.TestCase):
     """The schema-lies-flatten-merges class: zpa declares plain list
     blocks but its READ collapses all API elements into ONE block with
@@ -763,17 +825,17 @@ class MergeBlocksTest(unittest.TestCase):
         self.assertEqual(items["sg"]["app_connector_groups"], [{"id": ["c1", "c2"]}])
         self.assertEqual(items["sg"]["applications"], [{"id": ["a1", "a2"]}])
 
-    def test_segment_group_applications_NOT_merged(self):
-        # zpa_segment_group's flatten is per-item — N blocks is correct
-        # there; merging would be the opposite bug.
+    def test_segment_group_applications_dropped(self):
+        # Survey-verified: segment_group applications is a server-computed
+        # BACK-reference (membership is managed from the segment side);
+        # carrying it invites phantom diffs — dropped via override.
         from tools.transform import load_override, transform_items
 
         raw = [{"id": "x", "name": "G", "applications": [
             {"id": "a1"}, {"id": "a2"}]}]
         ov = load_override("zpa_segment_group")
         items, _, _ = transform_items(raw, "zpa_segment_group", ov)
-        self.assertEqual(
-            items["g"]["applications"], [{"id": "a1"}, {"id": "a2"}])
+        self.assertNotIn("applications", items["g"])
 
 
 class MovedBlocksTest(unittest.TestCase):

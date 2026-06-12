@@ -5,5 +5,11 @@
   "import_id": "{id}",
   "merge_blocks": [
     "server_groups"
-  ]
+  ],
+  "value_map": {
+    "policy_style": {
+      "DUAL_POLICY_EVAL": true,
+      "NONE": false
+    }
+  }
 }

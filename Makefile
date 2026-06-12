@@ -8,7 +8,7 @@ TF     ?= terraform
 # the python side expands those.
 SCOPE_GLOB = $(if $(RESOURCE),$(if $(word 2,$(RESOURCE)),$(RESOURCE),$(if $(filter zia zpa zcc,$(RESOURCE)),$(RESOURCE)_*,$(RESOURCE))),*)
 
-.PHONY: help env install-tf bump-check plan-report clean clean-plans unlock forget stage-imports unstage-imports lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck conformance
+.PHONY: help env install-tf bump-check mine plan-report clean clean-plans unlock forget stage-imports unstage-imports lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck conformance
 
 # Company/deployment extensions: a private repo adds its own targets and
 # variable overrides in local.mk — NEVER by editing this file, which is
@@ -32,6 +32,9 @@ install-tf: ## Download+checksum-verify a pinned terraform (VERSION=<v> [DEST=bi
 
 bump-check: ## Check pinned providers + terraform for newer releases (tool exits 4 on updates; make flattens to 2 — a red scheduled run IS the notification)
 	TF="$(TF)" $(PYTHON) -m tools.bump_check
+
+mine: ## Mine pinned provider Go source for quirks vs override coverage (tool exits 4 on NEW missing; UPDATE_BASELINE=1 blesses current findings; needs network — see tools/MINING.md)
+	$(PYTHON) -m tools.mine
 
 test: ## Run Python unit tests with the local interpreter
 	$(PYTHON) -m unittest discover -s tools/tests -t . -v

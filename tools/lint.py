@@ -151,6 +151,13 @@ def check_list_duplicates(values, rt, where, report, is_set, is_url_field):
 def check_ranges(item, key, rt, override, report):
     for field, bounds in sorted((override.get("ranges") or {}).items()):
         value = item.get(field)
+        if isinstance(value, str):
+            # some range-validated fields are schema STRINGS holding
+            # numbers (zpa latitude/longitude) — parse, else skip
+            try:
+                value = float(value)
+            except ValueError:
+                continue
         if isinstance(value, bool) or not isinstance(value, (int, float)):
             continue
         if not (bounds[0] <= value <= bounds[1]):
