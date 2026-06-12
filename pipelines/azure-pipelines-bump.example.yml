@@ -81,6 +81,12 @@ Follow RUNBOOK 'Provider Bumps': edit tools/schema-extract/main.tf, make schemas
     condition: eq(variables.UPDATES, 'true')
     env:
       AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
+      # az phones home on EXIT (telemetry/update check) — on
+      # egress-restricted agents that outbound call blocks forever AFTER
+      # the real operation succeeded (field-hit: a step hung post-success
+      # until the run was canceled). Kill the exit path:
+      AZURE_CORE_COLLECT_TELEMETRY: "false"
+      AZURE_CORE_DISABLE_PROGRESS_BAR: "true"
 
   # Upstream early warning: other operators hit provider problems before
   # we do (the signingCertId class sat answered in the issue tracker for
