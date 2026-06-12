@@ -721,6 +721,61 @@ class PredefinedUrlFilteringSkipTest(unittest.TestCase):
         self.assertEqual(sorted(items), ["custom_deny"])
 
 
+class MergeBlocksTest(unittest.TestCase):
+    """The schema-lies-flatten-merges class: zpa declares plain list
+    blocks but its READ collapses all API elements into ONE block with
+    merged id sets (provider source, v4.4.4). Field-hit: a segment with
+    2+ server groups showed phantom diffs at import; single-group
+    segments matched by accident."""
+
+    def test_multi_server_group_segment_merges_to_one_block(self):
+        from tools.transform import load_override, transform_items
+
+        raw = [{
+            "id": "seg1", "name": "Multi", "domainNames": ["a.test"],
+            "serverGroups": [
+                {"id": "g111", "name": "one"},
+                {"id": "g222", "name": "two"},
+            ],
+        }]
+        ov = load_override("zpa_application_segment")
+        items, _, _ = transform_items(raw, "zpa_application_segment", ov)
+        self.assertEqual(
+            items["multi"]["server_groups"], [{"id": ["g111", "g222"]}])
+
+    def test_single_group_shape_unchanged(self):
+        from tools.transform import load_override, transform_items
+
+        raw = [{"id": "s", "name": "One", "domainNames": ["a.test"],
+                "serverGroups": [{"id": "g111"}]}]
+        ov = load_override("zpa_application_segment")
+        items, _, _ = transform_items(raw, "zpa_application_segment", ov)
+        self.assertEqual(items["one"]["server_groups"], [{"id": ["g111"]}])
+
+    def test_server_group_connector_groups_merge(self):
+        from tools.transform import load_override, transform_items
+
+        raw = [{"id": "sg", "name": "SG", "appConnectorGroups": [
+            {"id": "c1"}, {"id": "c2"}], "applications": [
+            {"id": "a1"}, {"id": "a2"}]}]
+        ov = load_override("zpa_server_group")
+        items, _, _ = transform_items(raw, "zpa_server_group", ov)
+        self.assertEqual(items["sg"]["app_connector_groups"], [{"id": ["c1", "c2"]}])
+        self.assertEqual(items["sg"]["applications"], [{"id": ["a1", "a2"]}])
+
+    def test_segment_group_applications_NOT_merged(self):
+        # zpa_segment_group's flatten is per-item — N blocks is correct
+        # there; merging would be the opposite bug.
+        from tools.transform import load_override, transform_items
+
+        raw = [{"id": "x", "name": "G", "applications": [
+            {"id": "a1"}, {"id": "a2"}]}]
+        ov = load_override("zpa_segment_group")
+        items, _, _ = transform_items(raw, "zpa_segment_group", ov)
+        self.assertEqual(
+            items["g"]["applications"], [{"id": "a1"}, {"id": "a2"}])
+
+
 class MovedBlocksTest(unittest.TestCase):
     OLD = (
         'import {\n'

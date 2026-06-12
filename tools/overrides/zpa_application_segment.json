@@ -1,4 +1,9 @@
 {
+  "drop_if_default": {
+    "policy_style": "NONE"
+  },
   "import_id": "{id}",
-  "drop_if_default": {"policy_style": "NONE"}
+  "merge_blocks": [
+    "server_groups"
+  ]
 }
