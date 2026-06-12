@@ -283,7 +283,9 @@ assert-clean: ## Exit 0 only when every saved plan is no-op (imports allowed) �
 		rt=$$(basename $$d); t=$$(basename $$(dirname $$d)); \
 		checked=$$((checked+1)); \
 		raw=$$($(TF) -chdir=$$d show -json tfplan); \
-		changes=$$(printf '%s' "$$raw" | $(PYTHON) -c "import json,sys; p=json.load(sys.stdin); rc=p.get('resource_changes'); sys.exit(1) if rc is None else print(sum(1 for r in rc if set((r.get('change') or {}).get('actions') or []) - set(['no-op'])))"); \
+		changes=$$(printf '%s' "$$raw" | $(PYTHON) -c "import json,sys; p=json.load(sys.stdin); sys.exit(2) if 'format_version' not in p else print(sum(1 for r in (p.get('resource_changes') or []) if set((r.get('change') or {}).get('actions') or []) - set(['no-op'])))") || { \
+			echo "error: $$t/$$rt: terraform show output is not plan JSON (terraform version skew between agents?) — re-run the plan stage"; \
+			exit 1; }; \
 		if [ "$$changes" != "0" ]; then \
 			echo "NOT CLEAN: $$t/$$rt plan contains $$changes change(s) beyond imports"; \
 			dirty=$$((dirty+1)); fi; \
@@ -325,7 +327,9 @@ apply: ## Apply ONLY saved plans from 'make plan SAVE=1' ([TENANT=<label>] [RESO
 			exit 1; fi; \
 		$(TF) -chdir=$$d init -input=false $(if $(BACKEND_CONFIG),-reconfigure -backend-config="$(abspath $(BACKEND_CONFIG))" -backend-config="key=$$t/$$rt.tfstate") > /dev/null; \
 		raw=$$($(TF) -chdir=$$d show -json tfplan); \
-		destroys=$$(printf '%s' "$$raw" | $(PYTHON) -c "import json,sys; p=json.load(sys.stdin); rc=p.get('resource_changes'); sys.exit(1) if rc is None else print(sum(1 for r in rc if 'delete' in ((r.get('change') or {}).get('actions') or [])))"); \
+		destroys=$$(printf '%s' "$$raw" | $(PYTHON) -c "import json,sys; p=json.load(sys.stdin); sys.exit(2) if 'format_version' not in p else print(sum(1 for r in (p.get('resource_changes') or []) if 'delete' in ((r.get('change') or {}).get('actions') or [])))") || { \
+			echo "error: $$t/$$rt: terraform show output is not plan JSON (terraform version skew between the plan and apply agents?) — re-run the plan stage on a matching agent"; \
+			exit 1; }; \
 		if [ "$$destroys" != "0" ] && [ -z "$(ALLOW_DESTROY)" ]; then \
 			echo "error: $$t/$$rt saved plan destroys (or replaces) $$destroys resource(s) — refused."; \
 			echo "Review that plan; if the destroys are intended, re-run with ALLOW_DESTROY=1."; \

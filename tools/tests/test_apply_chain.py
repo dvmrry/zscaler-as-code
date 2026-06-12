@@ -112,6 +112,41 @@ class ApplyChainTest(unittest.TestCase):
         self.assertIn("BACKEND_CONFIG", out)
         self.assertTrue(os.path.exists(self.tfplan))
 
+    def test_empty_plan_applies_as_noop(self):
+        # Field bug: terraform legitimately OMITS resource_changes when a
+        # plan is empty; the malformed-output gate misread that as
+        # malformed and died SILENTLY. Empty plans must pass the guard
+        # and apply (an instant no-op).
+        self._plan_save()
+        log = os.path.join(self.config_dir, "applied.log")
+        rc, out = _run(
+            ["make", "apply", "TENANT=" + TENANT, "TF=" + FAKE_TF],
+            {"FAKE_TF_EMPTY": "1", "FAKE_TF_LOG": log},
+        )
+        self.assertEqual(rc, 0, out)
+        with open(log, encoding="utf-8") as f:
+            self.assertIn("fake_rt", f.read())
+
+    def test_empty_plan_is_assert_clean(self):
+        self._plan_save()
+        rc, out = _run(
+            ["make", "assert-clean", "TENANT=" + TENANT, "TF=" + FAKE_TF],
+            {"FAKE_TF_EMPTY": "1"},
+        )
+        self.assertEqual(rc, 0, out)
+
+    def test_malformed_show_output_aborts_loudly(self):
+        # The gate still rejects non-plan JSON — and must SAY SO (the
+        # silent sys.exit was the second half of the field bug).
+        self._plan_save()
+        rc, out = _run(
+            ["make", "apply", "TENANT=" + TENANT, "TF=" + FAKE_TF],
+            {"FAKE_TF_NORC": "1"},
+        )
+        self.assertNotEqual(rc, 0)
+        self.assertIn("not plan JSON", out)
+        self.assertIn("version skew", out)
+
     def test_assert_clean_passes_on_noop_and_import_only_plans(self):
         self._plan_save()
         rc, out = _run(
