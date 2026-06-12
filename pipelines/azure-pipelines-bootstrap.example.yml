@@ -49,6 +49,11 @@ stages:
       - job: plan
         pool:
           vmImage: ubuntu-latest
+        # Fresh workspace EVERY run — the structural fix for stale-tfplan
+        # contamination on reused self-hosted agents (make clean-plans is
+        # the in-band layer; this is the platform layer).
+        workspace:
+          clean: all
         steps:
           - checkout: self
           - script: |
@@ -85,6 +90,8 @@ stages:
       - deployment: apply
         pool:
           vmImage: ubuntu-latest
+        workspace:
+          clean: all
         # Approvals + exclusive lock live on this environment. The reviewer
         # reads the plan summary from the plan stage: expect
         # "N to import, 0 to add, 0 to change, 0 to destroy".

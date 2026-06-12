@@ -26,5 +26,10 @@
     "protocols": [
       "ANY_RULE"
     ]
-  }
+  },
+  "skip_if": [
+    {
+      "predefined": true
+    }
+  ]
 }

@@ -33,6 +33,14 @@ Notes that apply to every platform:
   other refs (reads ADO/GHA/Bitbucket ref vars, falls back to the local
   git branch; `MAIN_BRANCH=` overrides the name, `ALLOW_NON_MAIN=1` is
   the deliberate escape hatch). Only merged config gets applied.
+- **Examples are templates, not live pipelines — re-sync after pulling.**
+  Fixes landing in these example files do NOT propagate to the operative
+  pipeline definitions adapted from them (field-hit twice: a scoped run
+  applied stale out-of-scope plans because the live yaml predated the
+  clean-plans and scoped-apply fixes). After updating the repo, diff your
+  operative yamls against the current examples. On ADO self-hosted
+  agents, also set `workspace: clean: all` on plan/apply jobs — a fresh
+  workspace per run kills the stale-artifact class at the platform layer.
 - **Stale-plan hygiene on reused agents**: self-hosted workspaces
   persist between runs, so a cancelled run's tfplans would ride into
   the next apply (apply's scope IS the artifacts). `plan-changed`

@@ -701,6 +701,26 @@ class NullObjectStubTest(unittest.TestCase):
         self.assertFalse(_is_null_object({"id": 0, "enabled": False}))
 
 
+class PredefinedUrlFilteringSkipTest(unittest.TestCase):
+    def test_one_click_url_rules_skipped(self):
+        # One Click provisions service-managed URL FILTERING rules too
+        # (not just SSL): Zscaler re-asserts their positions, so managing
+        # them fights the service — order churns on every read. Same skip
+        # as ssl_inspection, via the real override file.
+        from tools.transform import load_override, transform_items
+
+        raw = [
+            {"id": 1, "name": "Office 365 One Click Rule", "order": 1,
+             "predefined": True, "protocols": ["ANY_RULE"]},
+            {"id": 2, "name": "Custom Deny", "order": 2,
+             "predefined": False, "protocols": ["ANY_RULE"]},
+        ]
+        ov = load_override("zia_url_filtering_rules")
+        items, originals, _ = transform_items(
+            raw, "zia_url_filtering_rules", ov)
+        self.assertEqual(sorted(items), ["custom_deny"])
+
+
 class MovedBlocksTest(unittest.TestCase):
     OLD = (
         'import {\n'
