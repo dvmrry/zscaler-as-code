@@ -273,27 +273,71 @@ def check_category_shadowing(items, rt, report):
     (SSL bypass lists, filtering rules, ...) silently stop applying to
     it. Identical entries in two categories are fine (multi-membership
     is legal); only specificity differences shadow.
+
+    Scaled for real tenants (field-hit: a single category carried 7500+
+    entries and the naive pairwise scan took minutes and emitted
+    thousands of lines): each entry checks only its ANCESTORS via an
+    index — O(n * depth) — and findings are AGGREGATED to one warning
+    per (specific category, broad category) pair with a count and an
+    example. LINT_SHADOWING_VERBOSE=1 restores the per-pair lines.
     """
-    entries = []  # (host, path, raw, category_key, field)
+    index = {}
+    entries = []
     for key in sorted(items):
         for field in URL_ENTRY_FIELDS:
             for raw in items[key].get(field) or []:
                 if isinstance(raw, str) and raw:
                     host, path = _split_entry(raw)
                     entries.append((host, path, raw, key, field))
-    for sh, sp, sraw, skey, sfield in entries:
-        for bh, bp, braw, bkey, bfield in entries:
-            if skey == bkey:
-                continue
-            if _shadows((sh, sp), (bh, bp)):
-                report.warn(
-                    rt, "items.%s.%s" % (skey, sfield),
-                    "%r is more specific than %r in category %r — policies "
-                    "matching %r via %r will NOT apply to this traffic"
-                    % (sraw, braw, bkey, bkey, braw),
-                    "if those policies should still cover it, add %r to %r "
-                    "as well" % (sraw, bkey),
-                )
+                    index.setdefault((host, path), {})[key] = raw
+
+    def ancestors(host, path):
+        # mirrors _shadows: path prefixes on the same host (and the bare
+        # host), then every proper dot-suffix of the host
+        if path:
+            segs = path.split("/")
+            for i in range(len(segs) - 1, 0, -1):
+                yield host, "/".join(segs[:i])
+            yield host, ""
+        labels = host.split(".")
+        for i in range(1, len(labels)):
+            yield ".".join(labels[i:]), ""
+
+    verbose = bool(os.environ.get("LINT_SHADOWING_VERBOSE"))
+    pairs = {}  # (specific_cat, broad_cat) -> [count, example tuple]
+    for host, path, raw, key, field in entries:
+        for anc in ancestors(host, path):
+            for bkey, braw in (index.get(anc) or {}).items():
+                if bkey == key:
+                    continue
+                slot = pairs.setdefault((key, bkey), [0, None])
+                slot[0] += 1
+                if slot[1] is None:
+                    slot[1] = (raw, braw, field)
+                if verbose:
+                    report.warn(
+                        rt, "items.%s.%s" % (key, field),
+                        "%r is more specific than %r in category %r — "
+                        "policies matching %r via %r will NOT apply to "
+                        "this traffic" % (raw, braw, bkey, bkey, braw),
+                        "if those policies should still cover it, add %r "
+                        "to %r as well" % (raw, bkey),
+                    )
+    if verbose:
+        return
+    for (skey, bkey) in sorted(pairs):
+        count, (sraw, braw, sfield) = pairs[(skey, bkey)]
+        report.warn(
+            rt, "items.%s.%s" % (skey, sfield),
+            "%d entr%s more specific than entries in category %r (e.g. %r "
+            "is more specific than %r) — policies matching %r via those "
+            "broader entries will NOT apply to this traffic"
+            % (count, "y is" if count == 1 else "ies are", bkey, sraw,
+               braw, bkey),
+            "if those policies should still cover them, add the specific "
+            "entries to %r as well (per-entry list: LINT_SHADOWING_VERBOSE=1)"
+            % bkey,
+        )
 
 
 # ---------------------------------------------------------------------------

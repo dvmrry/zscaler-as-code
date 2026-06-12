@@ -341,5 +341,51 @@ class EntityAllowanceTest(unittest.TestCase):
         self.assertEqual(r.errors + r.warnings, [])
 
 
+
+class ShadowingScaleTest(unittest.TestCase):
+    def test_many_shadows_aggregate_to_one_warning_per_pair(self):
+        # field-hit: a broad category legitimately containing parent
+        # domains flooded thousands of per-pair lines; the rollup keeps
+        # the signal (count + example) at one line per category pair
+        items = {
+            "broad": {"urls": ["dom%d.com" % i for i in range(50)]},
+            "specific": {"urls": ["sub.dom%d.com" % i for i in range(50)]},
+        }
+        r = report()
+        from tools.lint import check_category_shadowing
+        check_category_shadowing(items, "zia_url_categories", r)
+        self.assertEqual(len(r.warnings), 1)
+        self.assertIn("50 entries", r.warnings[0])
+        self.assertIn("broad", r.warnings[0])
+
+    def test_verbose_env_restores_per_entry_lines(self):
+        import os
+        items = {
+            "broad": {"urls": ["dom.com"]},
+            "specific": {"urls": ["a.dom.com", "b.dom.com"]},
+        }
+        r = report()
+        os.environ["LINT_SHADOWING_VERBOSE"] = "1"
+        try:
+            from tools.lint import check_category_shadowing
+            check_category_shadowing(items, "zia_url_categories", r)
+        finally:
+            del os.environ["LINT_SHADOWING_VERBOSE"]
+        self.assertEqual(len(r.warnings), 2)
+
+    def test_indexed_scan_handles_tenant_scale_fast(self):
+        # functional pin at realistic scale (the old pairwise scan took
+        # minutes here; no timing assert — just completion + correctness)
+        items = {"broad": {"urls": ["d%d.example.com" % i
+                                    for i in range(5000)]}}
+        items["spec"] = {"urls": ["s.d%d.example.com" % i
+                                  for i in range(5000)]}
+        r = report()
+        from tools.lint import check_category_shadowing
+        check_category_shadowing(items, "zia_url_categories", r)
+        self.assertEqual(len(r.warnings), 1)
+        self.assertIn("5000 entries", r.warnings[0])
+
+
 if __name__ == "__main__":
     unittest.main()
