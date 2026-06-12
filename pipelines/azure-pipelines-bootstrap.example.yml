@@ -95,9 +95,13 @@ variables:
 #           - script: DROPS_CHECK=1 make transform IN=pulls/${{ parameters.tenant }} TENANT=${{ parameters.tenant }}
 #             displayName: Transform (red = new API surface; triage, commit, re-run)
 #           - script: |
-#               make lint TENANT=${{ parameters.tenant }}
+#               LINT_ADVISORY=1 make lint TENANT=${{ parameters.tenant }}
 #               make typecheck TENANT=${{ parameters.tenant }}
 #             displayName: Inline gates (this config never sees a PR build first)
+#             # LINT_ADVISORY: freshly-FETCHED config is the tenant's
+#             # current truth — lint errors in it are a console-cleanup
+#             # worklist, not a reason to block adoption. The strict
+#             # default stays the PR gate for hand edits.
 #           - script: |
 #               if [ -z "$(git status --porcelain config/ imports/)" ]; then
 #                 echo "config unchanged -- nothing to commit"; exit 0

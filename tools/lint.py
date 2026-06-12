@@ -456,6 +456,17 @@ def main(argv=None):
     sys.stdout.write(
         "\n%d error(s), %d warning(s) across %d config file(s)\n"
         % (len(report.errors), len(report.warnings), checked))
+    if report.errors and os.environ.get("LINT_ADVISORY"):
+        # Freshly-FETCHED config is the tenant's current truth: errors
+        # in it are real findings (a console-cleanup worklist), but
+        # importing the data as-is is correct — blocking an adoption
+        # pipeline over pre-existing tenant data is the wrong gate.
+        # Strict mode (the default) remains the PR gate for hand edits.
+        sys.stdout.write(
+            "ADVISORY MODE: %d error(s) reported but exit suppressed — "
+            "fetched tenant data is the current truth; fix these in the "
+            "console, not the import pipeline\n" % len(report.errors))
+        return 0
     return 1 if report.errors else 0
 
 
