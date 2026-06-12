@@ -109,7 +109,7 @@ variables:
 #                 commit -m "bootstrap refresh: ${{ parameters.tenant }}"
 #               git push -u origin "$branch"
 #               printf '{"sourceRefName":"refs/heads/%s","targetRefName":"refs/heads/main","title":"bootstrap refresh: ${{ parameters.tenant }}","description":"Agent-generated config/imports backing this bootstrap run."}' "$branch" > /tmp/pr.json
-#               curl -sf -X POST \
+#               curl -sf --max-time 60 -X POST \
 #                 -H "Authorization: Bearer $(System.AccessToken)" \
 #                 -H "Content-Type: application/json" \
 #                 -d @/tmp/pr.json \
