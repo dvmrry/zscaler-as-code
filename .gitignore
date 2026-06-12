@@ -26,6 +26,8 @@ envs/tmpchaintest/
 config/tmpchaintest/
 config/tmpfmttest/
 config/tmptypechktest/
+config/tmpdropschk/
+imports/tmpdropschk/
 
 # make install-tf output
 bin/

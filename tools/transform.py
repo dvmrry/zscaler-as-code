@@ -769,7 +769,24 @@ def main(argv=None):
     # suppress known-unmanageable metadata from this report (fields still removed).
     for path in drops:
         sys.stderr.write("dropped %s.%s\n" % (resource_type, path))
+    if drops:
+        # NEW API surface is a tripwire, not noise: the signingCertId
+        # incident was visible here for weeks as an unacknowledged
+        # dropped field that turned out to be write-required under a
+        # different schema name.
+        sys.stderr.write(
+            "%d unacknowledged dropped field(s) above — NEW API surface "
+            "for %s. Triage each before silencing: run make issue-watch "
+            "and check the provider docs (a dropped field can be "
+            "write-REQUIRED under another schema name — the signingCertId "
+            "class); then encode an override (renames if the schema has "
+            "another spelling) or add it to acknowledged_drops in "
+            "tools/overrides/%s.json. DROPS_CHECK=1 makes this exit 4.\n"
+            % (len(drops), resource_type, resource_type))
     sys.stderr.write("wrote %s\nwrote %s\n" % (tfvars_path, imports_path))
+    if drops and os.environ.get("DROPS_CHECK"):
+        # outputs are already written — the exit only makes the run red
+        return 4
     return 0
 
 

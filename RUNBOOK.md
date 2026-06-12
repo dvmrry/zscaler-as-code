@@ -384,7 +384,9 @@ catalog — before any tenant contact.
    merge flattens, …) against override coverage. Exits 4 when the bump
    introduced a quirk no override encodes; each MISSING line names the
    override key to add. `tools/MINING.md` is the per-class verification
-   procedure — follow it before encoding anything.
+   procedure — follow it before encoding anything. Run
+   `make issue-watch` too — upstream issue reports often explain a new
+   quirk before any source reading does.
 6. `make test`
 7. `make lock TENANT=<label>` for each committed tenant — version pins
    alone don't pin artifact hashes; the per-root lock files do.

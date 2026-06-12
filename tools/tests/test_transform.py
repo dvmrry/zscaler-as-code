@@ -1253,5 +1253,53 @@ class OverrideAuthoringValidationTest(unittest.TestCase):
             load_override(rt)
 
 
+
+class DropsCheckGateTest(unittest.TestCase):
+    """DROPS_CHECK=1 turns new API surface (unacknowledged drops) into a
+    red run — the tripwire the signingCertId incident needed."""
+
+    def _run_main(self, raw, env_flag):
+        import io, sys, tempfile, json as _json, shutil
+        from tools.transform import main
+        with tempfile.TemporaryDirectory() as td:
+            src = os.path.join(td, "in.json")
+            with open(src, "w", encoding="utf-8") as f:
+                _json.dump(raw, f)
+            if env_flag:
+                os.environ["DROPS_CHECK"] = "1"
+            old_err, sys.stderr = sys.stderr, io.StringIO()
+            try:
+                code = main(["zpa_segment_group", src, "tmpdropschk"])
+                err = sys.stderr.getvalue()
+            finally:
+                sys.stderr = old_err
+                os.environ.pop("DROPS_CHECK", None)
+                shutil.rmtree(os.path.join("config", "tmpdropschk"),
+                              ignore_errors=True)
+                shutil.rmtree(os.path.join("imports", "tmpdropschk"),
+                              ignore_errors=True)
+            return code, err
+
+    RAW = [{"id": "1", "name": "G", "brandNewApiField": "x"}]
+
+    def test_new_surface_exits_4_under_drops_check(self):
+        code, err = self._run_main(self.RAW, env_flag=True)
+        self.assertEqual(code, 4)
+        self.assertIn("NEW API surface", err)
+        self.assertIn("issue-watch", err)
+        self.assertIn("acknowledged_drops", err)
+
+    def test_advisory_without_flag_but_loud(self):
+        code, err = self._run_main(self.RAW, env_flag=False)
+        self.assertEqual(code, 0)
+        self.assertIn("NEW API surface", err)
+
+    def test_clean_input_is_quiet_under_drops_check(self):
+        code, err = self._run_main([{"id": "1", "name": "G"}],
+                                   env_flag=True)
+        self.assertEqual(code, 0)
+        self.assertNotIn("NEW API surface", err)
+
+
 if __name__ == "__main__":
     unittest.main()
