@@ -101,7 +101,11 @@ steps:
       # read-and-click, not investigate.
       # Truncate the description to stay under the ADO 4,000-character server
       # limit; append a pointer to the full published artifact.
-      _desc="$(head -c 3800 reports/$(TENANT)/drift.md)"
+      # NEVER fatal: under set -e a missing report file here would kill
+      # the script AFTER the branch push and BEFORE the PR call — branch
+      # exists, no PR, and the log shows nothing (field-hit in an adapted
+      # copy of this block). Uncomment `set -x` above when diagnosing.
+      _desc="$(head -c 3800 "reports/$(TENANT)/drift.md" 2>/dev/null || echo "Drift backfill (report missing from workspace)")"
       _desc="${_desc}
 
 _Full report in pipeline artifact: drift-report_"
@@ -114,7 +118,7 @@ _Full report in pipeline artifact: drift-report_"
           "description": sys.argv[2],
       }))
       PYEOF
-      curl -sf -X POST \
+      curl -sf --max-time 60 -X POST \
         -H "Authorization: Bearer $(System.AccessToken)" \
         -H "Content-Type: application/json" \
         -d @/tmp/pr.json \

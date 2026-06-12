@@ -128,7 +128,7 @@ steps:
 #       print(json.dumps({'comments': [{'parentCommentId': 0, 'content': body,
 #                                       'commentType': 1}], 'status': 1}))
 #       PYEOF
-#       curl -sf -X POST \
+#       curl -sf --max-time 60 -X POST \
 #         -H "Authorization: Bearer $(System.AccessToken)" \
 #         -H "Content-Type: application/json" \
 #         -d @/tmp/thread.json \
