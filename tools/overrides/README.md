@@ -24,9 +24,12 @@ resource (all keys optional): `key_field` (map key source, default
 `name`; may be a LIST of fields joined into one slug for composite keys —
 e.g. `["type", "name"]` where names are only unique within a type),
 `renames` (post-snake-case API→schema names), `drops` (fields
-always removed), `references` (force `{id,...}` unwrapping),
-`drop_if_default` (remove a field when it equals the given value —
-perma-diff suppression), `divide` (field→integer divisor: unit conversion
+always removed; a DOTTED path like `conditions.operands.name` reaches
+inside nested blocks — for fields the API rewrites so a config copy can
+never round-trip, e.g. operand display names, zpa#287), `references`
+(force `{id,...}` unwrapping), `drop_if_default` (remove a field when it
+equals the given value — perma-diff suppression; dotted paths reach
+nested blocks the same way), `divide` (field→integer divisor: unit conversion
 for fields where the provider schema stores a larger unit than the API
 returns and converts internally — e.g. ZIA `size_quota` is KB on the API
 but MB in config, so `"divide": {"size_quota": 1024}`; integer division,

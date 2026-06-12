@@ -782,6 +782,50 @@ class QuirkClosureTest(unittest.TestCase):
         items, _, _ = transform_items(raw, "zia_cloud_app_control_rule", ov)
         self.assertEqual(sorted(items), ["streaming_media_custom"])
 
+    def test_operand_drift_fields_dropped(self):
+        # zpa#287: operands.name is Computed+Optional — the API rewrites it
+        # to the referenced object's display name, so a config copy can
+        # never round-trip; the maintainer's fix is "remove name from your
+        # operands". Nested microtenant_id "0" is the default-tenant stub
+        # (same rule as the top-level drop_if_default). Both reach inside
+        # conditions[].operands[] via dotted override paths. Item-level
+        # name (the key source) must be untouched.
+        from tools.transform import load_override, transform_items
+
+        raw = [{
+            "id": "r1", "name": "Rule", "microtenantId": "0",
+            "conditions": [
+                {"id": "c1", "operator": "OR", "microtenantId": "0",
+                 "operands": [
+                     {"id": "o1", "objectType": "APP", "lhs": "id",
+                      "rhs": "111", "name": "Display Name",
+                      "microtenantId": "0"},
+                     {"id": "o2", "objectType": "SCIM_GROUP",
+                      "lhs": "216196257331285825", "rhs": "3251059",
+                      "name": "Engineering", "idpId": "216196257331285825",
+                      "microtenantId": "9999"},
+                 ]},
+                {"id": "c2", "operator": "AND", "microtenantId": "8888",
+                 "operands": [{"id": "o3", "objectType": "APP", "lhs": "id",
+                               "rhs": "222"}]},
+            ],
+        }]
+        ov = load_override("zpa_policy_access_rule")
+        items, _, _ = transform_items(raw, "zpa_policy_access_rule", ov)
+        it = items["rule"]
+        self.assertEqual(it["name"], "Rule")
+        ops = it["conditions"][0]["operands"]
+        self.assertNotIn("name", ops[0])
+        self.assertNotIn("name", ops[1])
+        self.assertNotIn("microtenant_id", ops[0])
+        self.assertNotIn("microtenant_id", it["conditions"][0])
+        # REAL (non-"0") nested microtenant ids must survive at both levels
+        self.assertEqual(ops[1]["microtenant_id"], "9999")
+        self.assertEqual(it["conditions"][1]["microtenant_id"], "8888")
+        self.assertEqual(ops[1]["idp_id"], "216196257331285825")
+        # operand order is preserved verbatim (TypeList semantics)
+        self.assertEqual([o["rhs"] for o in ops], ["111", "3251059"])
+
 
 class MergeBlocksTest(unittest.TestCase):
     """The schema-lies-flatten-merges class: zpa declares plain list

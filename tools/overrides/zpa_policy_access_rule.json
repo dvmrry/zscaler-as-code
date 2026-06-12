@@ -44,9 +44,12 @@
     "zscaler_managed"
   ],
   "drop_if_default": {
+    "conditions.microtenant_id": "0",
+    "conditions.operands.microtenant_id": "0",
     "microtenant_id": "0"
   },
   "drops": [
+    "conditions.operands.name",
     "priority",
     "rule_order"
   ],
