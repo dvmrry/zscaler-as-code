@@ -224,6 +224,36 @@ The pattern generalizes: *symptom → read the provider's read path and
 validators → encode as override data (never transform code) → e2e test
 with real API shapes → re-mine to confirm coverage.*
 
+## Lead-time signals (catching it BEFORE it bites)
+
+Source mining finds rules that already exist in code. Some failures
+originate OUTSIDE any pinned code — the backend changes under the pins
+(the signingCertId class: a tenant-level rollout made a field
+write-required with zero provider change). For those, the lead time
+lives in two places, both now mechanized:
+
+1. **The drop report is the API-surface tripwire.** A field in the
+   pulls that the schema doesn't know is, by definition, the API
+   moving under the pins. `make transform` prints every unacknowledged
+   drop plus a triage summary; `DROPS_CHECK=1` makes it exit 4 (red
+   run). Triage means: is the field write-required under another
+   schema spelling (→ `renames`), real new provider-less surface
+   (→ `acknowledged_drops` + a RUNBOOK note), or metadata
+   (→ `acknowledged_drops`). signingCertId sat in this report for
+   weeks as noise; never silence a drop without the triage.
+2. **Other operators hit it first — read their reports.**
+   `make issue-watch` scans the three provider issue trackers for
+   issues/PRs mentioning OUR resource types, against a committed
+   baseline (`UPDATE_BASELINE=1` blesses after triage; exit 4 on NEW).
+   zpa#650 — the exact signingCertId incident — was filed and
+   maintainer-answered weeks before it reached this pipeline; the
+   watcher catches it (recall-validated). Wired into the bump
+   pipeline as an orange-run step.
+3. **Vendor release notes are the manual lane.** Tenant-side rollouts
+   are announced in the ZPA/ZIA release-upgrade summaries on
+   help.zscaler.com — unstructured, so no tool; skim them when the
+   bump pipeline goes orange or before enabling a new feature.
+
 ## When to run
 
 - **Every provider bump** — RUNBOOK "Provider Bumps" step 5. New
@@ -234,3 +264,6 @@ with real API shapes → re-mine to confirm coverage.*
 - **Any unexplained plan/apply mismatch** — if the API value and the
   config value disagree and you can't say why, the answer is almost
   certainly a `d.Set` away.
+- **issue-watch and the drop report** run continuously (bump pipeline /
+  every transform) — they are the lanes that see trouble coming
+  instead of explaining it afterwards.

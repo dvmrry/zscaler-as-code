@@ -8,7 +8,7 @@ TF     ?= terraform
 # the python side expands those.
 SCOPE_GLOB = $(if $(RESOURCE),$(if $(word 2,$(RESOURCE)),$(RESOURCE),$(if $(filter zia zpa zcc,$(RESOURCE)),$(RESOURCE)_*,$(RESOURCE))),*)
 
-.PHONY: help env install-tf bump-check mine shape plan-report clean clean-plans unlock forget stage-imports unstage-imports lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck conformance
+.PHONY: help env install-tf bump-check mine issue-watch shape plan-report clean clean-plans unlock forget stage-imports unstage-imports lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck conformance
 
 # Company/deployment extensions: a private repo adds its own targets and
 # variable overrides in local.mk — NEVER by editing this file, which is
@@ -37,6 +37,9 @@ bump-check: ## Check pinned providers + terraform for newer releases (tool exits
 
 mine: ## Mine pinned provider Go source for quirks vs override coverage (tool exits 4 on NEW missing; UPDATE_BASELINE=1 blesses current findings; MINE_VERBOSE=1 also prints info-class DiffSuppress/enum findings; needs network — see tools/MINING.md)
 	$(PYTHON) -m tools.mine
+
+issue-watch: ## Watch provider issue trackers for problems with OUR resources (exits 4 on NEW items; UPDATE_BASELINE=1 blesses after triage; needs network — other operators hit problems before we do)
+	$(PYTHON) -m tools.issue_watch
 
 shape: ## Sanitized structural digest of a plan JSON / config / pull (FILE=<path> [ONLY=<resource type>]) — values become tokens; output is safe to relay out of restricted environments
 	@test -n "$(FILE)" || { echo "usage: make shape FILE=plan.json [ONLY=zpa_policy_access_rule]"; exit 2; }

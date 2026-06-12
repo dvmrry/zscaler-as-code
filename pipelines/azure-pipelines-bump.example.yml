@@ -81,3 +81,22 @@ Follow RUNBOOK 'Provider Bumps': edit tools/schema-extract/main.tf, make schemas
     condition: eq(variables.UPDATES, 'true')
     env:
       AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
+
+  # Upstream early warning: other operators hit provider problems before
+  # we do (the signingCertId class sat answered in the issue tracker for
+  # weeks before it reached a tenant here). New issues/PRs mentioning OUR
+  # resource types go orange; triage each, then bless the worklist with
+  # UPDATE_BASELINE=1 make issue-watch and commit the baseline (a PR from
+  # this agent, or run it locally).
+  - script: |
+      set +e
+      out=$(make issue-watch 2>&1)
+      rc=$?
+      set -e
+      echo "$out"
+      if echo "$out" | grep -q ' NEW '; then
+        echo "##vso[task.complete result=SucceededWithIssues;]new upstream issues mention our resources"
+      elif [ "$rc" != "0" ]; then
+        exit "$rc"  # real failure (network/rate-limit) stays RED
+      fi
+    displayName: Watch provider issue trackers
