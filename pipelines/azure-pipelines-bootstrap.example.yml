@@ -56,6 +56,14 @@ stages:
           clean: all
         steps:
           - checkout: self
+          # backend.conf: either commit it to the deployment repo (checkout
+          # restores it; workspace cleans are then harmless) OR materialize
+          # it from variables IN EVERY JOB that uses BACKEND_CONFIG —
+          # workspace: clean: all wipes generated files at each job start.
+          # - script: |
+          #     printf 'storage_account_name = "%s"\ncontainer_name       = "%s"\n' \
+          #       "$(STATE_STORAGE_ACCOUNT)" "$(STATE_CONTAINER)" > backend.conf
+          #   displayName: Materialize backend.conf
           - script: |
               eval "$(python3 -m tools.cred_env ${{ parameters.tenant }})"
               # Stale-plan hygiene: self-hosted agents REUSE workspaces, so a
@@ -101,6 +109,8 @@ stages:
             deploy:
               steps:
                 - checkout: self
+                # If backend.conf is materialized from variables, repeat the
+                # materialize step HERE — this job's workspace was cleaned.
                 - script: |
                     # Reproduce the EXACT plan-time worktree: a saved plan
                     # is only valid against identical configuration, so the

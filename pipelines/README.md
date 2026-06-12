@@ -41,6 +41,10 @@ Notes that apply to every platform:
   operative yamls against the current examples. On ADO self-hosted
   agents, also set `workspace: clean: all` on plan/apply jobs — a fresh
   workspace per run kills the stale-artifact class at the platform layer.
+  Corollary: cleans wipe GENERATED files at every job start while
+  checked-out files come back free — a runtime-generated `backend.conf`
+  must be materialized in EVERY job that uses it (or committed to the
+  private deployment repo, making the question moot).
 - **Stale-plan hygiene on reused agents**: self-hosted workspaces
   persist between runs, so a cancelled run's tfplans would ride into
   the next apply (apply's scope IS the artifacts). `plan-changed`
