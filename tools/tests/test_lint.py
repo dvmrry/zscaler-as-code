@@ -57,6 +57,17 @@ class StringHygieneTest(unittest.TestCase):
         self.assertEqual(r.errors, [])
         self.assertTrue(any("pasted punctuation" in w for w in r.warnings))
 
+    def test_html_entity_is_warning(self):
+        r = report()
+        check_string("R&amp;D rule", "rt", "w", r)
+        self.assertEqual(r.errors, [])
+        self.assertTrue(any("HTML entity" in w for w in r.warnings))
+
+    def test_bare_ampersand_is_clean(self):
+        r = report()
+        check_string("R&D rule ?a=1&b=2", "rt", "w", r)
+        self.assertEqual(r.errors + r.warnings, [])
+
 
 class UrlEntryTest(unittest.TestCase):
     def test_plain_domain_passes(self):

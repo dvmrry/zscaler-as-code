@@ -782,6 +782,37 @@ class QuirkClosureTest(unittest.TestCase):
         items, _, _ = transform_items(raw, "zia_cloud_app_control_rule", ov)
         self.assertEqual(sorted(items), ["streaming_media_custom"])
 
+    def test_zpa_html_entities_unescaped(self):
+        # The Go SDK unescapes TOP-LEVEL name/description on every ZPA/ZCC
+        # response, applied twice (zscaler-sdk-go v3.8.37 unescapeHTML), so
+        # provider state holds the literal characters while the raw API
+        # carries entities — config must mirror or plans show phantom
+        # updates (&amp;, &gt;). Other fields and ZIA are untouched.
+        from tools.transform import (
+            _unescape_html_fields, load_override, transform_items,
+        )
+
+        raw = [{"id": "s", "name": "R&amp;amp;D &gt; Segment",
+                "description": "a &amp; b",
+                "domainNames": ["x&amp;y.test"]}]
+        ov = load_override("zpa_application_segment")
+        items, _, _ = transform_items(raw, "zpa_application_segment", ov)
+        self.assertEqual(sorted(items), ["r_d_segment"])
+        it = items["r_d_segment"]
+        self.assertEqual(it["name"], "R&D > Segment")
+        self.assertEqual(it["description"], "a & b")
+        # non-name/description fields keep the API's escaped form
+        self.assertEqual(it["domain_names"], ["x&amp;y.test"])
+
+        zcc = {"name": "&amp;", "policy_name": "&amp;"}
+        _unescape_html_fields(zcc, "zcc_forwarding_profile")
+        self.assertEqual(zcc["name"], "&")
+        self.assertEqual(zcc["policy_name"], "&amp;")
+
+        zia = {"name": "A &amp; B"}
+        _unescape_html_fields(zia, "zia_url_filtering_rules")
+        self.assertEqual(zia["name"], "A &amp; B")
+
     def test_operand_drift_fields_dropped(self):
         # zpa#287: operands.name is Computed+Optional — the API rewrites it
         # to the referenced object's display name, so a config copy can
