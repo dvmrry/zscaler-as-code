@@ -53,7 +53,7 @@ change only through a PR:**
 
 **About to hand-edit a file? Stop.** Ask whether it is generated or
 source. If it is, you are about to cause drift — run the `make` target
-that owns it, or leave a note.
+that owns it, or raise an issue.
 
 ## Uncertainty protocol — when to STOP
 
@@ -62,7 +62,7 @@ A wrong guess is worse than a clean stop. STOP and raise an issue when:
 - A plan shows a change you did not expect (anything other than imports
   of new objects and `0 to change, 0 to destroy`).
 - A `make` target errors with a message you do not understand. These
-  tools are written to name their own cause — capture it in the note;
+  tools are written to name their own cause — capture it in the issue;
   do not work around it.
 - Proceeding would require hand-editing a generated or source file.
 - A command would touch the live tenant (an apply, or any API write) and
