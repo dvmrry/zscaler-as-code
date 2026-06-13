@@ -104,12 +104,12 @@ variables:
 #             # than inline shell so gate behavior updates on repo pull —
 #             # adapted pipeline YAML does not.
 #           - script: bash pipelines/commitback.sh
-#             displayName: Commit-back (the durable record of what was imported)
+#             displayName: Commit-back (one PR per imported resource type)
 #             env:
 #               SYSTEM_ACCESSTOKEN: $(System.AccessToken) # never auto-exposed
 #               TENANT: ${{ parameters.tenant }}
 #               BRANCH_PREFIX: bootstrap
-#               PR_TITLE: "bootstrap refresh: ${{ parameters.tenant }}"
+#               PR_TITLE: "bootstrap refresh: ${{ parameters.tenant }}"  # type appended per PR
 #               # Proxied egress? Declare it HERE too — curl reads only
 #               # the env; agent-level git proxy config gets the push
 #               # through and then the REST call hangs (field-hit):
@@ -120,6 +120,10 @@ variables:
 #           # commit-back incident so far happened in an adapted inline
 #           # block (az hangs, set -e killing the PR call after the
 #           # push). The script is az-free, checkpointed, hang-proofed.
+#           # It opens ONE rolling PR per changed resource type on a
+#           # STABLE branch bootstrap/<tenant>/<type> (drift uses the
+#           # drift/ prefix, so the two never collide); a re-run refreshes
+#           # the open PR instead of stacking a new one.
 #           # Needs "Contribute" for the build service identity on this
 #           # repo + the persistCredentials: true on checkout above.
 #           # pulls/ contains REAL tenant data -- never publish it as a

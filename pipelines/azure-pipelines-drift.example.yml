@@ -87,22 +87,25 @@ steps:
   # az-free, checkpointed (the last `[commit-back N/5]` line printed
   # names the failing step), and never hangs: stdin is closed, git
   # prompts are disabled, curl is time-capped.
+  # It opens ONE rolling PR per CHANGED resource type, on a STABLE branch
+  # drift/<tenant>/<type> — a re-drift force-refreshes that PR instead of
+  # stacking a new one (a fresh PR appears only after the prior merges).
+  # The per-type body is short; the FULL drift report is the published
+  # artifact (ARTIFACT_NOTE points at it) rather than inlined per PR.
   # Requires the build service identity granted "Contribute" on this
   # repository (covers the branch push AND PR creation; without it the
   # push fails 403/TF401027) plus persistCredentials on checkout above.
-  # A HUMAN merges — the PR carries the diff summary + audit
-  # attribution, and the plan build policy shows merge-readiness;
+  # A HUMAN merges — the plan build policy shows per-root merge-readiness;
   # review is read-and-click, not investigate.
   - script: bash pipelines/commitback.sh
-    displayName: Open backfill PR
+    displayName: Open backfill PRs (one per changed resource type)
     condition: eq(variables.DRIFTED, 'true')
     env:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken) # never auto-exposed
       TENANT: $(TENANT)
       BRANCH_PREFIX: drift
-      PR_TITLE: "Drift backfill: $(TENANT)"
-      DESCRIPTION_FILE: reports/$(TENANT)/drift.md
-      ARTIFACT_NOTE: "_Full report in pipeline artifact: drift-report_"
+      PR_TITLE: "Drift backfill: $(TENANT)"  # the resource type is appended per PR
+      ARTIFACT_NOTE: "_Full drift report in the pipeline artifact: drift-report_"
       # Proxied egress? Declare it HERE too — curl reads only the env;
       # agent-level git proxy config gets the push through and then the
       # REST call hangs (field-hit):

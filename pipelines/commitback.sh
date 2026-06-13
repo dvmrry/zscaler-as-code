@@ -1,47 +1,48 @@
 #!/usr/bin/env bash
-# Commit-back: push generated config/imports to a branch and open an
-# Azure DevOps PR via REST. Called by the bootstrap/drift pipelines —
-# the YAML stays a thin caller so this logic updates on repo pull
-# (adapted pipeline YAML does not; field-hit three times).
+# Commit-back: push generated config/imports to STABLE per-(tenant,
+# resource-type) branches and open ONE Azure DevOps PR per changed
+# resource type via REST. Called by the bootstrap/drift pipelines — the
+# YAML stays a thin caller so this logic updates on repo pull (adapted
+# pipeline YAML does not; field-hit repeatedly).
+#
+# One rolling PR per changed resource type:
+#   <BRANCH_PREFIX>/<TENANT>/<resource_type>
+# The branch is STABLE (no timestamp) and force-pushed each run, so a type
+# that re-drifts REFRESHES its open PR instead of stacking a new one; a new
+# PR appears only after the previous is merged/closed. drift and bootstrap
+# stay separate by BRANCH_PREFIX, so their lifecycles never collide.
 #
 # Required env:
 #   TENANT              tenant label ([A-Za-z0-9_.-]+)
-#   BRANCH_PREFIX       branch namespace, e.g. bootstrap or drift
-#   PR_TITLE            PR title (also the commit message)
+#   BRANCH_PREFIX       branch namespace: drift | bootstrap ([A-Za-z0-9_.-]+)
+#   PR_TITLE            base PR title; " — <resource_type>" is appended per PR
 #   SYSTEM_ACCESSTOKEN  map EXPLICITLY in the YAML step:
 #                         env: { SYSTEM_ACCESSTOKEN: $(System.AccessToken) }
-#                       (ADO exposes the other SYSTEM_*/BUILD_* vars
-#                       automatically; the token it does not)
+#                       (ADO auto-exposes the other SYSTEM_*/BUILD_* vars; not
+#                       this one)
 # Optional env:
-#   COMMIT_PATHS        paths to commit (default: config/<T> imports/<T>)
 #   TARGET_BRANCH       PR target (default: main)
-#   DESCRIPTION_FILE    file for the PR body, truncated to the ADO 4,000
-#                       char server limit; missing file is NEVER fatal
-#                       (field-hit: set -e + a dead report file killed an
-#                       adapted block after push, before the PR call)
-#   ARTIFACT_NOTE       extra line appended to the PR body
-#   HTTPS_PROXY         declare on the step if egress rides a proxy:
-#                       curl reads ONLY the env — agent-level git proxy
-#                       config gets the push through and then the REST
-#                       call hangs (field-hit)
+#   ARTIFACT_NOTE       extra line appended to every PR body (e.g. a pointer
+#                       to the published full drift report)
+#   HTTPS_PROXY         declare on the step if egress rides a proxy: curl
+#                       reads ONLY the env — agent git config gets the push
+#                       through and then the REST call hangs (field-hit)
 #
-# ADO setup: the build service identity needs "Contribute" on the repo
-# (covers both the branch push and PR creation), and the checkout step
-# needs persistCredentials: true.
+# ADO setup: the build service identity needs "Contribute" on the repo;
+# checkout needs persistCredentials: true.
 #
-# Hang-proofing, each clause field-earned:
-#   - no az CLI (extension add hangs on egress; pr create waits on
-#     stdin; telemetry hangs AFTER success on restricted agents)
-#   - stdin closed + GIT_TERMINAL_PROMPT=0: any credential prompt fails
-#     loud instead of waiting forever
-#   - curl --max-time 60 and the HTTP status checked explicitly
-#   - numbered checkpoints: the last one printed names the failing step
+# Hang-proofing, each clause field-earned: no az CLI (extension add hangs on
+# egress; pr create waits on stdin; telemetry hangs AFTER success); stdin
+# closed + GIT_TERMINAL_PROMPT=0 (credential prompts fail loud); curl
+# --max-time 60 with the HTTP status checked; numbered checkpoints (the last
+# one printed names the failing step).
 set -euo pipefail
 exec </dev/null
 export GIT_TERMINAL_PROMPT=0
 
 say() { echo "[commit-back $1] $2"; }
 
+# --- preflight ----------------------------------------------------------
 say 0/5 "preflight"
 for v in TENANT BRANCH_PREFIX PR_TITLE SYSTEM_ACCESSTOKEN \
          SYSTEM_COLLECTIONURI SYSTEM_TEAMPROJECT BUILD_REPOSITORY_ID; do
@@ -60,41 +61,88 @@ for v in TENANT BRANCH_PREFIX; do
     (*[!A-Za-z0-9_.-]*) echo "error: $v must match [A-Za-z0-9_.-]+ (got '${!v}')"; exit 2;;
   esac
 done
-COMMIT_PATHS="${COMMIT_PATHS:-config/$TENANT imports/$TENANT}"
 TARGET_BRANCH="${TARGET_BRANCH:-main}"
+CONFIG_DIR="config/$TENANT"
+IMPORTS_DIR="imports/$TENANT"
 
-say 1/5 "change detection in: $COMMIT_PATHS"
-# shellcheck disable=SC2086  # COMMIT_PATHS is a deliberate word list
-if [ -z "$(git status --porcelain -- $COMMIT_PATHS)" ]; then
+# --- which resource types changed? --------------------------------------
+say 1/5 "change detection in $CONFIG_DIR + $IMPORTS_DIR"
+# NB: the program comes from `-c`, not a heredoc — stdin is the piped
+# `git status` output, and a `<<EOF` heredoc would override that pipe
+# (git would then SIGPIPE into a dead reader).
+types="$(git status --porcelain --untracked-files=all -- "$CONFIG_DIR" "$IMPORTS_DIR" | python3 -c '
+import re, sys
+t = re.escape(sys.argv[1])
+cfg = re.compile(r"^config/%s/(.+)\.auto\.tfvars\.json$" % t)
+imp = re.compile(r"^imports/%s/(.+?)_(?:imports|moves)\.tf$" % t)
+out = set()
+for line in sys.stdin:
+    line = line.rstrip("\n")
+    if len(line) < 4:
+        continue
+    path = line[3:]                       # porcelain: 2 status chars + space
+    if " -> " in path:                    # rename: take the new path
+        path = path.split(" -> ")[-1]
+    m = cfg.match(path) or imp.match(path)
+    if m:
+        out.add(m.group(1))
+for name in sorted(out):
+    print(name)
+' "$TENANT")"
+if [ -z "$types" ]; then
   say 1/5 "nothing to commit — clean exit"
   exit 0
 fi
+say 1/5 "changed types:$(printf ' %s' $types)"
 
-branch="$BRANCH_PREFIX/$TENANT/$(date -u +%Y%m%dT%H%M%S)"
-say 2/5 "branch + commit: $branch"
-git checkout -b "$branch"
-for p in $COMMIT_PATHS; do
-  if [ -e "$p" ]; then git add -- "$p"; fi
+# --- snapshot the working tree so per-type branches can cherry-pick paths ---
+# A throwaway commit captures every change (incl. NEW files) in one tree we
+# can restore individual paths from; the working tree is then clean, so each
+# `checkout -B <branch> <base>` below never hits "local changes would be
+# overwritten".
+say 2/5 "snapshot working tree"
+start_ref="$(git rev-parse HEAD)"
+tmpdir="$(mktemp -d)"
+# Trap armed BEFORE the temp branch is created, so a failure during the
+# snapshot still returns the repo to the start ref and removes the temp
+# branch — otherwise the next run cannot recreate _commitback_snap and the
+# pipeline wedges until someone intervenes.
+trap 'git checkout -q "$start_ref" 2>/dev/null || true; \
+      git branch -qD _commitback_snap 2>/dev/null || true; \
+      rm -rf "$tmpdir"' EXIT
+git branch -qD _commitback_snap 2>/dev/null || true   # leftover from a prior failed run
+git checkout -q -b _commitback_snap
+# Add only the dirs that exist — a config-only first bootstrap may have no
+# imports/<tenant> yet, and `git add` errors (exit 128) on a pathspec that
+# matches nothing.
+for d in "$CONFIG_DIR" "$IMPORTS_DIR"; do
+  [ -e "$d" ] && git add -A -- "$d"
 done
 git -c user.name="$BRANCH_PREFIX-bot" -c user.email="$BRANCH_PREFIX-bot@invalid" \
-  commit -m "$PR_TITLE"
+  commit -q -m "[commitback snapshot]" --no-verify
+wip="$(git rev-parse HEAD)"
+git checkout -q "$start_ref"            # detach back to start; snapshot held by $wip
 
-say 3/5 "push (needs Contribute + persistCredentials)"
-git push -u origin "$branch"
-
-say 4/5 "PR body"
-tmpdir="$(mktemp -d)"
-trap 'rm -rf "$tmpdir"' EXIT
-desc="Automated commit-back from $branch."
-if [ -n "${DESCRIPTION_FILE:-}" ]; then
-  desc="$(head -c 3800 "$DESCRIPTION_FILE" 2>/dev/null || echo "Commit-back (report missing from workspace)")"
+say 3/5 "fetch $TARGET_BRANCH (PR base)"
+git fetch -q origin "$TARGET_BRANCH"
+base="$(git rev-parse FETCH_HEAD)"
+# proxy visibility WITHOUT echoing the value (proxy URLs can carry creds)
+if [ -n "${HTTPS_PROXY:-${https_proxy:-}}" ]; then
+  say 3/5 "https proxy: set"
+else
+  say 3/5 "https proxy: unset (direct egress)"
 fi
-if [ -n "${ARTIFACT_NOTE:-}" ]; then
-  desc="$desc
 
-$ARTIFACT_NOTE"
-fi
-python3 - "$branch" "$TARGET_BRANCH" "$PR_TITLE" "$desc" > "$tmpdir/pr.json" <<'PYEOF'
+enc_proj="$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))' "$SYSTEM_TEAMPROJECT")"
+pr_url="${SYSTEM_COLLECTIONURI}${enc_proj}/_apis/git/repositories/${BUILD_REPOSITORY_ID}/pullrequests?api-version=7.0"
+
+open_pr() {   # $1 branch  $2 title
+  local br="$1" title="$2" desc code
+  desc="Automated $BRANCH_PREFIX for $TENANT — resource type \`${br##*/}\`."
+  if [ -n "${ARTIFACT_NOTE:-}" ]; then desc="$desc
+
+$ARTIFACT_NOTE"; fi
+  python3 - "$br" "$TARGET_BRANCH" "$title" "$desc" > "$tmpdir/pr.json" <<'PYEOF'
 import json, sys
 print(json.dumps({
     "sourceRefName": "refs/heads/" + sys.argv[1],
@@ -103,30 +151,58 @@ print(json.dumps({
     "description": sys.argv[4],
 }))
 PYEOF
+  code="$(curl -sS --max-time 60 -X POST \
+    -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" -H "Content-Type: application/json" \
+    -d @"$tmpdir/pr.json" -o "$tmpdir/resp.json" -w '%{http_code}' "$pr_url")" || {
+      echo "  error: curl transport failure for $br (egress/timeout/proxy) — branch IS pushed; if proxied, declare HTTPS_PROXY; open the PR by hand"
+      return 1; }
+  case "$code" in
+    2*)  echo "  PR opened for $br (HTTP $code)";;
+    409) echo "  $br: active PR already open — refreshed by the push (HTTP 409)";;
+    *)   echo "  error: PR create for $br failed (HTTP $code):"; cat "$tmpdir/resp.json"; return 1;;
+  esac
+}
 
-say 5/5 "open PR via REST"
-# Proxy visibility WITHOUT echoing the value (proxy URLs can carry
-# credentials). On proxied networks the proxy must be declared on THIS
-# step's env: git push can ride agent-level git config, but curl reads
-# only the environment — field-hit: branch pushed, REST call hung.
-if [ -n "${HTTPS_PROXY:-${https_proxy:-}}" ]; then
-  say 5/5 "https proxy: set"
-else
-  say 5/5 "https proxy: unset (direct egress)"
+# NB: process_type is called as `if process_type ...`, which disables
+# `set -e` inside it — so every load-bearing git step checks its own exit
+# and returns 1 explicitly. A bare failing command here would otherwise
+# fall through (e.g. a failed push followed by a 409 reporting success).
+process_type() {   # $1 resource type
+  local t="$1" br="$BRANCH_PREFIX/$TENANT/$1" f
+  git checkout -q -B "$br" "$base" || { echo "  $t: checkout failed"; return 1; }
+  # Bring this type's changes from the snapshot, handling add/modify AND
+  # delete: present in the snapshot -> restore it; gone from the snapshot
+  # but present in the base -> stage the removal (a resource dropped
+  # upstream), so deletions propagate instead of being silently skipped.
+  for f in "$CONFIG_DIR/$t.auto.tfvars.json" \
+           "$IMPORTS_DIR/${t}_imports.tf" "$IMPORTS_DIR/${t}_moves.tf"; do
+    if git cat-file -e "$wip:$f" 2>/dev/null; then
+      git checkout -q "$wip" -- "$f"
+    elif git cat-file -e "$base:$f" 2>/dev/null; then
+      git rm -q --cached -- "$f" >/dev/null 2>&1 || true
+      rm -f "$f"
+    fi
+  done
+  if git diff --cached --quiet; then
+    echo "  $t: no net change vs $TARGET_BRANCH — skip"
+    return 0
+  fi
+  git -c user.name="$BRANCH_PREFIX-bot" -c user.email="$BRANCH_PREFIX-bot@invalid" \
+    commit -q -m "$PR_TITLE — $t" || { echo "  $t: commit failed"; return 1; }
+  git fetch -q origin "$br" 2>/dev/null || true   # give --force-with-lease a basis if the branch exists
+  git push -q --force-with-lease origin "$br" \
+    || { echo "  $t: push FAILED — branch not updated"; return 1; }
+  open_pr "$br" "$PR_TITLE — $t"
+}
+
+say 4/5 "per-type branches + PRs"
+failed=0
+for t in $types; do
+  if process_type "$t"; then :; else failed=$((failed + 1)); fi
+done
+
+if [ "$failed" -ne 0 ]; then
+  say 5/5 "$failed resource type(s) FAILED — see errors above; the rest succeeded"
+  exit 1
 fi
-# Project names may carry spaces — encode the URL path segment.
-project="$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))' "$SYSTEM_TEAMPROJECT")"
-url="${SYSTEM_COLLECTIONURI}${project}/_apis/git/repositories/${BUILD_REPOSITORY_ID}/pullrequests?api-version=7.0"
-code="$(curl -sS --max-time 60 -X POST \
-  -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
-  -H "Content-Type: application/json" \
-  -d @"$tmpdir/pr.json" -o "$tmpdir/resp.json" -w '%{http_code}' "$url")" || {
-    echo "error: curl transport failure (egress/timeout/proxy) — branch $branch IS pushed; if this network rides a proxy, declare HTTPS_PROXY on this step's env; open the PR by hand or re-run"
-    exit 1
-  }
-case "$code" in
-  2*) say 5/5 "PR opened from $branch (HTTP $code)";;
-  *)  echo "error: PR creation failed (HTTP $code) — branch $branch IS pushed:"
-      cat "$tmpdir/resp.json"
-      exit 1;;
-esac
+say 5/5 "done — one rolling PR per changed resource type"

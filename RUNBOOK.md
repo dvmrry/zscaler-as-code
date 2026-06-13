@@ -301,11 +301,16 @@ drift pipeline can open the backfill PR itself (full reference flows in
    a pulled, checkpointed, az-free script the pipeline YAML calls with
    a few env vars. Keep it that way in adapted pipelines: inline
    commit-back blocks do not update on repo pull, and every commit-back
-   incident so far happened in one. The PR body is
-   `tools/drift_summary` (item-level: added / removed / changed-with-
-   fields) plus `tools/audit` — the ZIA audit trail for the window,
-   answering WHO made the change. Attribution is strictly advisory: any
-   audit failure degrades to a one-line note, never blocks the PR.
+   incident so far happened in one. It opens **one rolling PR per
+   changed resource type** on a STABLE branch `drift/<tenant>/<type>`:
+   a re-drift force-refreshes that PR (the create 409s harmlessly)
+   instead of stacking a new one, so an unmerged PR never piles up — a
+   fresh PR appears only after the prior is merged or closed, and the
+   `drift/` vs `bootstrap/` prefixes keep the two flows' lifecycles
+   separate. The full drift report (`tools/drift_summary` item-level +
+   `tools/audit` for WHO) is the published pipeline artifact; the
+   per-type PR body is short and points at it. Attribution is strictly
+   advisory: any audit failure degrades to a note, never blocks the PR.
 3. **Merge-readiness check — a human merges.** The PR's plan job runs
    `make plan-changed SAVE=1 ... && make assert-clean`. Backfill means
    config now MATCHES the tenant, so every saved plan must be pure
