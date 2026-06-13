@@ -441,6 +441,32 @@ files. The output is small and safe to paste.
 
 ## Troubleshooting
 
+### `Plugin did not respond` — provider crash at ConfigureProvider
+
+This is a PANIC (the provider process died), not a handled error —
+handled credential/proxy/cert problems print a readable sentence
+(`failed to initialize SDK … client: …`). The ZIA/ZPA providers
+authenticate EAGERLY at configure, so a crash here is almost always an
+ENVIRONMENT gap on the step that ran — a missing or mis-named variable,
+or untrusted TLS — not a config-file problem. The same symptom has
+several causes; the discriminator is the check in the left column.
+
+The common root cause across these is a step whose `env:` block was
+hand-assembled and dropped a variable. The durable fix for most rows is
+the same: **copy the working `make fetch` step's ENTIRE `env:` block
+verbatim onto the failing step** rather than cherry-picking variables —
+fetch proves the full set is present and correct.
+
+| Check (on the failing step) | Cause and fix |
+|---|---|
+| Legacy auth; `printenv ZIA_CLOUD` is empty | The provider reads `ZIA_CLOUD` **exactly** — a tenant-prefixed alias (e.g. `ZIA_<tenant>_CLOUD`) is NOT honored. For legacy auth the cloud IS the API host, so an empty/wrong cloud builds a bad base URL and the eager session bootstrap panics. Set `ZIA_CLOUD` to the tenant's real cloud (copy fetch's env block, or map the alias to `ZIA_CLOUD` in this step). |
+| OneAPI auth; the op hangs, then dies | Stale/wrong `ZSCALER_VANITY_DOMAIN` → DNS errno 8 → silent SDK retries. `make fetch-diag` is the discriminator; correct the vanity domain. |
+| `make fetch` works but the provider crashes | The Go provider validates TLS against the **system** trust store and IGNORES `REQUESTS_CA_BUNDLE` — that variable only helps `make fetch` (Python). Put the corporate root CA in the system store / `SSL_CERT_FILE`, and set `HTTPS_PROXY` on the step. "Fetch works" never proves the provider can authenticate. |
+| ZCC `failopen_policy` import only | Provider beta bug (`GetFailOpenPolicyByID`), not the environment — park the failopen import until a provider fix; adopt the rest of ZCC normally. |
+| None of the above / still unclear | Re-run with `TF_LOG=trace` and check for `crash.log` in the env root. The Go panic stack names the failing function — safe to relay (provider internals; redact any interpolated value). |
+
+### General
+
 | Symptom | Action |
 |---|---|
 | TLS / certificate errors | `make fetch-diag`; set `REQUESTS_CA_BUNDLE` |
