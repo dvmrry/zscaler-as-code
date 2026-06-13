@@ -341,8 +341,18 @@ import-one: ## CLI-import ONE address into state (TENANT= RESOURCE= KEY= IMPORT_
 	test -f "$$vf" || { echo "error: $$vf not found — run make transform first (import evaluates config, which needs the var-file: it lives in config/, not the env root, so it is NOT auto-loaded)"; exit 1; }; \
 	if grep -q '^  backend "' "envs/$(TENANT)/$(RESOURCE)/main.tf" && [ -z "$(BACKEND_CONFIG)" ]; then \
 		echo "error: $(RESOURCE) declares a remote backend; run with BACKEND_CONFIG=<file>"; exit 1; fi; \
-	$(TF) -chdir="envs/$(TENANT)/$(RESOURCE)" init -input=false $(if $(BACKEND_CONFIG),-reconfigure -backend-config="$(abspath $(BACKEND_CONFIG))" -backend-config="key=$(TENANT)/$(RESOURCE).tfstate") > /dev/null; \
-	$(TF) -chdir="envs/$(TENANT)/$(RESOURCE)" import -input=false -var-file="$$vf" 'module.$(RESOURCE).$(RESOURCE).this["$(KEY)"]' '$(IMPORT_ID)'
+	$(TF) -chdir="envs/$(TENANT)/$(RESOURCE)" init -input=false $(if $(BACKEND_CONFIG),-reconfigure -backend-config="$(abspath $(BACKEND_CONFIG))" -backend-config="key=$(TENANT)/$(RESOURCE).tfstate") > /dev/null \
+		|| { echo "error: terraform init failed for envs/$(TENANT)/$(RESOURCE) — backend creds, or a provider lock missing this agent's OS/arch (re-run make lock)"; exit 1; }; \
+	addr='module.$(RESOURCE).$(RESOURCE).this["$(KEY)"]'; \
+	out=$$($(TF) -chdir="envs/$(TENANT)/$(RESOURCE)" import -input=false -var-file="$$vf" "$$addr" '$(IMPORT_ID)' 2>&1); rc=$$?; \
+	printf '%s\n' "$$out"; \
+	if [ $$rc -ne 0 ] && printf '%s' "$$out" | grep -q 'already managed by Terraform'; then \
+		echo "note: $(KEY) is already in state (idempotent import) — nothing to do"; rc=0; \
+	fi; \
+	if [ $$rc -ne 0 ]; then \
+		echo "error: import of $(KEY) FAILED (exit $$rc) — do NOT run statefill; the item is not in state. A provider crash here ('Plugin did not respond' at ConfigureProvider) is an auth/client failure, not a config problem: capture the panic/crash.log and check the corp root CA is in the SYSTEM trust store (the Go provider ignores REQUESTS_CA_BUNDLE) and HTTPS_PROXY is set"; \
+	fi; \
+	exit $$rc
 
 statefill: ## Fill ONE config-carried field into STATE, zero tenant writes (TENANT= RESOURCE= KEY= FIELD= [BACKEND_CONFIG=]) — for provider reads that cannot return a required field (ISOLATE cbi_profile class); RE-FETCH+RE-TRANSFORM FIRST (the fill copies committed config); preview by default, STATE_FILL=1 pushes
 	@test -n "$(TENANT)" -a -n "$(RESOURCE)" -a -n "$(KEY)" -a -n "$(FIELD)" || { echo "usage: make statefill TENANT=<label> RESOURCE=<type> KEY=<config key> FIELD=<field> [BACKEND_CONFIG=<file>] [STATE_FILL=1]"; exit 2; }
