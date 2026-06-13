@@ -8,8 +8,23 @@ See AGENTS.md rules 1-5.
 """
 import json
 import os
+import re
 import sys
 import time
+
+
+def _mask_identifiers(text):
+    """Mask tenant-identifying substrings in a URL/host for error and
+    diagnostic messages: the vanity label of a *.zslogin*.net token host and
+    the ZPA /customers/<id>/ path segment. Hosts and path structure — the
+    actionable part of a connectivity/HTTP error — are preserved. Always
+    applied (these messages may end up in a shared log); the full URL adds
+    no diagnostic value beyond the host + status anyway.
+    """
+    text = re.sub(r"([/.]|^)([^/.]+)(\.zslogin[a-z0-9]*\.net)",
+                  r"\1<vanity>\3", text)
+    text = re.sub(r"(/customers/)[^/]+", r"\1<customer-id>", text)
+    return text
 
 def load_manifest():
     from tools.registry import load_registry
@@ -95,7 +110,8 @@ def _get_json(opener, url, headers, query):
     full = url + ("?" + urlencode(query) if query else "")
     status, body = opener("GET", full, headers, None)
     if status != 200:
-        raise RuntimeError("GET %s returned HTTP %d" % (url, status))
+        raise RuntimeError("GET %s returned HTTP %d"
+                           % (_mask_identifiers(url), status))
     return json.loads(body.decode())
 
 
@@ -205,7 +221,22 @@ def paginate_zcc_v2(opener, url, headers, query, per_page=100, max_pages=100000)
 # valid cert and exists only as the token-request audience value. The real
 # OneAPI gateway is api.zsapi.net (api.<cloud>.zsapi.net off production).
 _ONEAPI_AUDIENCE = "https://api.zscaler.com"
-_LEGACY_ZPA_BASE = "https://config.private.zscaler.com"
+
+# ZPA legacy config base per ZPA_CLOUD (zscaler-sdk-go). The Terraform
+# provider derives the SAME base from ZPA_CLOUD via the SDK, so deriving it
+# here keeps fetch and provider on the same host; hardcoding the production
+# base ignored ZPA_CLOUD and broke every non-production tenant (the ZS2 ZPA
+# 401). PRODUCTION (and empty) and ZPATWO are confirmed; BETA/GOV/GOVUS use
+# Zscaler's documented public hosts — confirm against the SDK constants and
+# pin with ZPA_LEGACY_BASE_URL if any is wrong for your tenant.
+_ZPA_LEGACY_BASES = {
+    "": "https://config.private.zscaler.com",
+    "PRODUCTION": "https://config.private.zscaler.com",
+    "ZPATWO": "https://config.zpatwo.net",
+    "BETA": "https://config.zpabeta.net",
+    "GOV": "https://config.zpagov.net",
+    "GOVUS": "https://config.zpagov.us",
+}
 
 
 def _oneapi_gateway(cloud):
@@ -215,64 +246,113 @@ def _oneapi_gateway(cloud):
     return "https://api.%s.zsapi.net" % norm
 
 
-def _legacy_zcc_base(cloud):
-    """ZCC legacy base URL (SDK-derived): https://api-mobile.<cloud>.net/papi"""
-    return "https://api-mobile.%s.net/papi" % cloud
+def _zpa_legacy_base_or_none(cloud):
+    """Mapped ZPA legacy base for `cloud`, or None if the cloud is unlisted
+    (callers decide whether that is fatal — fetch fails, --diag shows a
+    placeholder)."""
+    return _ZPA_LEGACY_BASES.get((cloud or "").strip().upper())
+
+
+def _legacy_zpa_base(cloud):
+    """ZPA legacy config base for ZPA_CLOUD; raises if the cloud is unlisted.
+
+    For a private/unlisted cloud, set ZPA_LEGACY_BASE_URL to override.
+    """
+    base = _zpa_legacy_base_or_none(cloud)
+    if base is None:
+        raise SystemExit(
+            "unknown ZPA_CLOUD %r for the legacy config base — set "
+            "ZPA_LEGACY_BASE_URL to the correct https://config.<cloud> host "
+            "(known clouds: %s)"
+            % (cloud, ", ".join(k for k in _ZPA_LEGACY_BASES if k)))
+    return base
+
+
+def _legacy_zia_base(cloud):
+    """ZIA legacy base for ZIA_CLOUD: https://zsapi.<cloud>.net.
+
+    An empty cloud would build https://zsapi..net — a malformed host that
+    surfaces downstream as an opaque provider crash, so fail loud here.
+    """
+    if not cloud:
+        raise SystemExit(
+            "ZIA_CLOUD is required in legacy mode (e.g. zscalertwo) — it "
+            "selects the ZIA host https://zsapi.<cloud>.net")
+    return "https://zsapi.%s.net" % cloud
+
+
+def host_overrides(env):
+    """The host-override ctx keys resolved from the environment (empty value
+    == derive from the cloud). Shared by the fetcher and the audit attribution
+    flow so the two never drift on which overrides they honor — both compose
+    URLs and acquire tokens through the same helpers, which read these keys.
+    Overrides exist only for the legacy base hosts, whose per-cloud derivation
+    is irregular (and where the ZPA production-host bug lived); the OneAPI
+    gateway/token hosts derive regularly from cloud+vanity and are not
+    override-able. See tools/FETCH.md 'Host overrides'.
+    """
+    return {
+        "zpa_cloud": env.get("ZPA_CLOUD", ""),
+        "zia_legacy_base": env.get("ZIA_LEGACY_BASE_URL", ""),
+        "zpa_legacy_base": env.get("ZPA_LEGACY_BASE_URL", ""),
+    }
+
+
+def _gateway_for(ctx):
+    """OneAPI gateway base, derived from the cloud."""
+    return _oneapi_gateway(ctx.get("cloud", ""))
+
+
+def _zia_legacy_base_for(ctx):
+    """Legacy ZIA base: ZIA_LEGACY_BASE_URL override wins over derivation."""
+    return ctx.get("zia_legacy_base") or _legacy_zia_base(ctx.get("cloud", ""))
+
+
+def _zpa_legacy_base_for(ctx):
+    """Legacy ZPA base: ZPA_LEGACY_BASE_URL override wins over derivation."""
+    return ctx.get("zpa_legacy_base") or _legacy_zpa_base(ctx.get("zpa_cloud", ""))
 
 
 def compose_url(auth_mode, product, path, ctx):
     """Compose the product base URL + resource path for the auth mode.
 
-    ctx carries cloud/customer_id as needed. All Zscaler-specific URL
-    shapes live here (SDK-derived) — confirm against dev before first work
-    run; a wrong literal here is a one-line fix.
+    ctx carries cloud/customer_id and, optionally, the legacy base overrides
+    (zia_legacy_base / zpa_legacy_base) that win over cloud-derivation. All
+    Zscaler-specific URL shapes are SDK-derived; a wrong literal is a
+    one-line fix or (for the legacy bases) an env override.
 
-    ZCC paths in the registry carry their full post-gateway path including
-    the /zcc/papi/public/v1/ prefix (e.g. zcc/papi/public/v1/webForwardingProfile/listByCompany).
-    For OneAPI, the gateway is the same api.zsapi.net as zia/zpa and routes
-    by the /zcc/ prefix, so the registry path is used verbatim.
-    For legacy, the base is https://api-mobile.<cloud>.net/papi (SDK
-    v2_config.go) which already carries /papi and is not gateway-routed, so
-    the registry's gateway-only "zcc/papi/" prefix is stripped here to avoid
-    a doubled /papi/ — yielding https://api-mobile.<cloud>.net/papi/public/v1/...
+    ZCC is OneAPI-only (no legacy path). Its registry path carries the full
+    post-gateway prefix (zcc/papi/public/v1/...) and the OneAPI gateway
+    routes by the /zcc/ prefix, so the path is used verbatim.
     """
     if auth_mode == "oneapi":
+        gateway = _gateway_for(ctx)
         if product == "zia":
-            return "%s/zia/api/v1/%s" % (_oneapi_gateway(ctx.get("cloud", "")), path)
+            return "%s/zia/api/v1/%s" % (gateway, path)
         if product == "zpa":
             return "%s/zpa/mgmtconfig/v1/admin/customers/%s/%s" % (
-                _oneapi_gateway(ctx.get("cloud", "")), ctx["customer_id"], path
+                gateway, ctx["customer_id"], path
             )
         if product == "zcc":
-            return "%s/%s" % (_oneapi_gateway(ctx.get("cloud", "")), path)
+            return "%s/%s" % (gateway, path)
     elif auth_mode == "legacy":
         if product == "zia":
-            return "https://zsapi.%s.net/api/v1/%s" % (ctx["cloud"], path)
+            return "%s/api/v1/%s" % (_zia_legacy_base_for(ctx), path)
         if product == "zpa":
             return "%s/mgmtconfig/v1/admin/customers/%s/%s" % (
-                _LEGACY_ZPA_BASE, ctx["customer_id"], path
+                _zpa_legacy_base_for(ctx), ctx["customer_id"], path
             )
-        if product == "zcc":
-            # _legacy_zcc_base already ends in /papi; the registry's
-            # gateway-only "zcc/papi/" prefix would double it, so strip it.
-            leg_path = path[len("zcc/papi/"):] if path.startswith("zcc/papi/") else path
-            return "%s/%s" % (_legacy_zcc_base(ctx["zcc_cloud"]), leg_path)
+        # ZCC has no legacy path — OneAPI-only — falls through to the error.
     raise ValueError("unknown auth_mode/product: %r/%r" % (auth_mode, product))
 
 
-def build_headers(token, auth_token_header=False):
+def build_headers(token):
     """Bearer header for OneAPI / legacy-ZPA; cookie-only (no auth header)
     for legacy-ZIA, where token is None and the session cookie rides in the
     opener's cookie jar.
-
-    auth_token_header=True uses the ZCC legacy header name 'auth-token'
-    (SDK: v2_client.go req.Header.Set("auth-token", ...)) instead of
-    the standard Authorization: Bearer form.
     """
     if token is None:
         return {"Accept": "application/json"}
-    if auth_token_header:
-        return {"auth-token": token, "Accept": "application/json"}
     return {"Authorization": "Bearer " + token, "Accept": "application/json"}
 
 
@@ -310,6 +390,18 @@ def connection_hint(reason):
             "HTTPS_PROXY (and NO_PROXY); transparent agents need nothing"
         )
     return "hint: see tools/FETCH.md (proxy and TLS notes)"
+
+
+def _unreachable_message(url, reason):
+    """Actionable 'cannot reach' message with the host preserved but
+    tenant-identifying parts masked (the vanity / ZPA customer id), since
+    this string surfaces in fetch_all's failure summary and may be relayed.
+    The reason is masked too — a TLS error can name the host (e.g.
+    'certificate is not valid for <vanity>.zslogin.net')."""
+    return "cannot reach %s: %s\n%s" % (
+        _mask_identifiers(url.split("?")[0]),
+        _mask_identifiers(str(reason)),
+        connection_hint(str(reason)))
 
 
 def real_opener(env=None):
@@ -353,10 +445,8 @@ def real_opener(env=None):
                 return e.code, e.read(), retry_after
             except urllib.error.URLError as e:
                 # Self-explanatory on this side — no traceback relay needed.
-                raise SystemExit(
-                    "cannot reach %s: %s\n%s"
-                    % (url.split("?")[0], e.reason, connection_hint(str(e.reason)))
-                )
+                # Identifiers masked: this surfaces in the failure summary.
+                raise SystemExit(_unreachable_message(url, e.reason))
         # 429s are retried HERE (honoring Retry-After), so every request —
         # data GETs and auth POSTs alike — paces itself transparently and
         # callers keep their simple (status, body) contract.
@@ -393,9 +483,7 @@ def expand_paths(entry):
 
 def _fetch_paths(entry, auth_mode, ctx, token, opener):
     product = entry["product"]
-    # ZCC legacy auth uses a non-standard header: auth-token (SDK v2_client.go)
-    use_auth_token_header = (product == "zcc" and auth_mode == "legacy")
-    headers = build_headers(token, auth_token_header=use_auth_token_header)
+    headers = build_headers(token)
     query = entry.get("query") or {}
     paginate = _PAGINATORS[entry.get("pagination", product)]
     kwargs = {}
@@ -463,6 +551,8 @@ def acquire_token(auth_mode, product, env, ctx, opener, now_ms=None):
     env is a dict (os.environ at the call site) so tests stay hermetic.
     """
     if auth_mode == "oneapi":
+        # The token host derives from the vanity + cloud, matching the gateway
+        # the data calls use.
         token_url = _zslogin_host(
             _require(env, "ZSCALER_VANITY_DOMAIN"), env.get("ZSCALER_CLOUD", "")
         ) + "/oauth2/v1/token"
@@ -482,7 +572,9 @@ def acquire_token(auth_mode, product, env, ctx, opener, now_ms=None):
 
     if auth_mode == "legacy":
         if product == "zpa":
-            url = "%s/signin" % _LEGACY_ZPA_BASE
+            # signin must hit the same config base as the data calls (ctx
+            # override wins over ZPA_CLOUD derivation).
+            url = "%s/signin" % _zpa_legacy_base_for(ctx)
             body = urlencode({
                 "client_id": _require(env, "ZPA_CLIENT_ID"),
                 "client_secret": _require(env, "ZPA_CLIENT_SECRET"),
@@ -496,7 +588,7 @@ def acquire_token(auth_mode, product, env, ctx, opener, now_ms=None):
             return _token_field(raw, "access_token", "ZPA signin")
         if product == "zia":
             ts = str(now_ms if now_ms is not None else int(time.time() * 1000))
-            url = "https://zsapi.%s.net/api/v1/authenticatedSession" % ctx["cloud"]
+            url = "%s/api/v1/authenticatedSession" % _zia_legacy_base_for(ctx)
             payload = json.dumps({
                 "apiKey": obfuscate_api_key(_require(env, "ZIA_API_KEY"), ts),
                 "username": _require(env, "ZIA_USERNAME"),
@@ -510,20 +602,11 @@ def acquire_token(auth_mode, product, env, ctx, opener, now_ms=None):
                 raise SystemExit("ZIA session auth failed: HTTP %d" % status)
             return None
         if product == "zcc":
-            # ZCC legacy: POST /auth/v1/login with {apiKey, secretKey} ->
-            # {jwtToken} used as auth-token header (SDK zcc/v2_client.go).
-            cloud = _require(env, "ZCC_CLOUD")
-            url = "%s/auth/v1/login" % _legacy_zcc_base(cloud)
-            payload = json.dumps({
-                "apiKey": _require(env, "ZCC_CLIENT_ID"),
-                "secretKey": _require(env, "ZCC_CLIENT_SECRET"),
-            }).encode()
-            status, raw = opener(
-                "POST", url, {"Content-Type": "application/json"}, payload
-            )
-            if status != 200:
-                raise SystemExit("ZCC login failed: HTTP %d" % status)
-            return _token_field(raw, "jwtToken", "ZCC login")
+            # ZCC is OneAPI-only — there is no legacy mobile-portal path here.
+            # Caught per-product by fetch_all; the message names the fix.
+            raise SystemExit(
+                "ZCC has no legacy auth path — it is OneAPI-only. Use OneAPI, "
+                "or scope ZCC out of legacy runs with RESOURCE=\"zia zpa\".")
     raise SystemExit("unknown auth mode %r" % auth_mode)
 
 
@@ -531,23 +614,107 @@ def products_in_manifest():
     return sorted({e["product"] for e in load_manifest().values()})
 
 
+def _host_of(url):
+    """Hostname of an https URL (drops scheme and any path)."""
+    return url.split("//", 1)[-1].split("/", 1)[0]
+
+
 def diag_hosts(env):
-    """Unique HTTPS hosts the fetcher will contact in the configured mode."""
+    """Unique HTTPS hosts the fetcher will contact in the configured mode.
+
+    Honors the legacy host overrides (ZIA_LEGACY_BASE_URL /
+    ZPA_LEGACY_BASE_URL) so --diag probes the hosts a real fetch will
+    actually dial. ZCC is OneAPI-only — no separate host.
+    """
     if auth_mode_from_env(env) == "oneapi":
         vanity = env.get("ZSCALER_VANITY_DOMAIN") or "<vanity>"
         cloud = env.get("ZSCALER_CLOUD", "")
         login = _zslogin_host(vanity, cloud)
         gateway = _oneapi_gateway(cloud)
-        return sorted({login.split("//", 1)[1], gateway.split("//", 1)[1]})
+        return sorted({_host_of(login), _host_of(gateway)})
     cloud = env.get("ZIA_CLOUD", "") or env.get("ZSCALER_CLOUD", "") or "<cloud>"
-    zcc_cloud = env.get("ZCC_CLOUD", "") or cloud
-    # ZCC legacy base: api-mobile.<cloud>.net (path /papi is not a hostname)
-    zcc_host = "api-mobile.%s.net" % zcc_cloud
-    return sorted({
-        "zsapi.%s.net" % cloud,
-        "config.private.zscaler.com",
-        zcc_host,
-    })
+    zia = env.get("ZIA_LEGACY_BASE_URL") or "https://zsapi.%s.net" % cloud
+    zpa = (env.get("ZPA_LEGACY_BASE_URL")
+           or _zpa_legacy_base_or_none(env.get("ZPA_CLOUD", ""))
+           or "https://config.<zpa-cloud>")
+    return sorted({_host_of(zia), _host_of(zpa)})
+
+
+def _safe_base(derive, override):
+    """Render a derived base URL for debug, tagging an active override and
+    never raising — host-derivation errors are shown inline so the debug
+    summary always prints; the real failure surfaces at auth time."""
+    if override:
+        return override + " (override)"
+    try:
+        return derive()
+    except SystemExit as e:
+        return "<unresolved: %s>" % e
+
+
+def _debug_verbose(env):
+    return (env.get("FETCH_DEBUG") or "").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+def debug_config(env, ctx, auth_mode, products):
+    """Secret-safe startup summary: the auth mode, the URLs/hosts the run
+    will hit, and the safe targeting vars. Returns lines; the caller writes
+    them to stderr.
+
+    Two redaction tiers. Credentials and the proxy VALUE are NEVER printed
+    (proxy shown only as set/not-set). Tenant-IDENTIFYING values — the
+    vanity domain and the ZPA customer id — are shown as "set" unless
+    FETCH_DEBUG is truthy; the operationally-critical, non-identifying
+    info (mode, clouds, the derived/overridden base hosts, proxy state) is
+    always shown, since that is what diagnoses the host-derivation class of
+    failure without revealing which tenant this is.
+    """
+    verbose = _debug_verbose(env)
+    masked = []
+
+    def ident(value):
+        if value and not verbose:
+            masked.append(1)
+            return "set"
+        return value or "<unset>"
+
+    lines = ["fetch: auth mode = %s" % auth_mode]
+    proxy = env.get("HTTPS_PROXY") or env.get("https_proxy")
+    lines.append("fetch: proxy = %s" % ("set" if proxy else "not set"))
+    if auth_mode == "oneapi":
+        lines.append("fetch: ZSCALER_CLOUD = %s"
+                     % (env.get("ZSCALER_CLOUD") or "(production)"))
+        lines.append("fetch: ZSCALER_VANITY_DOMAIN = %s"
+                     % ident(env.get("ZSCALER_VANITY_DOMAIN")))
+        if ctx.get("customer_id"):
+            lines.append("fetch: ZPA_CUSTOMER_ID = %s" % ident(ctx["customer_id"]))
+        # The derived token host embeds the vanity domain, so mask the vanity
+        # (keeping the cloud suffix, the diagnostic part) unless verbose.
+        vanity = env.get("ZSCALER_VANITY_DOMAIN")
+        if not verbose:
+            if vanity:
+                masked.append(1)
+            vanity = "<vanity>"
+        token = _zslogin_host(vanity or "<vanity>", env.get("ZSCALER_CLOUD", ""))
+        lines.append("fetch: token host = %s" % token)
+        lines.append("fetch: gateway = %s" % _gateway_for(ctx))
+    else:
+        lines.append("fetch: ZIA_CLOUD = %s" % (env.get("ZIA_CLOUD") or "<unset>"))
+        if "zpa" in products:
+            lines.append("fetch: ZPA_CLOUD = %s"
+                         % (env.get("ZPA_CLOUD") or "(production)"))
+        if ctx.get("customer_id"):
+            lines.append("fetch: ZPA_CUSTOMER_ID = %s" % ident(ctx["customer_id"]))
+        if "zia" in products:
+            lines.append("fetch: zia base = %s" % _safe_base(
+                lambda: _zia_legacy_base_for(ctx), ctx.get("zia_legacy_base")))
+        if "zpa" in products:
+            lines.append("fetch: zpa base = %s" % _safe_base(
+                lambda: _zpa_legacy_base_for(ctx), ctx.get("zpa_legacy_base")))
+    if masked:
+        lines.append("fetch: (vanity/customer-id hidden; set FETCH_DEBUG=1 to show)")
+    return lines
 
 
 def _try_tls(host, context):
@@ -593,11 +760,17 @@ def run_diag(env):
         if "<" in host:
             sys.stderr.write("%s: skipped (env vars not set)\n" % host)
             continue
+        # Probe the REAL host, but print a vanity-masked name so a relayed
+        # --diag log does not reveal the tenant's vanity (in <vanity>.zslogin).
+        shown = _mask_identifiers(host)
         ok, detail = _try_tls(host, system_ctx)
-        line = "%s: system-trust %s (%s)" % (host, "OK" if ok else "FAIL", detail)
+        # detail is a TLS/connection reason that can itself name the host.
+        line = "%s: system-trust %s (%s)" % (
+            shown, "OK" if ok else "FAIL", _mask_identifiers(detail))
         if bundle_ctx is not None:
             ok2, detail2 = _try_tls(host, bundle_ctx)
-            line += "; +bundle %s (%s)" % ("OK" if ok2 else "FAIL", detail2)
+            line += "; +bundle %s (%s)" % (
+                "OK" if ok2 else "FAIL", _mask_identifiers(detail2))
         else:
             line += "; no CA bundle configured (set REQUESTS_CA_BUNDLE)"
         sys.stderr.write(line + "\n")
@@ -644,8 +817,10 @@ def main(argv=None):
     ctx = {
         "cloud": env.get("ZIA_CLOUD", "") or env.get("ZSCALER_CLOUD", ""),
         "customer_id": customer_id,
-        "zcc_cloud": env.get("ZCC_CLOUD", ""),
     }
+    ctx.update(host_overrides(env))
+    for line in debug_config(env, ctx, auth_mode, needed_products):
+        sys.stderr.write(line + "\n")
     out_dir = os.path.join("pulls", tenant)
     return fetch_all(auth_mode, env, ctx, opener, out_dir, only=only)
 

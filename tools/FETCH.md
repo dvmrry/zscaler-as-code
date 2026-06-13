@@ -69,44 +69,85 @@ pull (other resource types are unaffected). Trim the `expand` list in
 
 The fetcher resolves mode from `ZSCALER_USE_LEGACY_CLIENT`. Set it to a
 truthy value (`1`, `true`, `yes`, `on`) for legacy mode; leave it unset or
-set it to a falsey value for OneAPI mode (the default).
+set it to a falsey value for OneAPI mode (the default). Mode is uniform per
+tenant, not per product — a tenant runs entirely legacy or entirely OneAPI,
+never a mix. Only that mode's variables are required; the other mode's are
+ignored.
 
 **OneAPI** (default; `ZSCALER_USE_LEGACY_CLIENT` unset or falsey) —
-one OAuth2 bearer for all three products (ZIA, ZPA, ZCC); the same
-credential set is used regardless of product. (The implementation currently
-acquires a token once per product — up to three requests — but all three
-are identical; a future cleanup could acquire it once and share it.) Note
-the gateway actually dialed is
-`api.zsapi.net` (`api.<cloud>.zsapi.net` off production); the similar
-`api.zscaler.com` is only the OAuth audience string and serves no valid
-certificate — attempts to call it fail TLS verification on any network.
+one OAuth2 bearer for all products (ZIA, ZPA, ZCC); the same credential set
+is used regardless of product. (The implementation currently acquires a
+token once per product — up to three requests — but all three are
+identical; a future cleanup could acquire it once and share it.) Note the
+gateway actually dialed is `api.zsapi.net` (`api.<cloud>.zsapi.net` off
+production); the similar `api.zscaler.com` is only the OAuth audience string
+and serves no valid certificate — attempts to call it fail TLS verification
+on any network.
 
-    ZSCALER_CLIENT_ID
-    ZSCALER_CLIENT_SECRET
-    ZSCALER_VANITY_DOMAIN    vanity domain (token host)
-    ZSCALER_CLOUD            cloud suffix (empty for production)
-    ZPA_CUSTOMER_ID          ZPA customer id
+    ZSCALER_CLIENT_ID        required
+    ZSCALER_CLIENT_SECRET    required
+    ZSCALER_VANITY_DOMAIN    required — vanity domain (token host)
+    ZSCALER_CLOUD            optional — cloud suffix (empty for production)
+    ZPA_CUSTOMER_ID          required only when a zpa_* resource is in scope
 
-**Legacy** (`ZSCALER_USE_LEGACY_CLIENT=true`) — per-product:
+**Legacy** (`ZSCALER_USE_LEGACY_CLIENT=true`) — per-product. In `cred_env`
+each product's set is all-or-nothing: a half-set product is a loud error,
+and a product with no credentials is tolerated (it isn't required). That
+tolerance is about resolution, not fetch scope — `make fetch` still attempts
+every manifest product unless you scope it with `RESOURCE`, so a
+single-product tenant should pass e.g. `RESOURCE=zia` to keep the
+unconfigured products from failing auth (see **Scoped fetch** above).
 
     ZIA_API_KEY              obfuscated per request; session cookie auth
     ZIA_USERNAME
     ZIA_PASSWORD
-    ZIA_CLOUD                e.g. zscalertwo (ZIA host)
+    ZIA_CLOUD                required — e.g. zscalertwo; selects the ZIA host
+                             https://zsapi.<cloud>.net (a missing cloud is a
+                             loud error, not a malformed host)
     ZPA_CLIENT_ID            /signin client-credentials
     ZPA_CLIENT_SECRET
     ZPA_CUSTOMER_ID
+    ZPA_CLOUD                required — e.g. ZPATWO; selects the config base
+                             (PRODUCTION/ZPATWO/BETA/GOV/GOVUS). The same
+                             ZPA_CLOUD drives the Terraform provider's base
+                             via the SDK, so fetch and provider agree.
 
-    ZCC_CLIENT_ID            ZCC API key (posted as apiKey)
-    ZCC_CLIENT_SECRET        ZCC secret key (posted as secretKey)
-    ZCC_CLOUD                ZCC cloud suffix (e.g. zscalertwo); resolves
-                             the legacy host api-mobile.<cloud>.net
+**ZCC is OneAPI-only.** It has no legacy path here — the ZCC provider
+(`0.1.0-beta.1`, pinned) is OneAPI-only too. Under OneAPI, ZCC shares the
+`ZSCALER_*` credentials and the same gateway. In legacy mode a ZCC fetch
+fails loud; scope it out with `RESOURCE="zia zpa"` until you migrate the
+tenant to OneAPI.
 
-ZCC works in both modes: OneAPI uses the same `ZSCALER_*` credentials and
-gateway as the other products; legacy uses the mobile-portal API key/secret
-above with ZCC's non-standard `auth-token` header (handled automatically).
-The ZCC provider itself is pre-1.0 (`0.1.0-beta.1`, pinned) — expect schema
-churn on bumps.
+### Host overrides (escape hatches)
+
+The **legacy** base hosts — whose per-cloud derivation is irregular (and
+where the production-host bug lived) — can each be pinned with an explicit
+env var, tenant-scoped like any other credential. Set one when a derived
+host is wrong or the cloud is unlisted; the override wins over derivation,
+so it *restores* fetch/provider agreement rather than breaking it. Both are
+optional:
+
+    ZPA_LEGACY_BASE_URL      legacy ZPA config base (e.g. https://config.zpatwo.net)
+    ZIA_LEGACY_BASE_URL      legacy ZIA base (e.g. https://zsapi.zscalertwo.net)
+
+The OneAPI gateway and token hosts derive regularly from `ZSCALER_CLOUD` +
+`ZSCALER_VANITY_DOMAIN` (the same way the SDK does) and are not override-able
+— a wrong derivation there fails immediately and totally, not subtly, so an
+escape hatch buys little. Add one if a private/custom OneAPI gateway ever
+needs it.
+
+### Startup debug
+
+Every `make fetch` prints a secret-safe summary to stderr first: the auth
+mode, whether a proxy is set (never its value), the clouds, and the actual
+base URLs/hosts it will dial for the in-scope products — enough to diagnose
+the host/derivation class of failure. Credentials are never printed.
+
+Tenant-**identifying** values (vanity domain, ZPA customer id) are shown as
+`set` by default and the derived token host's vanity is masked
+(`<vanity>.zslogin.net`), so a pipeline log can be shared without leaking
+which tenant it is. Set `FETCH_DEBUG=1` to reveal them when you need the
+full picture. `cred_env`'s resolution summary applies the same rule.
 
 Credentials are read from the environment at runtime only. They are never
 written to disk, never logged, and never enter `pulls/` output. Real pulls

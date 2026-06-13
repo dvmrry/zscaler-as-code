@@ -5,7 +5,7 @@ import os
 import sys
 import unittest
 
-from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, paginate_single, paginate_zcc_v2, build_headers, compose_url, fetch_resource, acquire_token, products_in_manifest, auth_mode_from_env, _zslogin_host, _legacy_zcc_base, ca_bundle_path, connection_hint, diag_hosts, expand_paths, _retry_delay, _request_with_retry, _RETRY_BASE, _RETRY_CAP
+from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, paginate_single, paginate_zcc_v2, build_headers, compose_url, fetch_resource, acquire_token, products_in_manifest, auth_mode_from_env, _zslogin_host, _legacy_zpa_base, ca_bundle_path, connection_hint, diag_hosts, debug_config, host_overrides, expand_paths, _get_json, _mask_identifiers, _unreachable_message, _retry_delay, _request_with_retry, _RETRY_BASE, _RETRY_CAP
 
 
 class ManifestTest(unittest.TestCase):
@@ -161,15 +161,68 @@ class ComposeUrlTest(unittest.TestCase):
             "https://zsapi.zscalertwo.net/api/v1/urlCategories",
         )
 
-    def test_legacy_zpa(self):
+    def test_legacy_zpa_defaults_to_production_base(self):
+        # No ZPA_CLOUD in ctx -> production config base (back-compat).
         self.assertEqual(
             compose_url("legacy", "zpa", "segmentGroup", {"customer_id": "C9"}),
             "https://config.private.zscaler.com/mgmtconfig/v1/admin/customers/C9/segmentGroup",
         )
 
+    def test_legacy_zpa_base_derived_from_cloud(self):
+        # ZS2 lives on ZPATWO; the base must follow ZPA_CLOUD, not a
+        # hardcoded production host (the ZS2 401 root cause).
+        self.assertEqual(
+            compose_url("legacy", "zpa", "segmentGroup",
+                        {"customer_id": "C9", "zpa_cloud": "ZPATWO"}),
+            "https://config.zpatwo.net/mgmtconfig/v1/admin/customers/C9/segmentGroup",
+        )
+
+    def test_legacy_zpa_base_override_wins(self):
+        # An explicit override pins the host even when a cloud is set,
+        # restoring fetch/provider agreement when derivation is wrong.
+        self.assertEqual(
+            compose_url("legacy", "zpa", "segmentGroup", {
+                "customer_id": "C9", "zpa_cloud": "ZPATWO",
+                "zpa_legacy_base": "https://config.zpacustom.example",
+            }),
+            "https://config.zpacustom.example/mgmtconfig/v1/admin/customers/C9/segmentGroup",
+        )
+
+    def test_legacy_zpa_unknown_cloud_is_actionable(self):
+        with self.assertRaises(SystemExit) as cm:
+            compose_url("legacy", "zpa", "segmentGroup",
+                        {"customer_id": "C9", "zpa_cloud": "NOPE"})
+        self.assertIn("ZPA_LEGACY_BASE_URL", str(cm.exception))
+
+    def test_legacy_zpa_base_helper(self):
+        self.assertEqual(_legacy_zpa_base(""), "https://config.private.zscaler.com")
+        self.assertEqual(_legacy_zpa_base("PRODUCTION"), "https://config.private.zscaler.com")
+        self.assertEqual(_legacy_zpa_base("zpatwo"), "https://config.zpatwo.net")
+
+    def test_legacy_zia_base_override_wins(self):
+        self.assertEqual(
+            compose_url("legacy", "zia", "urlCategories", {
+                "cloud": "zscalertwo",
+                "zia_legacy_base": "https://zsapi.custom.example",
+            }),
+            "https://zsapi.custom.example/api/v1/urlCategories",
+        )
+
+    def test_legacy_zia_empty_cloud_is_actionable(self):
+        # Empty ZIA_CLOUD must fail loud, not build a malformed
+        # https://zsapi..net (the DAV-6 'Plugin did not respond' root).
+        with self.assertRaises(SystemExit) as cm:
+            compose_url("legacy", "zia", "urlCategories", {"cloud": ""})
+        self.assertIn("ZIA_CLOUD", str(cm.exception))
+
     def test_unknown_mode_raises(self):
         with self.assertRaises(ValueError):
             compose_url("nope", "zia", "x", {})
+
+    def test_legacy_zcc_has_no_path(self):
+        # ZCC is OneAPI-only — no legacy URL composition.
+        with self.assertRaises(ValueError):
+            compose_url("legacy", "zcc", "zcc/papi/public/v1/x", {})
 
 
 class BuildHeadersTest(unittest.TestCase):
@@ -580,15 +633,201 @@ class DiagHostsTest(unittest.TestCase):
         )
 
     def test_legacy_hosts(self):
-        env = {"ZSCALER_USE_LEGACY_CLIENT": "true", "ZIA_CLOUD": "zscalertwo",
-               "ZCC_CLOUD": "zscalertwo"}
+        # No ZCC host (OneAPI-only); ZPA host follows ZPA_CLOUD (unset here
+        # -> production config base).
+        env = {"ZSCALER_USE_LEGACY_CLIENT": "true", "ZIA_CLOUD": "zscalertwo"}
         self.assertEqual(
             diag_hosts(env),
-            ["api-mobile.zscalertwo.net", "config.private.zscaler.com", "zsapi.zscalertwo.net"],
+            ["config.private.zscaler.com", "zsapi.zscalertwo.net"],
         )
+
+    def test_legacy_hosts_follow_zpa_cloud(self):
+        env = {"ZSCALER_USE_LEGACY_CLIENT": "true", "ZIA_CLOUD": "zscalertwo",
+               "ZPA_CLOUD": "ZPATWO"}
+        self.assertEqual(
+            diag_hosts(env),
+            ["config.zpatwo.net", "zsapi.zscalertwo.net"],
+        )
+
+    def test_legacy_hosts_honor_overrides(self):
+        env = {"ZSCALER_USE_LEGACY_CLIENT": "true", "ZIA_CLOUD": "zscalertwo",
+               "ZPA_LEGACY_BASE_URL": "https://config.zpacustom.example/x"}
+        self.assertIn("config.zpacustom.example", diag_hosts(env))
 
     def test_placeholder_when_unset(self):
         self.assertEqual(diag_hosts({}), ["<vanity>.zslogin.net", "api.zsapi.net"])
+
+
+class MaskIdentifiersTest(unittest.TestCase):
+    """Error/diagnostic messages echo URLs; those must not leak the vanity
+    (token host) or the ZPA customer id, while keeping the host + structure
+    that make the error actionable."""
+
+    def test_masks_vanity_in_token_host(self):
+        self.assertEqual(
+            _mask_identifiers("https://acmecorp.zslogin.net/oauth2/v1/token"),
+            "https://<vanity>.zslogin.net/oauth2/v1/token",
+        )
+
+    def test_masks_vanity_keeps_cloud_suffix(self):
+        self.assertEqual(
+            _mask_identifiers("https://acmecorp.zsloginbeta.net/oauth2/v1/token"),
+            "https://<vanity>.zsloginbeta.net/oauth2/v1/token",
+        )
+
+    def test_masks_zpa_customer_id(self):
+        self.assertEqual(
+            _mask_identifiers(
+                "https://config.zpatwo.net/mgmtconfig/v1/admin/customers/9876543/segmentGroup"),
+            "https://config.zpatwo.net/mgmtconfig/v1/admin/customers/<customer-id>/segmentGroup",
+        )
+
+    def test_leaves_non_identifying_hosts_untouched(self):
+        for url in ("https://api.zsapi.net/zia/api/v1/urlCategories",
+                    "https://config.zpatwo.net/signin",
+                    "https://zsapi.zscalertwo.net/api/v1/x"):
+            self.assertEqual(_mask_identifiers(url), url)
+
+    def test_masks_bare_vanity_host(self):
+        self.assertEqual(_mask_identifiers("acmecorp.zslogin.net"),
+                         "<vanity>.zslogin.net")
+
+
+class UnreachableMessageTest(unittest.TestCase):
+    def test_masks_identifiers_and_keeps_hint(self):
+        msg = _unreachable_message(
+            "https://acmecorp.zslogin.net/oauth2/v1/token?x=1", "Connection refused")
+        self.assertNotIn("acmecorp", msg)
+        self.assertIn("<vanity>.zslogin.net", msg)
+        self.assertIn("HTTPS_PROXY", msg)            # actionable hint preserved
+
+    def test_masks_vanity_in_reason_string(self):
+        # a TLS cert error reason can name the host — mask it too
+        msg = _unreachable_message(
+            "https://acmecorp.zslogin.net/oauth2/v1/token",
+            "[SSL: CERTIFICATE_VERIFY_FAILED] certificate is not valid for "
+            "'acmecorp.zslogin.net'")
+        self.assertNotIn("acmecorp", msg)
+
+
+class GetJsonErrorMaskingTest(unittest.TestCase):
+    def test_http_error_message_masks_customer_id(self):
+        url = "https://api.zsapi.net/zpa/mgmtconfig/v1/admin/customers/9876543/segmentGroup"
+        opener = FakeOpener({url: [(404, {"error": "nope"})]})
+        with self.assertRaises(RuntimeError) as cm:
+            _get_json(opener, url, {}, {})
+        self.assertNotIn("9876543", str(cm.exception))
+        self.assertIn("<customer-id>", str(cm.exception))
+        self.assertIn("404", str(cm.exception))      # status preserved
+
+
+class RunDiagMaskingTest(unittest.TestCase):
+    def test_diag_output_masks_vanity(self):
+        import tools.fetch as F
+        env = {"ZSCALER_VANITY_DOMAIN": "acmecorp", "ZSCALER_CLOUD": ""}
+        old_try, old_err = F._try_tls, sys.stderr
+        F._try_tls = lambda host, ctx: (True, "HTTP 200")
+        sys.stderr = io.StringIO()
+        try:
+            F.run_diag(env)
+            out = sys.stderr.getvalue()
+        finally:
+            F._try_tls, sys.stderr = old_try, old_err
+        self.assertNotIn("acmecorp", out)            # vanity not in --diag output
+        self.assertIn("<vanity>.zslogin.net", out)
+        self.assertIn("api.zsapi.net", out)          # non-identifying host still shown
+
+    def test_diag_masks_vanity_in_tls_failure_detail(self):
+        # a TLS-failure detail string can echo the real probed host
+        import tools.fetch as F
+        env = {"ZSCALER_VANITY_DOMAIN": "acmecorp", "ZSCALER_CLOUD": ""}
+        old_try, old_err = F._try_tls, sys.stderr
+        F._try_tls = lambda host, ctx: (False, "hostname mismatch for %s" % host)
+        sys.stderr = io.StringIO()
+        try:
+            F.run_diag(env)
+            out = sys.stderr.getvalue()
+        finally:
+            F._try_tls, sys.stderr = old_try, old_err
+        self.assertNotIn("acmecorp", out)            # masked even in the detail
+
+
+class HostOverridesTest(unittest.TestCase):
+    """The shared override ctx-builder — fetch and audit both spread this so
+    they can't drift on which overrides they honor."""
+
+    def test_maps_env_to_ctx_keys(self):
+        env = {
+            "ZPA_CLOUD": "ZPATWO",
+            "ZIA_LEGACY_BASE_URL": "https://zia.x",
+            "ZPA_LEGACY_BASE_URL": "https://zpa.x",
+        }
+        self.assertEqual(host_overrides(env), {
+            "zpa_cloud": "ZPATWO",
+            "zia_legacy_base": "https://zia.x",
+            "zpa_legacy_base": "https://zpa.x",
+        })
+
+    def test_absent_overrides_are_empty_so_derivation_applies(self):
+        ov = host_overrides({})
+        self.assertEqual(set(ov.values()), {""})
+        # an empty override means "derive": compose_url falls back cleanly
+        ctx = {"customer_id": "C"}
+        ctx.update(ov)
+        self.assertEqual(
+            compose_url("oneapi", "zia", "x", ctx),
+            "https://api.zsapi.net/zia/api/v1/x",
+        )
+
+
+class DebugConfigTest(unittest.TestCase):
+    """Startup debug prints mode, the URLs/hosts to be hit and safe vars;
+    secret values never appear."""
+
+    def test_oneapi_default_masks_identifying_shows_hosts(self):
+        env = {"ZSCALER_VANITY_DOMAIN": "acme", "ZSCALER_CLOUD": "",
+               "ZSCALER_CLIENT_ID": "cid", "ZSCALER_CLIENT_SECRET": "topsecret"}
+        ctx = {"cloud": "", "customer_id": "C9"}
+        lines = "\n".join(debug_config(env, ctx, "oneapi", {"zia", "zpa"}))
+        self.assertIn("oneapi", lines.lower())
+        self.assertIn("api.zsapi.net", lines)        # gateway: not identifying
+        self.assertIn("<vanity>.zslogin", lines)     # token host w/ vanity masked
+        self.assertNotIn("acme", lines)              # vanity domain hidden
+        self.assertNotIn("C9", lines)                # customer id hidden
+        self.assertNotIn("topsecret", lines)         # secret never shown
+        self.assertIn("FETCH_DEBUG", lines)          # tells operator how to reveal
+
+    def test_oneapi_verbose_reveals_identifying(self):
+        env = {"ZSCALER_VANITY_DOMAIN": "acme", "ZSCALER_CLOUD": "",
+               "ZSCALER_CLIENT_ID": "cid", "ZSCALER_CLIENT_SECRET": "topsecret",
+               "FETCH_DEBUG": "1"}
+        ctx = {"cloud": "", "customer_id": "C9"}
+        lines = "\n".join(debug_config(env, ctx, "oneapi", {"zia", "zpa"}))
+        self.assertIn("acme.zslogin.net", lines)     # full token host
+        self.assertIn("C9", lines)                   # customer id revealed
+        self.assertNotIn("topsecret", lines)         # secret STILL never shown
+
+    def test_legacy_shows_derived_bases_masks_identifying(self):
+        env = {"ZSCALER_USE_LEGACY_CLIENT": "true", "ZIA_CLOUD": "zscalertwo",
+               "ZPA_CLOUD": "ZPATWO", "ZIA_API_KEY": "topsecret",
+               "HTTPS_PROXY": "http://proxy.example:8080"}
+        ctx = {"cloud": "zscalertwo", "customer_id": "C9",
+               "zpa_cloud": "ZPATWO"}
+        lines = "\n".join(debug_config(env, ctx, "legacy", {"zia", "zpa"}))
+        self.assertIn("legacy", lines.lower())
+        self.assertIn("zsapi.zscalertwo.net", lines)  # base host: not identifying
+        self.assertIn("config.zpatwo.net", lines)     # base host: not identifying
+        self.assertIn("proxy", lines.lower())         # proxy state announced
+        self.assertNotIn("C9", lines)                 # customer id hidden by default
+        self.assertNotIn("topsecret", lines)          # api key never shown
+        self.assertNotIn("proxy.example", lines)      # proxy VALUE not shown
+
+    def test_legacy_scoped_to_zia_omits_zpa_base(self):
+        env = {"ZSCALER_USE_LEGACY_CLIENT": "true", "ZIA_CLOUD": "zscalertwo"}
+        ctx = {"cloud": "zscalertwo", "customer_id": ""}
+        lines = "\n".join(debug_config(env, ctx, "legacy", {"zia"}))
+        self.assertIn("zsapi.zscalertwo.net", lines)
+        self.assertNotIn("config.private.zscaler.com", lines)
 
 
 class ExpandPathsTest(unittest.TestCase):
@@ -706,75 +945,17 @@ class ComposeUrlZccTest(unittest.TestCase):
             "https://api.beta.zsapi.net/zcc/papi/public/v1/webTrustedNetwork/listByCompany",
         )
 
-    def test_legacy_zcc(self):
-        # The registry's gateway-only "zcc/papi/" prefix is stripped for the
-        # legacy mobile-portal base (which already ends in /papi), so /papi/
-        # appears exactly once.
-        self.assertEqual(
-            compose_url("legacy", "zcc",
-                        "zcc/papi/public/v1/webForwardingProfile/listByCompany",
-                        {"zcc_cloud": "zscalertwo"}),
-            "https://api-mobile.zscalertwo.net/papi/public/v1/webForwardingProfile/listByCompany",
-        )
-
-    def test_legacy_zcc_path_without_prefix_unchanged(self):
-        # A path that does not carry the gateway prefix is appended as-is.
-        self.assertEqual(
-            compose_url("legacy", "zcc", "papi/public/v1/x",
-                        {"zcc_cloud": "zscalertwo"}),
-            "https://api-mobile.zscalertwo.net/papi/papi/public/v1/x",
-        )
-
-    def test_legacy_zcc_base_helper(self):
-        self.assertEqual(
-            _legacy_zcc_base("zscalertwo"),
-            "https://api-mobile.zscalertwo.net/papi",
-        )
-
-
-class BuildHeadersZccTest(unittest.TestCase):
-    def test_auth_token_header(self):
-        h = build_headers("jwt123", auth_token_header=True)
-        self.assertEqual(h["auth-token"], "jwt123")
-        self.assertNotIn("Authorization", h)
-
-    def test_bearer_by_default(self):
-        h = build_headers("tok")
-        self.assertIn("Authorization", h)
-        self.assertNotIn("auth-token", h)
-
 
 class AcquireTokenZccLegacyTest(unittest.TestCase):
-    def test_zcc_legacy_login_returns_jwt(self):
-        opener = FakeOpener({
-            "https://api-mobile.zscalertwo.net/papi/auth/v1/login": [
-                (200, {"jwtToken": "ZCC_JWT_TOK", "expires_in": "86400"})
-            ]
-        })
-        env = {
-            "ZCC_CLIENT_ID": "cid",
-            "ZCC_CLIENT_SECRET": "sec",
-            "ZCC_CLOUD": "zscalertwo",
-        }
-        token = acquire_token("legacy", "zcc", env, {}, opener)
-        self.assertEqual(token, "ZCC_JWT_TOK")
-        body = json.loads(opener.bodies[0].decode())
-        self.assertEqual(body["apiKey"], "cid")
-        self.assertEqual(body["secretKey"], "sec")
-
-
-class DiagHostsZccTest(unittest.TestCase):
-    def test_legacy_includes_zcc_host(self):
-        env = {"ZSCALER_USE_LEGACY_CLIENT": "true",
-               "ZIA_CLOUD": "zscalertwo", "ZCC_CLOUD": "zscalertwo"}
-        hosts = diag_hosts(env)
-        self.assertIn("api-mobile.zscalertwo.net", hosts)
-
-    def test_legacy_zcc_defaults_to_zia_cloud(self):
-        env = {"ZSCALER_USE_LEGACY_CLIENT": "true", "ZIA_CLOUD": "zscalertwo"}
-        hosts = diag_hosts(env)
-        self.assertIn("api-mobile.zscalertwo.net", hosts)
-
+    def test_zcc_legacy_is_rejected_with_actionable_message(self):
+        # ZCC is OneAPI-only — legacy auth must fail loud (caught per-product
+        # by fetch_all), not silently or with a confusing "unknown mode".
+        with self.assertRaises(SystemExit) as cm:
+            acquire_token("legacy", "zcc",
+                          {"ZCC_CLIENT_ID": "x"}, {}, lambda *a: (200, b"{}"))
+        msg = str(cm.exception)
+        self.assertIn("OneAPI", msg)
+        self.assertIn("zia zpa", msg)
 
 
 class MalformedAuthResponseTest(unittest.TestCase):
