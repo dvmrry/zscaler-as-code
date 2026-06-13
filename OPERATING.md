@@ -17,6 +17,39 @@ or variable-group names, tenant labels) belong in `OPERATING.local.md`,
 which is gitignored and lives only in your private deployment copy. A
 template for it is `OPERATING.local.md.example`.
 
+## The short version (if you read nothing else)
+
+- Pull `main` first. Run `make` targets; commit only their output. Never
+  hand-edit generated files (`config/`, `imports/`, `envs/`) or source
+  (`modules/`, `tools/`, `Makefile`, `pipelines/`, `*.md`).
+- GREEN = imports of new objects **plus `0 to change, 0 to destroy`**, with
+  `make assert-clean` passing. Any other `+`, `-`, or `~` on an existing
+  object → **STOP**.
+- **STOP** — do not push, apply, or hand-edit; raise an issue — when a plan
+  surprises you, a target errors in a way you do not understand, you would
+  have to edit a generated or source file, or the situation is not covered
+  here or in `RUNBOOK.md`.
+- On steps that authenticate, copy the working `make fetch` step's **whole**
+  `env:` block (credentials, cloud, `HTTPS_PROXY`). A provider crash or hang
+  is almost always a missing/mis-named cloud or a dropped proxy — read the
+  `make fetch` startup summary (mode, hosts, proxy) first.
+- Use the named targets — `commitback.sh`, `import-one`, `statefill`,
+  `forget` — never raw `terraform` / `git` / `az`.
+- **Claim only what you verified.** "Tests pass" means you ran them and read
+  the output; a finding is a hypothesis until confirmed.
+- Never post credentials, tokens, real tenant identifiers, or raw API /
+  state / drift output anywhere. Redact when unsure.
+- Applies happen from `main`, after a human merges. Testing is read-only on
+  the code.
+
+**Before you push or apply, confirm:** on `main` with a clean tree · the
+plan is imports / `0 to change, 0 to destroy` (or an explicit `RUNBOOK.md`
+step says otherwise) · nothing hand-edited (output is `make`-generated) ·
+anything you are unsure about → stop and raise an issue instead.
+
+The sections below are the detail behind each of these — consult the
+relevant one per task; do not try to hold it all in memory.
+
 ## Operating vs developing
 
 `main` is the source of truth. The tooling — generators, `make` targets,
@@ -103,10 +136,17 @@ step: the provider credentials, the cloud (`ZIA_CLOUD` / `ZSCALER_*` —
 read by their exact names, not a tenant-prefixed alias), and `HTTPS_PROXY`
 if egress is proxied. The safe move when adding or editing a step that
 authenticates is to **copy the working `make fetch` step's entire `env:`
-block verbatim** rather than retyping or cherry-picking it. A missing or
-mis-named cloud, or a dropped proxy, does not produce a clear error — it
-surfaces as a provider crash (`Plugin did not respond` at
-`ConfigureProvider`) or a hung request. (See `RUNBOOK.md` troubleshooting.)
+block verbatim** rather than retyping or cherry-picking it.
+
+`make fetch` prints a startup summary before it authenticates — the auth
+mode, the hosts it will dial, and whether a proxy is set (secrets and
+tenant-identifying values are masked; `FETCH_DEBUG=1` un-masks them) — and
+the credential resolver fails loud naming any variable that is missing or
+half-set. **Read that summary first** when a step crashes or hangs: a
+missing/mis-named cloud or a dropped proxy shows up there as the wrong host
+or `proxy = not set`. Left undiagnosed it surfaces later as a provider crash
+(`Plugin did not respond` at `ConfigureProvider`) or a hung request. (See
+`RUNBOOK.md` troubleshooting.)
 
 ## Testing a change before it is on `main`
 
@@ -155,15 +195,41 @@ Order of operations, every time, before concluding anything is wrong:
 
 When you STOP, capture it as an issue in the project's tracker — GitHub
 issues, or whatever your deployment uses — so the work is picked up
-deliberately rather than guessed at. A good issue has:
-- What you were doing — the operation and the exact `make` command.
-- The exact error or unexpected plan output, verbatim, with tenant values
-  (names, URLs, IDs) replaced by `<redacted>`. Exit codes, step numbers,
-  and error text are safe and wanted.
-- What you have NOT done yet (e.g. "branch pushed, not applied").
+deliberately rather than guessed at.
 
-Never include credentials, tokens, real tenant identifiers, or raw API
-responses in an issue, a comment, or anywhere in this repo — see
+**The contract: write it so someone who wasn't there can act on it alone.**
+Whoever picks up the issue has none of your context — they did not see the
+run, cannot reach your tenant, credentials, state, or logs, and should not
+have to ask you for them (the round-trip loses fidelity, and they cannot see
+what you can). The issue is their only window. It must carry enough of the
+problem's *shape* to diagnose in one pass while carrying none of the *data*.
+Those are one rule, not two: **strip the values, keep the structure** — a
+perfectly redacted issue that also removed the error class is useless.
+
+Actionable from shape alone means:
+- **Locate it in the code.** The exact `make` command/target, the tool, the
+  resource type, the auth mode, the product — the structural coordinates a
+  reader maps to a line. Values do not help them; coordinates do.
+- **The failure, verbatim and complete.** Exact error text, exit code, and
+  the named checkpoint (`[commit-back N/5]`) or the target's own named
+  cause. Replace tenant values (names, URLs, IDs) with `<redacted>`, but
+  never the message template, the status code, the path shape, or which
+  field is involved.
+- **Expected vs actual.** What you expected (e.g. "imports + `0 to change,
+  0 to destroy`") and what you got (e.g. "`+ cbi_profile` on one rule") —
+  the delta is the diagnosis.
+- **State of the world.** What is done and not done ("branch pushed, not
+  applied"; "import done, statefill not"), so the reader does not propose a
+  redo or assume a clean slate.
+- **The conditions, not the data.** Deterministic or intermittent? One
+  resource or all? First run or steady-state? Which mode/cloud, by name.
+
+The test: **could someone who has never seen your environment produce a fix,
+a diagnostic, or a code change from this issue without asking you a single
+follow-up?** If not, it is not ready to file.
+
+Never include credentials, tokens, real tenant identifiers, or raw API /
+state / drift output in an issue, a comment, or anywhere in this repo — see
 `AGENTS.md` data hygiene. When unsure whether a value is safe to share,
 redact it and say so. (A tracker is also where work is shared between a
 person and an automated operator; the same redaction rule applies to
