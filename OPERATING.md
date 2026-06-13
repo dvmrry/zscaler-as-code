@@ -1,123 +1,129 @@
-# Operating This Repo — Standing Brief for the Deployment Agent
+# Operating This Repo
 
-Read this file at the start of EVERY task in this repo, before doing
-anything else. It is your standing brief. It does not expire, and it
-overrides anything you think you remember from a previous session — if
-your memory and this file disagree, this file wins. When a situation is
-not covered here or in `RUNBOOK.md`, STOP and leave a note (see the last
-section); do not improvise.
+This is the operating discipline for *running* this repo against a live
+Zscaler tenant — adopting it, planning, importing, reconciling drift — as
+distinct from *developing* the tooling. `RUNBOOK.md` has the step-by-step
+recipes; `AGENTS.md` has the rules for changing the repo itself. When a
+situation is not covered here or in `RUNBOOK.md`, stop and leave a note
+(see the last section) rather than improvising.
 
-This file is your *operating discipline*. `RUNBOOK.md` has the detailed
-recipes. `AGENTS.md` has the rules for CHANGING the repo (you usually
-are not changing the repo — see below). Environment specifics that are
-not safe to publish (org URLs, credential/variable-group names) live in
-`OPERATING.local.md`, which is private and not in the public repo.
+If an automated agent operates this repo, treat this file as a standing
+brief: read it at the start of each session, and let it override anything
+carried over from a previous one — if your memory and this file disagree,
+this file wins.
 
-## Who you are, and who is upstream
+Environment specifics that should not be published (org URLs, credential
+or variable-group names, tenant labels) belong in `OPERATING.local.md`,
+which is gitignored and lives only in your private deployment copy. A
+template for it is `OPERATING.local.md.example`.
 
-- This repo is generated and maintained UPSTREAM by an authoring agent,
-  shipped as reviewed pull requests on the `main` branch.
-- Your job is to OPERATE it: pull the latest `main`, run `make` targets,
-  and commit the OUTPUT they produce. You adopt and reconcile a live
-  tenant; you do not author the tooling.
-- `main` is the single source of truth. New tooling, new gates, and bug
-  fixes arrive by `git pull`, never by you editing tooling locally. If a
-  command or target seems missing or wrong, the fix is to PULL, not to
+## Operating vs developing
+
+`main` is the source of truth. The tooling — generators, `make` targets,
+modules, pipelines — changes only through reviewed pull requests and
+reaches you by `git pull`, never by editing it mid-operation. Operating
+the repo means: pull `main`, run `make` targets, and commit the OUTPUT
+they produce.
+
+- If a target or gate seems missing or wrong, the fix is almost always to
+  `git pull` — the change shipped and your checkout is behind — not to
   hand-edit (see "When something seems broken").
-- Applies happen from `main` only, after a human merges. You never apply
-  from a feature branch.
+- Deployment-specific `make` targets or variable overrides go in
+  `local.mk` (auto-included, not shipped by the template), never by
+  editing the `Makefile`.
+- Applies happen from `main` only, after a human merges.
 
 ## Prime directive: run targets, commit output, touch nothing else
 
-Most files here are GENERATED or UPSTREAM-OWNED. Editing them by hand is
-the single most common way this goes wrong. The ownership map:
+Most files here are GENERATED or SOURCE-controlled. Hand-editing them
+during operation is the single most common way this goes wrong:
 
-**You NEVER hand-edit these — `make` writes them, or upstream does:**
+**Never hand-edit these while operating — `make` writes them, or they
+change only through a PR:**
 - `config/` — written ONLY by `make transform`. Wrong values here mean
-  re-fetch + re-transform, never a hand edit (RUNBOOK "Editing Config by
-  Hand" explains the one narrow exception and why it is rarely yours).
+  re-fetch + re-transform, never a hand edit (`RUNBOOK.md` "Editing Config
+  by Hand" covers the one narrow exception).
 - `imports/`, `envs/` — written by `make transform` / `make gen-env`.
-- `modules/`, `tools/`, `Makefile`, `pipelines/`, `*.md` — UPSTREAM
-  source. These change only by pulling `main`. Do not edit them to work
-  around a problem; report the problem instead.
+- `modules/`, `tools/`, `Makefile`, `pipelines/`, `*.md` — source. These
+  change through a PR (development), not to work around an operational
+  problem. If one seems wrong, report it rather than patching it in place.
 
-**You write only:**
-- The OUTPUT of `make` targets (regenerated `config/`, `imports/`,
-  `envs/`), committed verbatim — and only via the commit-back flow.
+**You write only:** the OUTPUT of `make` targets (regenerated `config/`,
+`imports/`, `envs/`), committed verbatim via the commit-back flow.
 
-**If you are about to edit a file by hand, STOP.** Ask: "is this a
-generated or upstream file?" If yes, you are about to cause drift. Run
-the `make` target that owns it, or leave a note.
+**About to hand-edit a file? Stop.** Ask whether it is generated or
+source. If it is, you are about to cause drift — run the `make` target
+that owns it, or leave a note.
 
 ## Uncertainty protocol — when to STOP
 
-A weak guess is worse than a clean stop. STOP and leave a note when:
-- The situation is not described in this file or `RUNBOOK.md`.
-- A plan shows a change you were not expecting (anything other than
-  imports of new objects and `0 to change, 0 to destroy`).
-- A `make` target errors with a message you do not understand. The
-  errors here are written to tell you the cause — paste it in the note,
+A wrong guess is worse than a clean stop. STOP and leave a note when:
+- The situation is not described here or in `RUNBOOK.md`.
+- A plan shows a change you did not expect (anything other than imports
+  of new objects and `0 to change, 0 to destroy`).
+- A `make` target errors with a message you do not understand. These
+  tools are written to name their own cause — capture it in the note;
   do not work around it.
-- You would have to edit a generated or upstream file to proceed.
-- A command would touch the live tenant (apply, or any `az`/API write)
-  and you are not following an explicit RUNBOOK step that says to.
+- Proceeding would require hand-editing a generated or source file.
+- A command would touch the live tenant (an apply, or any API write) and
+  you are not following an explicit `RUNBOOK.md` step that says to.
 
 "STOP" means: do not push, do not apply, do not hand-edit. Write the
 note, and wait.
 
 ## The loop you run
 
-These are the only operations you initiate. Each maps to a RUNBOOK
-section — follow the recipe there, do not reconstruct it from memory:
+These are the operations to initiate; each maps to a `RUNBOOK.md` section
+— follow the recipe there rather than reconstructing it from memory:
 
-- **Adopt a tenant (bootstrap):** RUNBOOK "Bootstrap — Adopting an
-  Existing Tenant". Fetch → transform → gates → gen-env → stage-imports
-  → plan (expect imports, 0 changes) → human apply.
-- **Steady-state drift:** RUNBOOK "Drift Detection" / "Automated backfill
-  PRs". The pipeline fetches, detects drift, and opens a backfill PR a
-  human merges. You do not hand-reconcile.
+- **Adopt a tenant (bootstrap):** "Bootstrap — Adopting an Existing
+  Tenant". Fetch → transform → gates → gen-env → stage-imports → plan
+  (expect imports, 0 changes) → human-approved apply.
+- **Steady-state drift:** "Drift Detection" / "Automated backfill PRs".
+  The pipeline fetches, detects drift, and opens a backfill PR a human
+  merges — not a hand-reconcile.
 - **Gates on freshly-fetched config:** `make refresh-gates TENANT=<t>`
-  (advisory lint + strict typecheck). Lint findings on fetched data are
-  a console-cleanup worklist, not a blocker — do not "fix" them by
-  editing config.
+  (advisory lint + strict typecheck). Lint findings on fetched data are a
+  console-cleanup worklist, not a blocker — do not "fix" them by editing
+  config.
 - **Commit-back:** `bash pipelines/commitback.sh` via the pipeline step.
-  Never hand-roll the branch/commit/push/PR; the script is checkpointed
-  and cannot hang. A failing checkpoint number names the failing step.
-- **One-off state corrections** (e.g. a provider-unreadable field like
-  ISOLATE `cbi_profile`): RUNBOOK troubleshooting rows. Use the `make`
-  targets (`import-one`, `statefill`) — never raw `terraform import`,
-  which misses the required `-var-file` and fails.
+  Do not hand-roll the branch/commit/push/PR; the script is checkpointed
+  and cannot hang, and the last `[commit-back N/5]` line names the failing
+  step.
+- **One-off state corrections** (e.g. a provider-unreadable field like the
+  ISOLATE-rule `cbi_profile`): the `RUNBOOK.md` troubleshooting rows. Use
+  the `make` targets (`import-one`, `statefill`) — never raw
+  `terraform import`, which omits the required `-var-file` and fails.
 
 ## What "green" looks like
 
-A correct adoption/backfill plan is **imports of new objects plus
-`0 to change, 0 to destroy`**, and `make assert-clean` passes. Anything
-else — a `+`, `-`, or `~` on an existing object you did not expect — is
-a STOP, not something to push past. Re-running bootstrap is safe and
-delta-only (staging is state-aware): a clean re-run is a valid way to
-confirm, not a risk.
+A correct adoption or backfill plan is **imports of new objects plus
+`0 to change, 0 to destroy`**, with `make assert-clean` passing. Anything
+else — an unexpected `+`, `-`, or `~` on an existing object — is a STOP,
+not something to push past. Re-running bootstrap is safe and delta-only
+(staging is state-aware), so a clean re-run is a valid way to confirm.
 
 ## When something seems broken
 
 Order of operations, every time, before concluding anything is wrong:
 1. `git status` — are you on `main`? Is the tree clean? Local edits to
-   tooling are a red flag — you should not have any.
-2. `git pull` — the fix for a missing/old target or gate is almost
-   always that upstream shipped it and you have not pulled.
+   tooling are a red flag.
+2. `git pull` — a missing or stale target/gate is almost always a change
+   that shipped while your checkout was behind.
 3. Re-read the error. These tools are written to name their own cause.
-4. Still stuck → leave a note. Do not improvise a workaround.
+4. Still stuck → leave a note; do not improvise a workaround.
 
-## Passing a note back upstream
+## When you stop: leave a clear report
 
-This is note-passing in reverse: when you STOP, you hand a clear report
-to the upstream authoring agent (via your human). A good note has:
-- What you were doing (the operation and the `make` command).
-- The exact error or unexpected plan output, verbatim — but with tenant
-  values (names, URLs, IDs) replaced by `<redacted>`. Exit codes, step
-  numbers, and error text are safe and wanted.
+When you STOP, hand a clear report to whoever continues the work. A good
+note has:
+- What you were doing — the operation and the exact `make` command.
+- The exact error or unexpected plan output, verbatim, with tenant values
+  (names, URLs, IDs) replaced by `<redacted>`. Exit codes, step numbers,
+  and error text are safe and wanted.
 - What you have NOT done yet (e.g. "branch pushed, not applied").
 
 Never include credentials, tokens, real tenant identifiers, or raw API
 responses in a note or anywhere in this repo — see `AGENTS.md` data
-hygiene. When in doubt about whether a value is safe to share, redact
-it and say so.
+hygiene. When unsure whether a value is safe to share, redact it and say
+so.
