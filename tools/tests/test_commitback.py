@@ -1,11 +1,11 @@
 """Tests for the commit-back script (pipelines/commitback.sh).
 
 The script is the pulled home for commit-back logic — every field
-incident (az hangs, set -e killing the PR call after the push) happened
-in adapted inline YAML, so its behavior is pinned here like any tool.
-Runs against a scratch repo with a local bare origin and a PATH-stubbed
-curl: the full flow (detect -> branch -> commit -> push -> PR REST
-call) executes with zero network.
+incident (az hangs, set -e killing the PR call after the push, PR
+pileup) happened in adapted inline YAML, so its behavior is pinned here
+like any tool. Runs against a scratch repo with a local bare origin and
+a PATH-stubbed curl: the full flow (detect changed types -> snapshot ->
+one stable branch + PR per type) executes with zero network.
 """
 import json
 import os
@@ -18,19 +18,20 @@ REPO_ROOT = os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))))
 SCRIPT = os.path.join(REPO_ROOT, "pipelines", "commitback.sh")
 
-STUB_CURL = """#!/bin/sh
-prev=""
-out=""
-body=""
-printf '%s\\n' "$@" > "$CURL_LOG"
+# Stub curl: append each call's URL to CURL_LOG and each POST body to
+# CURL_BODIES (one JSON object per line), write a canned PR response, and
+# print the configured HTTP status as curl's -w '%{http_code}' output.
+STUB_CURL = r"""#!/bin/sh
+out=""; body=""; prev=""; url=""
 for a in "$@"; do
   case "$prev" in
     -o) out="$a";;
     -d) body="$a";;
   esac
-  prev="$a"
+  url="$a"; prev="$a"
 done
-if [ -n "$body" ]; then cp "${body#@}" "$CURL_BODY"; fi
+printf '%s\n' "$url" >> "$CURL_LOG"
+if [ -n "$body" ]; then cat "${body#@}" >> "$CURL_BODIES"; printf '\n' >> "$CURL_BODIES"; fi
 if [ -n "$out" ]; then echo '{"pullRequestId": 1}' > "$out"; fi
 printf '%s' "${CURL_STATUS:-201}"
 """
@@ -68,7 +69,7 @@ class CommitbackTest(unittest.TestCase):
         self.env = dict(os.environ)
         self.env.update({
             "PATH": stub_bin + os.pathsep, "CURL_LOG": os.path.join(self.tmp, "curl.log"),
-            "CURL_BODY": os.path.join(self.tmp, "curl.body"),
+            "CURL_BODIES": os.path.join(self.tmp, "curl.bodies"),
             "TENANT": "t1", "BRANCH_PREFIX": "bootstrap",
             "PR_TITLE": "bootstrap refresh: t1",
             "SYSTEM_ACCESSTOKEN": "fake-token",
@@ -83,13 +84,18 @@ class CommitbackTest(unittest.TestCase):
         subprocess.check_call(("git",) + args, stdout=subprocess.DEVNULL,
                               stderr=subprocess.STDOUT)
 
-    def _stage_change(self):
+    def _stage_types(self, *types):
+        """Write a config + imports file for each resource type, mimicking a
+        fresh transform; they are new files vs main (= additions to detect)."""
         for d in ("config/t1", "imports/t1"):
-            path = os.path.join(self.work, d)
-            os.makedirs(path)
-            with open(os.path.join(path, "x.json"), "w",
-                      encoding="utf-8") as f:
-                f.write("{}\n")
+            os.makedirs(os.path.join(self.work, d), exist_ok=True)
+        for rt in types:
+            with open(os.path.join(self.work, "config/t1", rt + ".auto.tfvars.json"),
+                      "w", encoding="utf-8") as f:
+                f.write('{"items": {}}\n')
+            with open(os.path.join(self.work, "imports/t1", rt + "_imports.tf"),
+                      "w", encoding="utf-8") as f:
+                f.write("# import blocks for %s\n" % rt)
 
     def _run(self, **env_extra):
         env = dict(self.env)
@@ -104,37 +110,135 @@ class CommitbackTest(unittest.TestCase):
         out = subprocess.check_output(
             ["git", "-C", self.origin, "branch", "--list",
              "--format=%(refname:short)"])
-        return out.decode("utf-8").split()
+        return [b for b in out.decode("utf-8").split() if b != "main"]
 
-    def test_happy_path_pushes_branch_and_opens_pr(self):
-        self._stage_change()
+    def _pr_bodies(self):
+        path = self.env["CURL_BODIES"]
+        if not os.path.exists(path):
+            return []
+        with open(path, encoding="utf-8") as f:
+            return [json.loads(line) for line in f if line.strip()]
+
+    def test_one_stable_branch_and_pr_per_changed_type(self):
+        self._stage_types("zia_url_categories", "zpa_segment_group")
         code, out = self._run()
         self.assertEqual(code, 0, out)
-        branches = [b for b in self._origin_branches()
-                    if b.startswith("bootstrap/t1/")]
-        self.assertEqual(len(branches), 1, out)
-        with open(self.env["CURL_BODY"], encoding="utf-8") as f:
-            body = json.load(f)
-        self.assertEqual(body["sourceRefName"], "refs/heads/" + branches[0])
-        self.assertEqual(body["targetRefName"], "refs/heads/main")
-        self.assertEqual(body["title"], "bootstrap refresh: t1")
-        self.assertTrue(body["description"].startswith(
-            "Automated commit-back"))
+        self.assertEqual(sorted(self._origin_branches()),
+                         ["bootstrap/t1/zia_url_categories",
+                          "bootstrap/t1/zpa_segment_group"], out)
+        bodies = self._pr_bodies()
+        self.assertEqual(len(bodies), 2, out)  # one PR POST per type
+        by_src = {b["sourceRefName"]: b for b in bodies}
+        self.assertEqual(
+            by_src["refs/heads/bootstrap/t1/zia_url_categories"]["title"],
+            "bootstrap refresh: t1 — zia_url_categories")
+        for b in bodies:
+            self.assertEqual(b["targetRefName"], "refs/heads/main")
+        # project space survived as %20 in the REST URL
         with open(self.env["CURL_LOG"], encoding="utf-8") as f:
-            curl_args = f.read()
-        self.assertIn("My%20Project", curl_args)  # space survived, encoded
-        self.assertIn("[commit-back 5/5] PR opened", out)
+            self.assertIn("My%20Project", f.read())
+
+    def test_branch_names_are_stable_no_timestamp(self):
+        self._stage_types("zia_rule_labels")
+        code, out = self._run()
+        self.assertEqual(code, 0, out)
+        # exact stable name — nothing appended (no date), so a re-drift
+        # refreshes this same branch instead of stacking a new one
+        self.assertEqual(self._origin_branches(), ["bootstrap/t1/zia_rule_labels"])
+
+    def test_rerun_refreshes_same_branches_not_duplicates(self):
+        self._stage_types("zia_url_categories", "zpa_segment_group")
+        self._run()
+        self._stage_types("zia_url_categories", "zpa_segment_group")  # workspace is ephemeral
+        code, out = self._run()
+        self.assertEqual(code, 0, out)
+        # still exactly two branches — stable names, force-pushed, not doubled
+        self.assertEqual(len(self._origin_branches()), 2, out)
+
+    def test_409_is_success_already_open(self):
+        # a stable branch whose PR is already open: the push refreshed it,
+        # and ADO 409s the create — that is success, not failure
+        self._stage_types("zia_url_categories")
+        code, out = self._run(CURL_STATUS="409")
+        self.assertEqual(code, 0, out)
+        self.assertIn("active PR already open", out)
+        self.assertEqual(self._origin_branches(), ["bootstrap/t1/zia_url_categories"])
+
+    def test_server_error_fails_loud_after_push(self):
+        self._stage_types("zia_url_categories")
+        code, out = self._run(CURL_STATUS="500")
+        self.assertEqual(code, 1, out)
+        self.assertIn("HTTP 500", out)
+        # the branch is pushed before the PR call, so it survives for a re-run
+        self.assertEqual(self._origin_branches(), ["bootstrap/t1/zia_url_categories"])
+
+    def test_artifact_note_in_every_body(self):
+        self._stage_types("zia_url_categories", "zpa_segment_group")
+        code, out = self._run(ARTIFACT_NOTE="_full report: drift-report_")
+        self.assertEqual(code, 0, out)
+        bodies = self._pr_bodies()
+        self.assertEqual(len(bodies), 2)
+        for b in bodies:
+            self.assertIn("_full report: drift-report_", b["description"])
+            self.assertIn("resource type", b["description"])
 
     def test_clean_worktree_is_a_quiet_success(self):
         code, out = self._run()
         self.assertEqual(code, 0, out)
         self.assertIn("nothing to commit", out)
-        self.assertEqual([b for b in self._origin_branches()
-                          if b != "main"], [])
+        self.assertEqual(self._origin_branches(), [])
         self.assertFalse(os.path.exists(self.env["CURL_LOG"]))
 
+    def test_unrelated_change_is_not_a_resource_type(self):
+        # a change outside the <type>.auto.tfvars.json / <type>_imports.tf
+        # shape derives no type -> nothing to commit
+        os.makedirs(os.path.join(self.work, "config/t1"), exist_ok=True)
+        with open(os.path.join(self.work, "config/t1", "README.md"),
+                  "w", encoding="utf-8") as f:
+            f.write("notes\n")
+        code, out = self._run()
+        self.assertEqual(code, 0, out)
+        self.assertIn("nothing to commit", out)
+        self.assertEqual(self._origin_branches(), [])
+
+    def _commit_types_to_main(self, *types):
+        """Commit + push config/imports for types to main, so the PR base
+        (origin/main) already tracks them — needed to exercise deletions."""
+        self._stage_types(*types)
+        self._git("-C", self.work, "add", "-A")
+        self._git("-C", self.work, "-c", "user.name=t", "-c", "user.email=t@invalid",
+                  "commit", "-q", "-m", "seed types")
+        self._git("-C", self.work, "push", "-q", "origin", "main")
+
+    def test_deletion_propagates_to_its_branch(self):
+        # a resource dropped upstream: its file is removed, not rewritten —
+        # the per-type branch must carry the removal, not silently skip it
+        self._commit_types_to_main("zia_url_categories")
+        os.remove(os.path.join(self.work, "config/t1/zia_url_categories.auto.tfvars.json"))
+        os.remove(os.path.join(self.work, "imports/t1/zia_url_categories_imports.tf"))
+        code, out = self._run()
+        self.assertEqual(code, 0, out)
+        self.assertEqual(self._origin_branches(), ["bootstrap/t1/zia_url_categories"], out)
+        tree = subprocess.check_output(
+            ["git", "-C", self.origin, "ls-tree", "-r", "--name-only",
+             "bootstrap/t1/zia_url_categories"]).decode("utf-8")
+        self.assertNotIn("config/t1/zia_url_categories.auto.tfvars.json", tree)
+        self.assertNotIn("imports/t1/zia_url_categories_imports.tf", tree)
+
+    def test_config_only_first_bootstrap_no_imports_dir(self):
+        # first bootstrap of a type with no import blocks: config/t1 exists,
+        # imports/t1 does not — `git add` must not 128 on the missing dir
+        os.makedirs(os.path.join(self.work, "config/t1"), exist_ok=True)
+        with open(os.path.join(self.work, "config/t1", "zia_rule_labels.auto.tfvars.json"),
+                  "w", encoding="utf-8") as f:
+            f.write('{"items": {}}\n')
+        self.assertFalse(os.path.exists(os.path.join(self.work, "imports/t1")))
+        code, out = self._run()
+        self.assertEqual(code, 0, out)
+        self.assertEqual(self._origin_branches(), ["bootstrap/t1/zia_rule_labels"], out)
+
     def test_missing_token_names_the_yaml_mapping(self):
-        self._stage_change()
+        self._stage_types("zia_url_categories")
         env = dict(self.env)
         del env["SYSTEM_ACCESSTOKEN"]
         proc = subprocess.Popen(
@@ -143,47 +247,24 @@ class CommitbackTest(unittest.TestCase):
         out = proc.communicate()[0].decode("utf-8", "replace")
         self.assertEqual(proc.returncode, 2, out)
         self.assertIn("SYSTEM_ACCESSTOKEN: $(System.AccessToken)", out)
-        # preflight refuses BEFORE any git mutation
-        self.assertEqual([b for b in self._origin_branches()
-                          if b != "main"], [])
+        self.assertEqual(self._origin_branches(), [])  # refuses before any push
 
-    def test_missing_description_file_is_never_fatal(self):
-        self._stage_change()
-        code, out = self._run(DESCRIPTION_FILE="reports/t1/nope.md",
-                              ARTIFACT_NOTE="_artifact: x_")
-        self.assertEqual(code, 0, out)
-        with open(self.env["CURL_BODY"], encoding="utf-8") as f:
-            body = json.load(f)
-        self.assertIn("report missing from workspace", body["description"])
-        self.assertIn("_artifact: x_", body["description"])
-
-    def test_http_error_fails_loud_after_push(self):
-        self._stage_change()
-        code, out = self._run(CURL_STATUS="409")
-        self.assertEqual(code, 1, out)
-        self.assertIn("HTTP 409", out)
-        self.assertIn("IS pushed", out)  # the branch survived for a re-run
-        self.assertEqual(len([b for b in self._origin_branches()
-                              if b.startswith("bootstrap/t1/")]), 1)
-
-    def test_tenant_charset_is_validated(self):
-        self._stage_change()
-        code, out = self._run(TENANT="t1; rm -rf /")
-        self.assertEqual(code, 2, out)
-        self.assertIn("must match", out)
+    def test_charset_validated(self):
+        self._stage_types("zia_url_categories")
+        for bad in ({"TENANT": "t1; rm -rf /"}, {"BRANCH_PREFIX": "a b"}):
+            code, out = self._run(**bad)
+            self.assertEqual(code, 2, out)
+            self.assertIn("must match", out)
 
     def test_proxy_announced_without_leaking_credentials(self):
-        # field-hit: agent-level git proxy config got the push through,
-        # then the REST call hung — the script must surface proxy state,
-        # but proxy URLs can carry credentials, so never the value
-        self._stage_change()
+        self._stage_types("zia_url_categories")
         code, out = self._run(HTTPS_PROXY="http://u:sekrit@proxy.test:8080")
         self.assertEqual(code, 0, out)
         self.assertIn("https proxy: set", out)
         self.assertNotIn("sekrit", out)
 
     def test_direct_egress_announced(self):
-        self._stage_change()
+        self._stage_types("zia_url_categories")
         env = dict(self.env)
         env.pop("HTTPS_PROXY", None)
         env.pop("https_proxy", None)
