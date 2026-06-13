@@ -1,0 +1,42 @@
+# Operating — Local Environment (PRIVATE; fill in, do not publish)
+
+Copy this file to `OPERATING.local.md` in your PRIVATE deployment mirror
+and fill in the values. The deployment agent reads it alongside
+`OPERATING.md` for environment specifics that must NOT appear in the
+public repo. `OPERATING.local.md` is gitignored here so a filled copy is
+never pushed to the public repo by accident — keep it only in the
+private mirror.
+
+Keep this SHORT and factual. These are stable facts, not behavioral
+rules (the rules live in `OPERATING.md`, which is durable and pulled).
+Do not restate operating discipline here.
+
+## CI / repo
+
+- CI platform: Azure DevOps (pipelines under `pipelines/` are the
+  reference; the live definitions are in the private mirror).
+- The `az` CLI is installed and authenticated for this environment. Use
+  it for repo/pipeline interaction per the patterns the pipelines use
+  (REST + `System.AccessToken` for PRs; never interactive `az` calls
+  that wait on stdin — see `pipelines/commitback.sh`).
+- Azure DevOps org URL: <fill in, e.g. https://dev.azure.com/your-org>
+- Project / repo name: <fill in>
+
+## Credentials (NAMES ONLY — never the secret values)
+
+- Variable group holding Zscaler API credentials: <fill in name>
+- Backend (state) config file the pipelines pass: <fill in, e.g.
+  backend.conf>
+- Proxied egress? If yes, the env var the steps set: <e.g. HTTPS_PROXY>
+  (curl/terraform read it from the env; a missing declaration is a
+  classic "pushed the branch then hung" cause).
+
+## Tenant labels you operate
+
+- <label-1>: <one line — which tenant, read-only vs full creds>
+- <label-2>: ...
+
+## Anything else stable and environment-specific
+
+- <e.g. "ZCC runs read-only until OneAPI entitlement lands" — but only
+  if it is a stable fact; transient state does not belong here>

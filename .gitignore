@@ -52,3 +52,6 @@ docs/superpowers/
 pulls/*
 !pulls/README.md
 !pulls/.gitkeep
+
+# Operating manual — private environment layer stays out of the public repo
+OPERATING.local.md

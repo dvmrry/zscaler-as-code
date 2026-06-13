@@ -1,8 +1,14 @@
 # Agent Instructions
 
-Invariants for anyone — human or agent — working in this repo. These are
-not suggestions. When a change would violate one, stop and leave a note
-instead of being clever.
+Invariants for anyone — human or agent — CHANGING this repo (authoring
+tooling, fixtures, generators). These are not suggestions. When a change
+would violate one, stop and leave a note instead of being clever.
+
+> OPERATING the repo (adopting/reconciling a live tenant: fetch,
+> transform, plan, import, commit-back) is a different job with a
+> different audience — see `OPERATING.md`. If you are running `make`
+> targets against a real tenant rather than editing `tools/`, read that
+> first.
 
 ## Data hygiene
 
