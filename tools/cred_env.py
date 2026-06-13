@@ -47,8 +47,7 @@ ONEAPI_REQUIRED = ("ZSCALER_CLIENT_ID", "ZSCALER_CLIENT_SECRET",
 # Exported when the required set is complete; never required themselves.
 # ZPA_CUSTOMER_ID is needed only when a ZPA resource is in scope — the
 # fetcher enforces that per-run, so it is optional at this layer.
-ONEAPI_OPTIONAL = ("ZSCALER_CLOUD", "ZPA_CUSTOMER_ID", "ZPA_MICROTENANT_ID",
-                   "ZSCALER_API_BASE_URL", "ZSCALER_LOGIN_BASE_URL")
+ONEAPI_OPTIONAL = ("ZSCALER_CLOUD", "ZPA_CUSTOMER_ID", "ZPA_MICROTENANT_ID")
 
 # Legacy: per-product credential sets. Each is all-or-nothing.
 LEGACY_REQUIRED = (
@@ -64,25 +63,20 @@ LEGACY_MARKERS = ("ZIA_USERNAME", "ZIA_PASSWORD", "ZIA_API_KEY",
                   "ZPA_CLIENT_ID", "ZPA_CLIENT_SECRET")
 
 # Non-secret values safe to print in the debug summary; everything else
-# exported is shown as "set". Clouds, hosts and base-URL overrides are
+# exported is shown as "set". Clouds and the legacy base-URL overrides are
 # shared-infra targeting data, not credentials and not tenant-identifying.
 # Client ids and usernames are NOT here — shown as "set", conservatively.
 SHOWABLE = frozenset((
     "ZIA_CLOUD", "ZPA_CLOUD", "ZSCALER_CLOUD", MODE_FLAG,
     "ZSCALER_VANITY_DOMAIN", "ZPA_CUSTOMER_ID", "ZPA_MICROTENANT_ID",
-    "ZSCALER_API_BASE_URL", "ZSCALER_LOGIN_BASE_URL",
     "ZIA_LEGACY_BASE_URL", "ZPA_LEGACY_BASE_URL",
 ))
 
 # Showable but tenant-IDENTIFYING: not secret, but they pin down which org/
 # tenant this is. Shown as "set" unless FETCH_DEBUG is truthy, so a pipeline
 # log that someone might paste into a shared channel does not leak identity.
-# ZSCALER_LOGIN_BASE_URL is here because the OneAPI token host structurally
-# embeds the vanity domain (<vanity>.zslogin.net) — the other base-URL
-# overrides (gateway/zia/zpa) are shared-infra hosts and stay shown.
 IDENTIFYING = frozenset((
     "ZSCALER_VANITY_DOMAIN", "ZPA_CUSTOMER_ID", "ZPA_MICROTENANT_ID",
-    "ZSCALER_LOGIN_BASE_URL",
 ))
 
 

@@ -120,16 +120,21 @@ tenant to OneAPI.
 
 ### Host overrides (escape hatches)
 
-Each base URL the fetcher derives from a cloud name can be pinned with an
-explicit env var, tenant-scoped like any other credential. Set one when a
-derived host is wrong or the cloud is unlisted — the override wins over
-derivation, so it *restores* fetch/provider agreement rather than breaking
-it. All are optional:
+The **legacy** base hosts — whose per-cloud derivation is irregular (and
+where the production-host bug lived) — can each be pinned with an explicit
+env var, tenant-scoped like any other credential. Set one when a derived
+host is wrong or the cloud is unlisted; the override wins over derivation,
+so it *restores* fetch/provider agreement rather than breaking it. Both are
+optional:
 
     ZPA_LEGACY_BASE_URL      legacy ZPA config base (e.g. https://config.zpatwo.net)
     ZIA_LEGACY_BASE_URL      legacy ZIA base (e.g. https://zsapi.zscalertwo.net)
-    ZSCALER_API_BASE_URL     OneAPI gateway base
-    ZSCALER_LOGIN_BASE_URL   OneAPI token host
+
+The OneAPI gateway and token hosts derive regularly from `ZSCALER_CLOUD` +
+`ZSCALER_VANITY_DOMAIN` (the same way the SDK does) and are not override-able
+— a wrong derivation there fails immediately and totally, not subtly, so an
+escape hatch buys little. Add one if a private/custom OneAPI gateway ever
+needs it.
 
 ### Startup debug
 

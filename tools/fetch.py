@@ -286,21 +286,21 @@ def host_overrides(env):
     == derive from the cloud). Shared by the fetcher and the audit attribution
     flow so the two never drift on which overrides they honor — both compose
     URLs and acquire tokens through the same helpers, which read these keys.
-    See tools/FETCH.md 'Host overrides'.
+    Overrides exist only for the legacy base hosts, whose per-cloud derivation
+    is irregular (and where the ZPA production-host bug lived); the OneAPI
+    gateway/token hosts derive regularly from cloud+vanity and are not
+    override-able. See tools/FETCH.md 'Host overrides'.
     """
     return {
         "zpa_cloud": env.get("ZPA_CLOUD", ""),
-        "oneapi_gateway": env.get("ZSCALER_API_BASE_URL", ""),
-        "oneapi_login": env.get("ZSCALER_LOGIN_BASE_URL", ""),
         "zia_legacy_base": env.get("ZIA_LEGACY_BASE_URL", ""),
         "zpa_legacy_base": env.get("ZPA_LEGACY_BASE_URL", ""),
     }
 
 
 def _gateway_for(ctx):
-    """OneAPI gateway base: explicit override (ZSCALER_API_BASE_URL, carried
-    in ctx) wins over cloud derivation."""
-    return ctx.get("oneapi_gateway") or _oneapi_gateway(ctx.get("cloud", ""))
+    """OneAPI gateway base, derived from the cloud."""
+    return _oneapi_gateway(ctx.get("cloud", ""))
 
 
 def _zia_legacy_base_for(ctx):
@@ -316,10 +316,10 @@ def _zpa_legacy_base_for(ctx):
 def compose_url(auth_mode, product, path, ctx):
     """Compose the product base URL + resource path for the auth mode.
 
-    ctx carries cloud/customer_id and, optionally, host overrides
-    (oneapi_gateway / zia_legacy_base / zpa_legacy_base) that win over
-    cloud-derivation. All Zscaler-specific URL shapes are SDK-derived;
-    a wrong literal is a one-line fix or an env override.
+    ctx carries cloud/customer_id and, optionally, the legacy base overrides
+    (zia_legacy_base / zpa_legacy_base) that win over cloud-derivation. All
+    Zscaler-specific URL shapes are SDK-derived; a wrong literal is a
+    one-line fix or (for the legacy bases) an env override.
 
     ZCC is OneAPI-only (no legacy path). Its registry path carries the full
     post-gateway prefix (zcc/papi/public/v1/...) and the OneAPI gateway
@@ -551,13 +551,11 @@ def acquire_token(auth_mode, product, env, ctx, opener, now_ms=None):
     env is a dict (os.environ at the call site) so tests stay hermetic.
     """
     if auth_mode == "oneapi":
-        # The token host must match the data host's cloud; an explicit
-        # ZSCALER_LOGIN_BASE_URL override (carried in ctx) wins over the
-        # vanity/cloud derivation.
-        login_base = ctx.get("oneapi_login") or _zslogin_host(
+        # The token host derives from the vanity + cloud, matching the gateway
+        # the data calls use.
+        token_url = _zslogin_host(
             _require(env, "ZSCALER_VANITY_DOMAIN"), env.get("ZSCALER_CLOUD", "")
-        )
-        token_url = login_base + "/oauth2/v1/token"
+        ) + "/oauth2/v1/token"
         body = urlencode({
             "grant_type": "client_credentials",
             "client_id": _require(env, "ZSCALER_CLIENT_ID"),
@@ -624,15 +622,15 @@ def _host_of(url):
 def diag_hosts(env):
     """Unique HTTPS hosts the fetcher will contact in the configured mode.
 
-    Honors the host overrides (ZSCALER_API_BASE_URL / ZSCALER_LOGIN_BASE_URL
-    / ZIA_LEGACY_BASE_URL / ZPA_LEGACY_BASE_URL) so --diag probes the hosts
-    a real fetch will actually dial. ZCC is OneAPI-only — no separate host.
+    Honors the legacy host overrides (ZIA_LEGACY_BASE_URL /
+    ZPA_LEGACY_BASE_URL) so --diag probes the hosts a real fetch will
+    actually dial. ZCC is OneAPI-only — no separate host.
     """
     if auth_mode_from_env(env) == "oneapi":
         vanity = env.get("ZSCALER_VANITY_DOMAIN") or "<vanity>"
         cloud = env.get("ZSCALER_CLOUD", "")
-        login = env.get("ZSCALER_LOGIN_BASE_URL") or _zslogin_host(vanity, cloud)
-        gateway = env.get("ZSCALER_API_BASE_URL") or _oneapi_gateway(cloud)
+        login = _zslogin_host(vanity, cloud)
+        gateway = _oneapi_gateway(cloud)
         return sorted({_host_of(login), _host_of(gateway)})
     cloud = env.get("ZIA_CLOUD", "") or env.get("ZSCALER_CLOUD", "") or "<cloud>"
     zia = env.get("ZIA_LEGACY_BASE_URL") or "https://zsapi.%s.net" % cloud
@@ -691,26 +689,16 @@ def debug_config(env, ctx, auth_mode, products):
                      % ident(env.get("ZSCALER_VANITY_DOMAIN")))
         if ctx.get("customer_id"):
             lines.append("fetch: ZPA_CUSTOMER_ID = %s" % ident(ctx["customer_id"]))
-        # The token host embeds the vanity domain whether derived OR supplied
-        # via the login override, so mask the vanity in both (keeping the
-        # cloud suffix, which is the diagnostic part) unless verbose.
-        if ctx.get("oneapi_login"):
-            if verbose:
-                token = ctx["oneapi_login"]
-            else:
-                token = _mask_identifiers(ctx["oneapi_login"])
-                if token != ctx["oneapi_login"]:
-                    masked.append(1)   # so the reveal-hint footer fires
-        else:
-            vanity = env.get("ZSCALER_VANITY_DOMAIN")
-            if not verbose:
-                if vanity:
-                    masked.append(1)
-                vanity = "<vanity>"
-            token = _zslogin_host(vanity or "<vanity>", env.get("ZSCALER_CLOUD", ""))
+        # The derived token host embeds the vanity domain, so mask the vanity
+        # (keeping the cloud suffix, the diagnostic part) unless verbose.
+        vanity = env.get("ZSCALER_VANITY_DOMAIN")
+        if not verbose:
+            if vanity:
+                masked.append(1)
+            vanity = "<vanity>"
+        token = _zslogin_host(vanity or "<vanity>", env.get("ZSCALER_CLOUD", ""))
         lines.append("fetch: token host = %s" % token)
-        lines.append("fetch: gateway = %s" % _safe_base(
-            lambda: _gateway_for(ctx), ctx.get("oneapi_gateway")))
+        lines.append("fetch: gateway = %s" % _gateway_for(ctx))
     else:
         lines.append("fetch: ZIA_CLOUD = %s" % (env.get("ZIA_CLOUD") or "<unset>"))
         if "zpa" in products:

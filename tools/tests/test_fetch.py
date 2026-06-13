@@ -199,13 +199,6 @@ class ComposeUrlTest(unittest.TestCase):
         self.assertEqual(_legacy_zpa_base("PRODUCTION"), "https://config.private.zscaler.com")
         self.assertEqual(_legacy_zpa_base("zpatwo"), "https://config.zpatwo.net")
 
-    def test_oneapi_gateway_override_wins(self):
-        self.assertEqual(
-            compose_url("oneapi", "zia", "urlCategories",
-                        {"oneapi_gateway": "https://api.example.invalid"}),
-            "https://api.example.invalid/zia/api/v1/urlCategories",
-        )
-
     def test_legacy_zia_base_override_wins(self):
         self.assertEqual(
             compose_url("legacy", "zia", "urlCategories", {
@@ -766,15 +759,11 @@ class HostOverridesTest(unittest.TestCase):
     def test_maps_env_to_ctx_keys(self):
         env = {
             "ZPA_CLOUD": "ZPATWO",
-            "ZSCALER_API_BASE_URL": "https://api.x",
-            "ZSCALER_LOGIN_BASE_URL": "https://login.x",
             "ZIA_LEGACY_BASE_URL": "https://zia.x",
             "ZPA_LEGACY_BASE_URL": "https://zpa.x",
         }
         self.assertEqual(host_overrides(env), {
             "zpa_cloud": "ZPATWO",
-            "oneapi_gateway": "https://api.x",
-            "oneapi_login": "https://login.x",
             "zia_legacy_base": "https://zia.x",
             "zpa_legacy_base": "https://zpa.x",
         })
@@ -807,18 +796,6 @@ class DebugConfigTest(unittest.TestCase):
         self.assertNotIn("C9", lines)                # customer id hidden
         self.assertNotIn("topsecret", lines)         # secret never shown
         self.assertIn("FETCH_DEBUG", lines)          # tells operator how to reveal
-
-    def test_oneapi_login_override_masks_vanity(self):
-        # the login-base override structurally embeds the vanity — masked by
-        # default, revealed under FETCH_DEBUG, just like the derived host.
-        ctx = {"cloud": "", "customer_id": "",
-               "oneapi_login": "https://acmecorp.zslogin.net"}
-        lines = "\n".join(debug_config({}, ctx, "oneapi", {"zia"}))
-        self.assertNotIn("acmecorp", lines)
-        self.assertIn("<vanity>.zslogin.net", lines)
-        self.assertIn("FETCH_DEBUG", lines)          # reveal-hint footer fires
-        verbose = "\n".join(debug_config({"FETCH_DEBUG": "1"}, ctx, "oneapi", {"zia"}))
-        self.assertIn("acmecorp.zslogin.net", verbose)
 
     def test_oneapi_verbose_reveals_identifying(self):
         env = {"ZSCALER_VANITY_DOMAIN": "acme", "ZSCALER_CLOUD": "",

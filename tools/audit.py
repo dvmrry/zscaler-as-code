@@ -75,9 +75,9 @@ def fetch_audit_csv(env, hours, sleep=time.sleep, now_ms=None):
         "cloud": env.get("ZIA_CLOUD", "") or env.get("ZSCALER_CLOUD", ""),
         "customer_id": env.get("ZPA_CUSTOMER_ID", ""),
     }
-    # Honor the same host overrides as the fetcher (e.g. ZIA_LEGACY_BASE_URL,
-    # ZSCALER_API_BASE_URL) so audit attribution hits the SAME ZIA host the
-    # fetch did — otherwise an overridden tenant degrades to the derived host.
+    # Honor the same legacy host overrides as the fetcher (ZIA_LEGACY_BASE_URL)
+    # so audit attribution hits the SAME ZIA host the fetch did — otherwise an
+    # overridden tenant degrades to the derived host.
     ctx.update(host_overrides(env))
     token = acquire_token(auth_mode, "zia", env, ctx, opener)
     end_ms = now_ms if now_ms is not None else int(time.time() * 1000)
