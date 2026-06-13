@@ -5,7 +5,7 @@ import os
 import sys
 import unittest
 
-from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, paginate_single, paginate_zcc_v2, build_headers, compose_url, fetch_resource, acquire_token, products_in_manifest, auth_mode_from_env, _zslogin_host, _legacy_zcc_base, ca_bundle_path, connection_hint, diag_hosts, expand_paths
+from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, paginate_single, paginate_zcc_v2, build_headers, compose_url, fetch_resource, acquire_token, products_in_manifest, auth_mode_from_env, _zslogin_host, _legacy_zcc_base, ca_bundle_path, connection_hint, diag_hosts, expand_paths, _retry_delay, _request_with_retry, _RETRY_BASE, _RETRY_CAP
 
 
 class ManifestTest(unittest.TestCase):
@@ -826,6 +826,54 @@ class MalformedAuthResponseTest(unittest.TestCase):
         with self.assertRaises(SystemExit) as ctx:
             acquire_token("oneapi", "zia", self.ENV, {}, opener)
         self.assertNotIn("secret-ish", str(ctx.exception))
+
+
+class RetryDelayTest(unittest.TestCase):
+    def test_numeric_retry_after_wins_and_is_capped(self):
+        # Retry-After (delta-seconds) is honored over exponential backoff
+        self.assertEqual(_retry_delay(0, "2"), 2.0)
+        self.assertEqual(_retry_delay(4, "3"), 3.0)  # beats 2**4 exponential
+        # a hostile/huge value is capped
+        self.assertEqual(_retry_delay(0, str(_RETRY_CAP + 100)), _RETRY_CAP)
+        self.assertEqual(_retry_delay(0, "-5"), 0.0)  # never negative
+
+    def test_exponential_when_absent_or_unparseable(self):
+        self.assertEqual(_retry_delay(0, None), _RETRY_BASE)
+        self.assertEqual(_retry_delay(2, None), _RETRY_BASE * 4)
+        # HTTP-date Retry-After is not parsed -> exponential fallback
+        self.assertEqual(
+            _retry_delay(0, "Wed, 21 Oct 2099 07:28:00 GMT"), _RETRY_BASE)
+        self.assertEqual(_retry_delay(99, None), _RETRY_CAP)  # capped
+
+
+class RequestWithRetryTest(unittest.TestCase):
+    def test_retries_429_then_succeeds(self):
+        # the field case: rate-limited GET retried, then 200
+        responses = iter([(429, b"", "1"), (429, b"", None), (200, b'{"ok":1}', None)])
+        slept = []
+        status, body = _request_with_retry(lambda: next(responses), slept.append)
+        self.assertEqual(status, 200)
+        self.assertEqual(body, b'{"ok":1}')
+        self.assertEqual(len(slept), 2)         # slept once before each retry
+        self.assertEqual(slept[0], 1.0)         # honored Retry-After "1"
+
+    def test_gives_up_after_max_retries(self):
+        slept = []
+        status, body = _request_with_retry(
+            lambda: (429, b"limited", None), slept.append, max_retries=3)
+        self.assertEqual(status, 429)           # returns the last 429, not an exception
+        self.assertEqual(body, b"limited")
+        self.assertEqual(len(slept), 3)         # exactly max_retries waits
+
+    def test_non_429_returns_immediately_without_sleeping(self):
+        slept = []
+        status, body = _request_with_retry(lambda: (200, b"ok", None), slept.append)
+        self.assertEqual((status, body), (200, b"ok"))
+        self.assertEqual(slept, [])
+        # a non-rate-limit error is passed straight through, never retried
+        status, _ = _request_with_retry(lambda: (404, b"", None), slept.append)
+        self.assertEqual(status, 404)
+        self.assertEqual(slept, [])
 
 
 if __name__ == "__main__":
