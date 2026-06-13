@@ -4,6 +4,10 @@ Step-by-step procedures for bringing an existing Zscaler tenant under
 management and keeping it there. Follow each step in order; commands are
 exact and can be run verbatim.
 
+> If you are an agent operating this repo, read `OPERATING.md` first —
+> it is the standing brief (roles, file ownership, when to STOP). This
+> runbook is the detailed recipe set it points into.
+
 ---
 
 ## Prerequisites
