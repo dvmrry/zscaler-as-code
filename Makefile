@@ -109,11 +109,21 @@ gen-env: ## Generate env roots for a tenant (TENANT=<label> [BACKEND=azurerm])
 	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
 	$(PYTHON) -m tools.gen_env "$(TENANT)" $(BACKEND)
 
-transform: ## Transform pulled API JSON into tfvars + imports (IN=<dir> TENANT=<name> [RESOURCE=<type>])
-	@test -n "$(IN)" -a -n "$(TENANT)" || { echo "usage: make transform IN=pulls/<tenant> TENANT=<tenant> [RESOURCE=<type>]"; exit 2; }
+transform: ## Transform pulled API JSON into tfvars + imports (IN=<dir> TENANT=<name> [RESOURCE="<type|product> ..."])
+	@test -n "$(IN)" -a -n "$(TENANT)" || { echo "usage: make transform IN=pulls/<tenant> TENANT=<tenant> [RESOURCE=\"<type|product> ...\"]"; exit 2; }
 	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
-	@failed=""; for rt in $$($(PYTHON) -c "from tools.registry import generated_types; print('\n'.join(generated_types()))"); do \
-		if [ -n "$(RESOURCE)" ] && [ "$$rt" != "$(RESOURCE)" ]; then continue; fi; \
+	@failed=""; sel="$(RESOURCE)"; \
+	for rt in $$($(PYTHON) -c "from tools.registry import generated_types; print('\n'.join(generated_types()))"); do \
+		if [ -n "$$sel" ]; then \
+			match=""; \
+			for tok in $$sel; do \
+				case "$$tok" in \
+					zia|zpa|zcc) case "$$rt" in "$$tok"_*) match=1 ;; esac ;; \
+					*) if [ "$$rt" = "$$tok" ]; then match=1; fi ;; \
+				esac; \
+			done; \
+			[ -n "$$match" ] || continue; \
+		fi; \
 		if [ -f "$(IN)/$$rt.json" ]; then \
 			$(PYTHON) -m tools.transform "$$rt" "$(IN)/$$rt.json" "$(TENANT)" || failed="$$failed $$rt"; \
 		else \
@@ -410,7 +420,7 @@ drift: ## Fetch + transform + report config diff (TENANT=<label> [RESOURCE="<typ
 	@test -n "$(TENANT)" || { echo "usage: make drift TENANT=<label> [RESOURCE=\"<type|product> ...\"]"; exit 2; }
 	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
 	$(MAKE) fetch TENANT=$(TENANT) $(if $(RESOURCE),RESOURCE="$(RESOURCE)")
-	$(MAKE) transform IN=pulls/$(TENANT) TENANT=$(TENANT)
+	$(MAKE) transform IN=pulls/$(TENANT) TENANT=$(TENANT) $(if $(RESOURCE),RESOURCE="$(RESOURCE)")
 	@if [ -n "$$(git status --porcelain config/$(TENANT) imports/$(TENANT) 2>/dev/null)" ]; then \
 		echo ""; echo "DRIFT DETECTED (tenant differs from committed config):"; \
 		git status --porcelain config/$(TENANT) imports/$(TENANT); \
