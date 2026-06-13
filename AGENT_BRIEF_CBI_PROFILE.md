@@ -145,8 +145,7 @@ works without it but is more error-prone.
 - script: |
     set -e
     make import-one TENANT=REPLACE_LABEL RESOURCE=zia_url_filtering_rules \
-      KEY=REPLACE_KEY IMPORT_ID=REPLACE_RULE_ID BACKEND_CONFIG=backend.conf \
-      || echo "import returned non-zero (already managed from a prior run?) — statefill verifies next"
+      KEY=REPLACE_KEY IMPORT_ID=REPLACE_RULE_ID BACKEND_CONFIG=backend.conf
     make statefill TENANT=REPLACE_LABEL RESOURCE=zia_url_filtering_rules KEY=REPLACE_KEY \
       FIELD=cbi_profile BACKEND_CONFIG=backend.conf STATE_FILL=1
   displayName: One-off cbi_profile state fill (DELETE AFTER SUCCESS)
@@ -165,6 +164,19 @@ works without it but is more error-prone.
    (If the plan step passes a BACKEND_CONFIG file other than
    `backend.conf` at the repo root, match that path here.)
 
+   No `|| true` / `|| echo` after import-one: it is idempotent (a rule
+   already in state exits 0 on its own), so `set -e` is correct — if
+   import-one FAILS, the step STOPS before statefill, which is what you
+   want (statefill on an unimported item only produces a confusing
+   "must be imported first"). A failure here that says **"Plugin did
+   not respond" at ConfigureProvider is a provider CRASH, not a config
+   error** — it is an auth/client failure. Capture the panic/crash.log
+   (safe to relay — provider internals, no tenant data; glance for
+   interpolated values) and verify the corp root CA is in the agent's
+   SYSTEM trust store (the Go provider IGNORES `REQUESTS_CA_BUNDLE` —
+   that only helps `make fetch`) and `HTTPS_PROXY` is set. Then STOP
+   and report; do not loop the stage.
+
 2. In the SAME pipeline edit, find the existing stage-imports step and
    add `STATE_AWARE=1 BACKEND_CONFIG=backend.conf` to its make
    command. This change is PERMANENT, not temporary: it filters import
@@ -175,11 +187,12 @@ works without it but is more error-prone.
 3. Run the pipeline once. The single run then does: fill -> staged
    imports minus the managed rule -> plan -> assert-clean. EXPECT the
    plan summary `0 to change, 0 to destroy` with the other resources
-   importing as before. Two failure texts in the temp step are SUCCESS
-   signals on a re-run — state is already correct, delete the step:
-   - `Resource already managed by Terraform` (the import landed earlier)
-   - `refusing to overwrite a non-empty value` (the fill landed earlier)
-   Any OTHER error: STOP and report the step's log (values redacted).
+   importing as before. On a re-run where state is ALREADY correct:
+   import-one prints `already in state (idempotent import)` and exits
+   0, and statefill may say `refusing to overwrite a non-empty value`
+   (the fill already landed) — both mean "already done", safe to
+   delete the step. Any OTHER error, especially a provider crash at
+   import: STOP and report the step's log (values redacted).
 
 4. After one green run: DELETE the temporary step (keep the
    stage-imports change), and report per Part 6.
