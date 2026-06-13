@@ -760,18 +760,25 @@ def main(argv=None):
     # the rename is a state-address change, not destroy+create of a live
     # object. The moves file is staged ONLY when renames exist; copy it
     # into the env root alongside the imports file and delete after apply.
+    moves = []
     if os.path.exists(imports_path):
         with open(imports_path, encoding="utf-8") as f:
             moves = derive_moves(f.read(), new_imports)
-        if moves:
-            with open(moves_path, "w", encoding="utf-8") as f:
-                f.write(render_moves(resource_type, moves))
-            sys.stderr.write(
-                "RENAME(S) DETECTED: %d item(s) re-keyed — moved blocks "
-                "staged in %s; copy into the env root alongside the imports "
-                "file before plan/apply (RUNBOOK: Drift)\n"
-                % (len(moves), moves_path)
-            )
+    if moves:
+        with open(moves_path, "w", encoding="utf-8") as f:
+            f.write(render_moves(resource_type, moves))
+        sys.stderr.write(
+            "RENAME(S) DETECTED: %d item(s) re-keyed — moved blocks "
+            "staged in %s; copy into the env root alongside the imports "
+            "file before plan/apply (RUNBOOK: Drift)\n"
+            % (len(moves), moves_path)
+        )
+    elif os.path.exists(moves_path):
+        # A prior run staged renames; this run found none. Remove the stale
+        # moves file so transform output never depends on a previous run —
+        # otherwise the old moved blocks get staged into env roots later.
+        os.remove(moves_path)
+        sys.stderr.write("removed stale %s (no renames this run)\n" % moves_path)
     with open(tfvars_path, "w", encoding="utf-8") as f:
         f.write(render_tfvars(items))
     with open(imports_path, "w", encoding="utf-8") as f:

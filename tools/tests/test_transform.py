@@ -1059,6 +1059,38 @@ class MovedBlocksEndToEndTest(unittest.TestCase):
             self.assertIn('from = module.zia_rule_labels.zia_rule_labels.this["original_name"]', body)
             self.assertIn('to   = module.zia_rule_labels.zia_rule_labels.this["renamed_thing"]', body)
 
+    def test_stale_moves_file_removed_when_a_later_run_has_no_rename(self):
+        # DAV-8 P2: a rename stages _moves.tf; a subsequent run with no
+        # rename must REMOVE it, so transform output never depends on a
+        # prior run (else stale moved blocks get staged into env roots).
+        import shutil
+        import tempfile
+        from tools.transform import main as transform_main
+
+        self.addCleanup(shutil.rmtree, os.path.join("config", self.TENANT), True)
+        self.addCleanup(shutil.rmtree, os.path.join("imports", self.TENANT), True)
+        moves_path = os.path.join(
+            "imports", self.TENANT, "zia_rule_labels_moves.tf")
+        with tempfile.TemporaryDirectory() as td:
+            src = os.path.join(td, "in.json")
+            # run 1: baseline
+            with open(src, "w", encoding="utf-8") as f:
+                json.dump([{"id": 7, "name": "Original Name"}], f)
+            self.assertEqual(
+                transform_main(["zia_rule_labels", src, self.TENANT]), 0)
+            # run 2: rename -> moves file staged
+            with open(src, "w", encoding="utf-8") as f:
+                json.dump([{"id": 7, "name": "Renamed Thing"}], f)
+            self.assertEqual(
+                transform_main(["zia_rule_labels", src, self.TENANT]), 0)
+            self.assertTrue(os.path.exists(moves_path), "rename should stage moves")
+            # run 3: same data, no rename -> stale moves file must be gone
+            self.assertEqual(
+                transform_main(["zia_rule_labels", src, self.TENANT]), 0)
+            self.assertFalse(
+                os.path.exists(moves_path),
+                "stale moves file must be removed when a run has no rename")
+
 
 class AcknowledgedDropsTest(unittest.TestCase):
     def test_acknowledged_drops_suppressed_from_report(self):
