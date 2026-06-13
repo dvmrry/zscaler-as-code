@@ -628,12 +628,33 @@ def _safe_base(derive, override):
         return "<unresolved: %s>" % e
 
 
+def _debug_verbose(env):
+    return (env.get("FETCH_DEBUG") or "").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
 def debug_config(env, ctx, auth_mode, products):
     """Secret-safe startup summary: the auth mode, the URLs/hosts the run
-    will hit, and the safe targeting vars. Credentials and the proxy VALUE
-    are never printed — only whether a proxy is set. Returns lines; the
-    caller writes them to stderr.
+    will hit, and the safe targeting vars. Returns lines; the caller writes
+    them to stderr.
+
+    Two redaction tiers. Credentials and the proxy VALUE are NEVER printed
+    (proxy shown only as set/not-set). Tenant-IDENTIFYING values — the
+    vanity domain and the ZPA customer id — are shown as "set" unless
+    FETCH_DEBUG is truthy; the operationally-critical, non-identifying
+    info (mode, clouds, the derived/overridden base hosts, proxy state) is
+    always shown, since that is what diagnoses the host-derivation class of
+    failure without revealing which tenant this is.
     """
+    verbose = _debug_verbose(env)
+    masked = []
+
+    def ident(value):
+        if value and not verbose:
+            masked.append(1)
+            return "set"
+        return value or "<unset>"
+
     lines = ["fetch: auth mode = %s" % auth_mode]
     proxy = env.get("HTTPS_PROXY") or env.get("https_proxy")
     lines.append("fetch: proxy = %s" % ("set" if proxy else "not set"))
@@ -641,14 +662,22 @@ def debug_config(env, ctx, auth_mode, products):
         lines.append("fetch: ZSCALER_CLOUD = %s"
                      % (env.get("ZSCALER_CLOUD") or "(production)"))
         lines.append("fetch: ZSCALER_VANITY_DOMAIN = %s"
-                     % (env.get("ZSCALER_VANITY_DOMAIN") or "<unset>"))
+                     % ident(env.get("ZSCALER_VANITY_DOMAIN")))
         if ctx.get("customer_id"):
-            lines.append("fetch: ZPA_CUSTOMER_ID = %s" % ctx["customer_id"])
-        lines.append("fetch: token host = %s" % _safe_base(
-            lambda: ctx.get("oneapi_login") or _zslogin_host(
-                env.get("ZSCALER_VANITY_DOMAIN") or "<vanity>",
-                env.get("ZSCALER_CLOUD", "")),
-            ctx.get("oneapi_login")))
+            lines.append("fetch: ZPA_CUSTOMER_ID = %s" % ident(ctx["customer_id"]))
+        # An explicit login override IS a base host — show it. Otherwise the
+        # derived token host embeds the vanity domain, so mask the vanity
+        # (keeping the cloud suffix, which is the diagnostic part).
+        if ctx.get("oneapi_login"):
+            token = ctx["oneapi_login"]
+        else:
+            vanity = env.get("ZSCALER_VANITY_DOMAIN")
+            if not verbose:
+                if vanity:
+                    masked.append(1)
+                vanity = "<vanity>"
+            token = _zslogin_host(vanity or "<vanity>", env.get("ZSCALER_CLOUD", ""))
+        lines.append("fetch: token host = %s" % token)
         lines.append("fetch: gateway = %s" % _safe_base(
             lambda: _gateway_for(ctx), ctx.get("oneapi_gateway")))
     else:
@@ -657,13 +686,15 @@ def debug_config(env, ctx, auth_mode, products):
             lines.append("fetch: ZPA_CLOUD = %s"
                          % (env.get("ZPA_CLOUD") or "(production)"))
         if ctx.get("customer_id"):
-            lines.append("fetch: ZPA_CUSTOMER_ID = %s" % ctx["customer_id"])
+            lines.append("fetch: ZPA_CUSTOMER_ID = %s" % ident(ctx["customer_id"]))
         if "zia" in products:
             lines.append("fetch: zia base = %s" % _safe_base(
                 lambda: _zia_legacy_base_for(ctx), ctx.get("zia_legacy_base")))
         if "zpa" in products:
             lines.append("fetch: zpa base = %s" % _safe_base(
                 lambda: _zpa_legacy_base_for(ctx), ctx.get("zpa_legacy_base")))
+    if masked:
+        lines.append("fetch: (vanity/customer-id hidden; set FETCH_DEBUG=1 to show)")
     return lines
 
 

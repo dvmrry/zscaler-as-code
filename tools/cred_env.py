@@ -29,7 +29,9 @@ derived host is wrong or unlisted — set one and it wins over derivation.
 
 Usage:  eval "$(python -m tools.cred_env <tenant>)"
 (Do not run under `set -x` — the export lines carry secret values. The
-debug summary on stderr is secret-safe: credentials show as "set".)
+debug summary on stderr is secret-safe: credentials show as "set", and
+tenant-identifying values — vanity domain, customer id — are hidden too
+unless FETCH_DEBUG is truthy.)
 
 Stdlib-only, Python 3.6-floor — see AGENTS.md rule 5.
 """
@@ -62,14 +64,21 @@ LEGACY_MARKERS = ("ZIA_USERNAME", "ZIA_PASSWORD", "ZIA_API_KEY",
                   "ZPA_CLIENT_ID", "ZPA_CLIENT_SECRET")
 
 # Non-secret values safe to print in the debug summary; everything else
-# exported is shown as "set". Hosts, clouds, vanity domain and customer id
-# are targeting data, not credentials. Client ids and usernames are shown
-# as "set" too, conservatively — they identify the API client.
+# exported is shown as "set". Clouds, hosts and base-URL overrides are
+# shared-infra targeting data, not credentials and not tenant-identifying.
+# Client ids and usernames are NOT here — shown as "set", conservatively.
 SHOWABLE = frozenset((
-    "ZIA_CLOUD", "ZPA_CLOUD", "ZSCALER_CLOUD", "ZSCALER_VANITY_DOMAIN",
-    "ZPA_CUSTOMER_ID", "ZPA_MICROTENANT_ID", MODE_FLAG,
+    "ZIA_CLOUD", "ZPA_CLOUD", "ZSCALER_CLOUD", MODE_FLAG,
+    "ZSCALER_VANITY_DOMAIN", "ZPA_CUSTOMER_ID", "ZPA_MICROTENANT_ID",
     "ZSCALER_API_BASE_URL", "ZSCALER_LOGIN_BASE_URL",
     "ZIA_LEGACY_BASE_URL", "ZPA_LEGACY_BASE_URL",
+))
+
+# Showable but tenant-IDENTIFYING: not secret, but they pin down which org/
+# tenant this is. Shown as "set" unless FETCH_DEBUG is truthy, so a pipeline
+# log that someone might paste into a shared channel does not leak identity.
+IDENTIFYING = frozenset((
+    "ZSCALER_VANITY_DOMAIN", "ZPA_CUSTOMER_ID", "ZPA_MICROTENANT_ID",
 ))
 
 
@@ -213,9 +222,14 @@ def shell_quote(value):
     return "'" + value.replace("'", "'\"'\"'") + "'"
 
 
-def _debug_value(name, value):
-    """Secret-safe rendering for the debug summary."""
-    return value if name in SHOWABLE else "set"
+def _debug_value(name, value, verbose):
+    """Secret-safe rendering for the debug summary. Credentials always show
+    as "set"; tenant-identifying values show as "set" unless verbose."""
+    if name not in SHOWABLE:
+        return "set"
+    if name in IDENTIFYING and not verbose:
+        return "set"
+    return value
 
 
 def main(argv=None, environ=None):
@@ -269,9 +283,15 @@ def main(argv=None, environ=None):
     for name, value in export_pairs:
         sys.stdout.write("export %s=%s\n" % (name, shell_quote(value)))
 
+    verbose = is_truthy(environ.get("FETCH_DEBUG"))
     sys.stderr.write("resolved %s credentials for tenant %r:\n" % (mode, tenant))
+    hid = False
     for name, value in export_pairs:
-        sys.stderr.write("  %s = %s\n" % (name, _debug_value(name, value)))
+        if name in IDENTIFYING and value and not verbose:
+            hid = True
+        sys.stderr.write("  %s = %s\n" % (name, _debug_value(name, value, verbose)))
+    if hid:
+        sys.stderr.write("  (vanity/customer-id hidden; set FETCH_DEBUG=1 to show)\n")
     return 0
 
 

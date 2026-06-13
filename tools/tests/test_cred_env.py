@@ -310,6 +310,35 @@ class MainEndToEndTest(unittest.TestCase):
         self.assertEqual(rc, 1)
         self.assertEqual(out, "")
 
+    def test_identifying_vars_masked_in_debug_by_default(self):
+        # vanity domain + customer id are non-secret but tenant-identifying:
+        # hidden in the debug stream unless FETCH_DEBUG is set. (They still
+        # appear in the eval'd stdout — that is the whole point of it.)
+        env = {
+            "ZS2_ZSCALER_CLIENT_ID": "cid", "ZS2_ZSCALER_CLIENT_SECRET": "sec",
+            "ZS2_ZSCALER_VANITY_DOMAIN": "acmecorp",
+            "ZS2_ZPA_CUSTOMER_ID": "C12345",
+        }
+        rc, out, err = self._run("zs2", env)
+        self.assertEqual(rc, 0)
+        self.assertIn("acmecorp", out)               # exported for the providers
+        self.assertNotIn("acmecorp", err)            # but hidden in debug
+        self.assertNotIn("C12345", err)
+        self.assertIn("FETCH_DEBUG", err)            # reveal hint
+
+    def test_identifying_vars_revealed_with_fetch_debug(self):
+        env = {
+            "ZS2_ZSCALER_CLIENT_ID": "cid",
+            "ZS2_ZSCALER_CLIENT_SECRET": "topsecret",
+            "ZS2_ZSCALER_VANITY_DOMAIN": "acmecorp",
+            "ZS2_ZPA_CUSTOMER_ID": "C12345",
+            "FETCH_DEBUG": "1",
+        }
+        rc, out, err = self._run("zs2", env)
+        self.assertIn("acmecorp", err)               # revealed
+        self.assertIn("C12345", err)
+        self.assertNotIn("topsecret", err)           # secret still never in debug
+
     def test_secret_values_never_reach_stdout_or_debug(self):
         env = {"ZS2_" + k: v for k, v in dict(LEGACY_ZIA_FULL).items()}
         env["ZS2_ZSCALER_USE_LEGACY_CLIENT"] = "true"

@@ -134,10 +134,15 @@ it. All are optional:
 ### Startup debug
 
 Every `make fetch` prints a secret-safe summary to stderr first: the auth
-mode, whether a proxy is set (never its value), the safe targeting vars
-(clouds, vanity domain, customer id), and the actual base URLs/hosts it will
-dial for the in-scope products. Credentials are never printed. Use it to
-confirm a run is pointed where you expect before it authenticates.
+mode, whether a proxy is set (never its value), the clouds, and the actual
+base URLs/hosts it will dial for the in-scope products — enough to diagnose
+the host/derivation class of failure. Credentials are never printed.
+
+Tenant-**identifying** values (vanity domain, ZPA customer id) are shown as
+`set` by default and the derived token host's vanity is masked
+(`<vanity>.zslogin.net`), so a pipeline log can be shared without leaking
+which tenant it is. Set `FETCH_DEBUG=1` to reveal them when you need the
+full picture. `cred_env`'s resolution summary applies the same rule.
 
 Credentials are read from the environment at runtime only. They are never
 written to disk, never logged, and never enter `pulls/` output. Real pulls

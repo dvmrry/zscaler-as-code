@@ -84,8 +84,9 @@ Notes that apply to every platform:
   It exports only the active auth mode's variables (legacy vs OneAPI,
   never a mix) and fails loud if a product's set is half-configured, so a
   stray wrong-mode var can't crash a provider; the resolved mode and safe
-  vars are echoed to stderr (secrets shown as `set`). Don't run that step
-  under `set -x`.
+  vars are echoed to stderr (secrets shown as `set`; tenant-identifying
+  values like the vanity domain and customer id hidden unless
+  `FETCH_DEBUG=1`). Don't run that step under `set -x`.
 - **Agents without terraform**: `make install-tf VERSION=1.15.4`
   downloads and checksum-verifies the binary into `bin/`; either PATH
   it or pass `TF=bin/terraform` to subsequent make calls.

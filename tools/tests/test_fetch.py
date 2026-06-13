@@ -701,18 +701,30 @@ class DebugConfigTest(unittest.TestCase):
     """Startup debug prints mode, the URLs/hosts to be hit and safe vars;
     secret values never appear."""
 
-    def test_oneapi_shows_mode_hosts_and_redacts_secrets(self):
+    def test_oneapi_default_masks_identifying_shows_hosts(self):
         env = {"ZSCALER_VANITY_DOMAIN": "acme", "ZSCALER_CLOUD": "",
                "ZSCALER_CLIENT_ID": "cid", "ZSCALER_CLIENT_SECRET": "topsecret"}
         ctx = {"cloud": "", "customer_id": "C9"}
         lines = "\n".join(debug_config(env, ctx, "oneapi", {"zia", "zpa"}))
         self.assertIn("oneapi", lines.lower())
-        self.assertIn("acme.zslogin.net", lines)    # token host (URL hit)
-        self.assertIn("api.zsapi.net", lines)        # gateway (URL hit)
-        self.assertIn("C9", lines)                   # customer id is safe
+        self.assertIn("api.zsapi.net", lines)        # gateway: not identifying
+        self.assertIn("<vanity>.zslogin", lines)     # token host w/ vanity masked
+        self.assertNotIn("acme", lines)              # vanity domain hidden
+        self.assertNotIn("C9", lines)                # customer id hidden
         self.assertNotIn("topsecret", lines)         # secret never shown
+        self.assertIn("FETCH_DEBUG", lines)          # tells operator how to reveal
 
-    def test_legacy_shows_derived_bases_and_proxy_state(self):
+    def test_oneapi_verbose_reveals_identifying(self):
+        env = {"ZSCALER_VANITY_DOMAIN": "acme", "ZSCALER_CLOUD": "",
+               "ZSCALER_CLIENT_ID": "cid", "ZSCALER_CLIENT_SECRET": "topsecret",
+               "FETCH_DEBUG": "1"}
+        ctx = {"cloud": "", "customer_id": "C9"}
+        lines = "\n".join(debug_config(env, ctx, "oneapi", {"zia", "zpa"}))
+        self.assertIn("acme.zslogin.net", lines)     # full token host
+        self.assertIn("C9", lines)                   # customer id revealed
+        self.assertNotIn("topsecret", lines)         # secret STILL never shown
+
+    def test_legacy_shows_derived_bases_masks_identifying(self):
         env = {"ZSCALER_USE_LEGACY_CLIENT": "true", "ZIA_CLOUD": "zscalertwo",
                "ZPA_CLOUD": "ZPATWO", "ZIA_API_KEY": "topsecret",
                "HTTPS_PROXY": "http://proxy.example:8080"}
@@ -720,11 +732,12 @@ class DebugConfigTest(unittest.TestCase):
                "zpa_cloud": "ZPATWO"}
         lines = "\n".join(debug_config(env, ctx, "legacy", {"zia", "zpa"}))
         self.assertIn("legacy", lines.lower())
-        self.assertIn("zsapi.zscalertwo.net", lines)
-        self.assertIn("config.zpatwo.net", lines)
-        self.assertIn("proxy", lines.lower())        # proxy state announced
-        self.assertNotIn("topsecret", lines)         # api key never shown
-        self.assertNotIn("proxy.example", lines)     # proxy VALUE not shown
+        self.assertIn("zsapi.zscalertwo.net", lines)  # base host: not identifying
+        self.assertIn("config.zpatwo.net", lines)     # base host: not identifying
+        self.assertIn("proxy", lines.lower())         # proxy state announced
+        self.assertNotIn("C9", lines)                 # customer id hidden by default
+        self.assertNotIn("topsecret", lines)          # api key never shown
+        self.assertNotIn("proxy.example", lines)      # proxy VALUE not shown
 
     def test_legacy_scoped_to_zia_omits_zpa_base(self):
         env = {"ZSCALER_USE_LEGACY_CLIENT": "true", "ZIA_CLOUD": "zscalertwo"}
