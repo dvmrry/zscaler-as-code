@@ -62,13 +62,24 @@ grep -c 'STATE_AWARE' Makefile
 EXPECT: `4`. (Reference: in current main these sit at lines 244, 245,
 255, 345.) If not 4, same conclusion as 1.2: stale checkout. STOP.
 
-Step 1.4
+Step 1.4 (sync-dating check only — NOT required by this task)
 ```
-test -f pipelines/commitback.sh && grep -c '^refresh-gates:' Makefile
+grep -c '^refresh-gates:' Makefile
+test -f pipelines/commitback.sh && echo COMMITBACK_OK || echo COMMITBACK_MISSING
 ```
-EXPECT: `1`. This proves the checkout is at or after the two newest
-changes. If the file is missing or grep prints 0, the sync stopped at
-an older commit. STOP and report which of 1.2–1.4 failed.
+EXPECT: `1` and `COMMITBACK_OK`. Interpreting a mismatch:
+- `refresh-gates` prints `0`: the sync predates the lint-gate fix.
+  Re-sync the repo before continuing (the lint step needs it anyway).
+- Only `COMMITBACK_MISSING`: the sync is exactly one commit behind
+  (commitback.sh shipped 2026-06-12, after the statefill feature).
+  This does NOT block this task — nothing below uses commitback.sh.
+  CONTINUE to Part 2 now. Separately, re-sync when convenient: that
+  commit also carries the fix for the commit-back step hanging after
+  the branch push.
+
+If 1.1–1.3 all matched EXPECT, the statefill sequence below runs on
+this checkout regardless of Step 1.4. Only 1.2 or 1.3 failing is a
+hard STOP.
 
 ## Part 2 — identify the rule and set variables
 
