@@ -115,6 +115,63 @@ grep -c 'cbi_profile' "config/$LABEL/zia_url_filtering_rules.auto.tfvars.json"
 EXPECT: a number >= 1. If `0`, STOP and report — config must be
 re-fetched + re-transformed before any fill.
 
+## Part 3-PRE — WHERE to run Parts 3–5 (read before running anything)
+
+Parts 3–5 need credentials for BOTH the state backend and the ZIA
+provider. Machines outside the pipeline agents do not have backend
+access — that is by design, not a problem to fix. If this machine
+cannot reach the backend, do NOT run Parts 3, 4, or 5.1 here. Do this
+instead:
+
+1. Take the step below, replace the three REPLACE_ values with the
+   literals found in Part 2 (paste literal values — no shell
+   variables), and add it to the bootstrap pipeline in the SAME JOB as
+   the plan step, BEFORE the stage-imports step. Give it the SAME
+   `env:` block as the plan step (it needs the provider credentials
+   for the import read and the backend credentials for state).
+
+```yaml
+# TEMPORARY one-off — DELETE THIS STEP after one successful run.
+- script: |
+    set -e
+    terraform -chdir="envs/REPLACE_LABEL/zia_url_filtering_rules" init -input=false -reconfigure \
+      -backend-config="$(System.DefaultWorkingDirectory)/backend.conf" \
+      -backend-config="key=REPLACE_LABEL/zia_url_filtering_rules.tfstate"
+    terraform -chdir="envs/REPLACE_LABEL/zia_url_filtering_rules" import -input=false \
+      'module.zia_url_filtering_rules.zia_url_filtering_rules.this["REPLACE_KEY"]' 'REPLACE_RULE_ID' \
+      || echo "import returned non-zero (already managed from a prior run?) — statefill verifies next"
+    make statefill TENANT=REPLACE_LABEL RESOURCE=zia_url_filtering_rules KEY=REPLACE_KEY \
+      FIELD=cbi_profile BACKEND_CONFIG=backend.conf STATE_FILL=1
+  displayName: One-off cbi_profile state fill (DELETE AFTER SUCCESS)
+```
+
+   (If the pipeline's plan step passes a BACKEND_CONFIG file other
+   than `backend.conf` at the repo root, use that path in BOTH places
+   above — always match the plan step.)
+
+2. In the SAME pipeline edit, find the existing stage-imports step and
+   add `STATE_AWARE=1 BACKEND_CONFIG=backend.conf` to its make
+   command. This change is PERMANENT, not temporary: it filters import
+   blocks for already-managed addresses and does nothing otherwise.
+   Without it, the plan fails on the now-managed rule with "Resource
+   already managed".
+
+3. Run the pipeline once. The single run then does: fill -> staged
+   imports minus the managed rule -> plan -> assert-clean. EXPECT the
+   plan summary `0 to change, 0 to destroy` with the other resources
+   importing as before. Two failure texts in the temp step are SUCCESS
+   signals on a re-run — state is already correct, delete the step:
+   - `Resource already managed by Terraform` (the import landed earlier)
+   - `refusing to overwrite a non-empty value` (the fill landed earlier)
+   Any OTHER error: STOP and report the step's log (values redacted).
+
+4. After one green run: DELETE the temporary step (keep the
+   stage-imports change), and report per Part 6.
+
+Parts 3–5 below describe the same commands for direct execution on a
+machine WITH backend access — skip them entirely if you used the
+pipeline step above.
+
 ## Part 3 — import the ONE rule (this CREATES the state file)
 
 `terraform import` does not require an existing state file: it reads
@@ -162,6 +219,10 @@ terraform -chdir="envs/$LABEL/zia_url_filtering_rules" state show "module.zia_ur
 EXPECT: a number >= 1. If `0`, STOP and report — the fill did not land.
 
 ## Part 5 — exclude the now-managed rule and re-plan
+
+NOTE: Step 5.1 also needs backend access (the filter checks state).
+On a no-backend machine this is covered by item 2 of Part 3-PRE (the
+permanent STATE_AWARE addition to the pipeline's stage-imports step).
 
 Step 5.1: Re-stage imports, skipping anything already in state:
 ```
