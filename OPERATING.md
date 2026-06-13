@@ -4,7 +4,7 @@ This is the operating discipline for *running* this repo against a live
 Zscaler tenant — adopting it, planning, importing, reconciling drift — as
 distinct from *developing* the tooling. `RUNBOOK.md` has the step-by-step
 recipes; `AGENTS.md` has the rules for changing the repo itself. When a
-situation is not covered here or in `RUNBOOK.md`, stop and leave a note
+situation is not covered here or in `RUNBOOK.md`, stop and raise an issue
 (see the last section) rather than improvising.
 
 If an automated agent operates this repo, treat this file as a standing
@@ -57,7 +57,7 @@ that owns it, or leave a note.
 
 ## Uncertainty protocol — when to STOP
 
-A wrong guess is worse than a clean stop. STOP and leave a note when:
+A wrong guess is worse than a clean stop. STOP and raise an issue when:
 - The situation is not described here or in `RUNBOOK.md`.
 - A plan shows a change you did not expect (anything other than imports
   of new objects and `0 to change, 0 to destroy`).
@@ -68,8 +68,8 @@ A wrong guess is worse than a clean stop. STOP and leave a note when:
 - A command would touch the live tenant (an apply, or any API write) and
   you are not following an explicit `RUNBOOK.md` step that says to.
 
-"STOP" means: do not push, do not apply, do not hand-edit. Write the
-note, and wait.
+"STOP" means: do not push, do not apply, do not hand-edit. Raise the
+issue, and wait.
 
 ## The loop you run
 
@@ -111,12 +111,13 @@ Order of operations, every time, before concluding anything is wrong:
 2. `git pull` — a missing or stale target/gate is almost always a change
    that shipped while your checkout was behind.
 3. Re-read the error. These tools are written to name their own cause.
-4. Still stuck → leave a note; do not improvise a workaround.
+4. Still stuck → raise an issue; do not improvise a workaround.
 
-## When you stop: leave a clear report
+## When you stop: raise an issue
 
-When you STOP, hand a clear report to whoever continues the work. A good
-note has:
+When you STOP, capture it as an issue in the project's tracker — GitHub
+issues, or whatever your deployment uses — so the work is picked up
+deliberately rather than guessed at. A good issue has:
 - What you were doing — the operation and the exact `make` command.
 - The exact error or unexpected plan output, verbatim, with tenant values
   (names, URLs, IDs) replaced by `<redacted>`. Exit codes, step numbers,
@@ -124,6 +125,8 @@ note has:
 - What you have NOT done yet (e.g. "branch pushed, not applied").
 
 Never include credentials, tokens, real tenant identifiers, or raw API
-responses in a note or anywhere in this repo — see `AGENTS.md` data
-hygiene. When unsure whether a value is safe to share, redact it and say
-so.
+responses in an issue, a comment, or anywhere in this repo — see
+`AGENTS.md` data hygiene. When unsure whether a value is safe to share,
+redact it and say so. (A tracker is also where work is shared between a
+person and an automated operator; the same redaction rule applies to
+everything posted there.)
