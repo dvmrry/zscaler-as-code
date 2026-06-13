@@ -95,6 +95,44 @@ These are the operations to initiate; each maps to a `RUNBOOK.md` section
   the `make` targets (`import-one`, `statefill`) — never raw
   `terraform import`, which omits the required `-var-file` and fails.
 
+## Credentials and proxy on the steps that authenticate
+
+`make fetch` and anything that configures a Terraform provider authenticate
+against the tenant, so they need their full environment present on the
+step: the provider credentials, the cloud (`ZIA_CLOUD` / `ZSCALER_*` —
+read by their exact names, not a tenant-prefixed alias), and `HTTPS_PROXY`
+if egress is proxied. The safe move when adding or editing a step that
+authenticates is to **copy the working `make fetch` step's entire `env:`
+block verbatim** rather than retyping or cherry-picking it. A missing or
+mis-named cloud, or a dropped proxy, does not produce a clear error — it
+surfaces as a provider crash (`Plugin did not respond` at
+`ConfigureProvider`) or a hung request. (See `RUNBOOK.md` troubleshooting.)
+
+## Testing a change before it is on `main`
+
+Default: do not pre-test most changes. The tooling is unit-tested, so once
+a change is merged, sync `main` (`git fetch <upstream>` + fast-forward) and
+run your check there; a regression is a one-command revert. Pre-testing
+earns its keep only for genuinely risky changes.
+
+When you do need to test a pull request *before* merge, do NOT create a
+branch and rebase it onto local `main`. Fetch the host's ready-made merge
+ref and check it out detached — it is the PR already merged onto `main`,
+computed for you, so there is nothing to rebase and no branch to clean up:
+
+```
+git status                            # tree must be clean; otherwise: git stash -u
+git fetch <upstream> pull/<PR#>/merge # the PR merged onto the base branch
+git checkout --detach FETCH_HEAD
+make test                             # plus the real check
+git checkout main                     # return
+# if you stashed: git stash pop
+```
+
+If a PR has conflicts the `/merge` ref will not exist — use
+`pull/<PR#>/head` instead. Never push these test checkouts; testing is
+read-only on the code.
+
 ## What "green" looks like
 
 A correct adoption or backfill plan is **imports of new objects plus
