@@ -5,7 +5,7 @@ import os
 import sys
 import unittest
 
-from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, paginate_single, paginate_zcc_v2, build_headers, compose_url, fetch_resource, acquire_token, products_in_manifest, auth_mode_from_env, _zslogin_host, _legacy_zpa_base, ca_bundle_path, connection_hint, diag_hosts, debug_config, host_overrides, expand_paths, _retry_delay, _request_with_retry, _RETRY_BASE, _RETRY_CAP
+from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, paginate_single, paginate_zcc_v2, build_headers, compose_url, fetch_resource, acquire_token, products_in_manifest, auth_mode_from_env, _zslogin_host, _legacy_zpa_base, ca_bundle_path, connection_hint, diag_hosts, debug_config, host_overrides, expand_paths, _get_json, _mask_identifiers, _unreachable_message, _retry_delay, _request_with_retry, _RETRY_BASE, _RETRY_CAP
 
 
 class ManifestTest(unittest.TestCase):
@@ -665,6 +665,100 @@ class DiagHostsTest(unittest.TestCase):
         self.assertEqual(diag_hosts({}), ["<vanity>.zslogin.net", "api.zsapi.net"])
 
 
+class MaskIdentifiersTest(unittest.TestCase):
+    """Error/diagnostic messages echo URLs; those must not leak the vanity
+    (token host) or the ZPA customer id, while keeping the host + structure
+    that make the error actionable."""
+
+    def test_masks_vanity_in_token_host(self):
+        self.assertEqual(
+            _mask_identifiers("https://acmecorp.zslogin.net/oauth2/v1/token"),
+            "https://<vanity>.zslogin.net/oauth2/v1/token",
+        )
+
+    def test_masks_vanity_keeps_cloud_suffix(self):
+        self.assertEqual(
+            _mask_identifiers("https://acmecorp.zsloginbeta.net/oauth2/v1/token"),
+            "https://<vanity>.zsloginbeta.net/oauth2/v1/token",
+        )
+
+    def test_masks_zpa_customer_id(self):
+        self.assertEqual(
+            _mask_identifiers(
+                "https://config.zpatwo.net/mgmtconfig/v1/admin/customers/9876543/segmentGroup"),
+            "https://config.zpatwo.net/mgmtconfig/v1/admin/customers/<customer-id>/segmentGroup",
+        )
+
+    def test_leaves_non_identifying_hosts_untouched(self):
+        for url in ("https://api.zsapi.net/zia/api/v1/urlCategories",
+                    "https://config.zpatwo.net/signin",
+                    "https://zsapi.zscalertwo.net/api/v1/x"):
+            self.assertEqual(_mask_identifiers(url), url)
+
+    def test_masks_bare_vanity_host(self):
+        self.assertEqual(_mask_identifiers("acmecorp.zslogin.net"),
+                         "<vanity>.zslogin.net")
+
+
+class UnreachableMessageTest(unittest.TestCase):
+    def test_masks_identifiers_and_keeps_hint(self):
+        msg = _unreachable_message(
+            "https://acmecorp.zslogin.net/oauth2/v1/token?x=1", "Connection refused")
+        self.assertNotIn("acmecorp", msg)
+        self.assertIn("<vanity>.zslogin.net", msg)
+        self.assertIn("HTTPS_PROXY", msg)            # actionable hint preserved
+
+    def test_masks_vanity_in_reason_string(self):
+        # a TLS cert error reason can name the host — mask it too
+        msg = _unreachable_message(
+            "https://acmecorp.zslogin.net/oauth2/v1/token",
+            "[SSL: CERTIFICATE_VERIFY_FAILED] certificate is not valid for "
+            "'acmecorp.zslogin.net'")
+        self.assertNotIn("acmecorp", msg)
+
+
+class GetJsonErrorMaskingTest(unittest.TestCase):
+    def test_http_error_message_masks_customer_id(self):
+        url = "https://api.zsapi.net/zpa/mgmtconfig/v1/admin/customers/9876543/segmentGroup"
+        opener = FakeOpener({url: [(404, {"error": "nope"})]})
+        with self.assertRaises(RuntimeError) as cm:
+            _get_json(opener, url, {}, {})
+        self.assertNotIn("9876543", str(cm.exception))
+        self.assertIn("<customer-id>", str(cm.exception))
+        self.assertIn("404", str(cm.exception))      # status preserved
+
+
+class RunDiagMaskingTest(unittest.TestCase):
+    def test_diag_output_masks_vanity(self):
+        import tools.fetch as F
+        env = {"ZSCALER_VANITY_DOMAIN": "acmecorp", "ZSCALER_CLOUD": ""}
+        old_try, old_err = F._try_tls, sys.stderr
+        F._try_tls = lambda host, ctx: (True, "HTTP 200")
+        sys.stderr = io.StringIO()
+        try:
+            F.run_diag(env)
+            out = sys.stderr.getvalue()
+        finally:
+            F._try_tls, sys.stderr = old_try, old_err
+        self.assertNotIn("acmecorp", out)            # vanity not in --diag output
+        self.assertIn("<vanity>.zslogin.net", out)
+        self.assertIn("api.zsapi.net", out)          # non-identifying host still shown
+
+    def test_diag_masks_vanity_in_tls_failure_detail(self):
+        # a TLS-failure detail string can echo the real probed host
+        import tools.fetch as F
+        env = {"ZSCALER_VANITY_DOMAIN": "acmecorp", "ZSCALER_CLOUD": ""}
+        old_try, old_err = F._try_tls, sys.stderr
+        F._try_tls = lambda host, ctx: (False, "hostname mismatch for %s" % host)
+        sys.stderr = io.StringIO()
+        try:
+            F.run_diag(env)
+            out = sys.stderr.getvalue()
+        finally:
+            F._try_tls, sys.stderr = old_try, old_err
+        self.assertNotIn("acmecorp", out)            # masked even in the detail
+
+
 class HostOverridesTest(unittest.TestCase):
     """The shared override ctx-builder — fetch and audit both spread this so
     they can't drift on which overrides they honor."""
@@ -713,6 +807,18 @@ class DebugConfigTest(unittest.TestCase):
         self.assertNotIn("C9", lines)                # customer id hidden
         self.assertNotIn("topsecret", lines)         # secret never shown
         self.assertIn("FETCH_DEBUG", lines)          # tells operator how to reveal
+
+    def test_oneapi_login_override_masks_vanity(self):
+        # the login-base override structurally embeds the vanity — masked by
+        # default, revealed under FETCH_DEBUG, just like the derived host.
+        ctx = {"cloud": "", "customer_id": "",
+               "oneapi_login": "https://acmecorp.zslogin.net"}
+        lines = "\n".join(debug_config({}, ctx, "oneapi", {"zia"}))
+        self.assertNotIn("acmecorp", lines)
+        self.assertIn("<vanity>.zslogin.net", lines)
+        self.assertIn("FETCH_DEBUG", lines)          # reveal-hint footer fires
+        verbose = "\n".join(debug_config({"FETCH_DEBUG": "1"}, ctx, "oneapi", {"zia"}))
+        self.assertIn("acmecorp.zslogin.net", verbose)
 
     def test_oneapi_verbose_reveals_identifying(self):
         env = {"ZSCALER_VANITY_DOMAIN": "acme", "ZSCALER_CLOUD": "",

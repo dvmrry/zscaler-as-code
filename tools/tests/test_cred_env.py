@@ -339,6 +339,19 @@ class MainEndToEndTest(unittest.TestCase):
         self.assertIn("C12345", err)
         self.assertNotIn("topsecret", err)           # secret still never in debug
 
+    def test_login_base_override_masked_in_debug(self):
+        # ZSCALER_LOGIN_BASE_URL embeds the vanity (<vanity>.zslogin.net), so
+        # it is hidden in the debug stream by default — but still exported.
+        env = {
+            "ZS2_ZSCALER_CLIENT_ID": "cid", "ZS2_ZSCALER_CLIENT_SECRET": "sec",
+            "ZS2_ZSCALER_VANITY_DOMAIN": "acmecorp",
+            "ZS2_ZSCALER_LOGIN_BASE_URL": "https://acmecorp.zsloginbeta.net",
+        }
+        rc, out, err = self._run("zs2", env)
+        self.assertEqual(rc, 0)
+        self.assertIn("acmecorp.zsloginbeta.net", out)   # exported for the SDK
+        self.assertNotIn("acmecorp", err)                # hidden in debug
+
     def test_secret_values_never_reach_stdout_or_debug(self):
         env = {"ZS2_" + k: v for k, v in dict(LEGACY_ZIA_FULL).items()}
         env["ZS2_ZSCALER_USE_LEGACY_CLIENT"] = "true"

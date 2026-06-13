@@ -8,8 +8,23 @@ See AGENTS.md rules 1-5.
 """
 import json
 import os
+import re
 import sys
 import time
+
+
+def _mask_identifiers(text):
+    """Mask tenant-identifying substrings in a URL/host for error and
+    diagnostic messages: the vanity label of a *.zslogin*.net token host and
+    the ZPA /customers/<id>/ path segment. Hosts and path structure — the
+    actionable part of a connectivity/HTTP error — are preserved. Always
+    applied (these messages may end up in a shared log); the full URL adds
+    no diagnostic value beyond the host + status anyway.
+    """
+    text = re.sub(r"([/.]|^)([^/.]+)(\.zslogin[a-z0-9]*\.net)",
+                  r"\1<vanity>\3", text)
+    text = re.sub(r"(/customers/)[^/]+", r"\1<customer-id>", text)
+    return text
 
 def load_manifest():
     from tools.registry import load_registry
@@ -95,7 +110,8 @@ def _get_json(opener, url, headers, query):
     full = url + ("?" + urlencode(query) if query else "")
     status, body = opener("GET", full, headers, None)
     if status != 200:
-        raise RuntimeError("GET %s returned HTTP %d" % (url, status))
+        raise RuntimeError("GET %s returned HTTP %d"
+                           % (_mask_identifiers(url), status))
     return json.loads(body.decode())
 
 
@@ -376,6 +392,18 @@ def connection_hint(reason):
     return "hint: see tools/FETCH.md (proxy and TLS notes)"
 
 
+def _unreachable_message(url, reason):
+    """Actionable 'cannot reach' message with the host preserved but
+    tenant-identifying parts masked (the vanity / ZPA customer id), since
+    this string surfaces in fetch_all's failure summary and may be relayed.
+    The reason is masked too — a TLS error can name the host (e.g.
+    'certificate is not valid for <vanity>.zslogin.net')."""
+    return "cannot reach %s: %s\n%s" % (
+        _mask_identifiers(url.split("?")[0]),
+        _mask_identifiers(str(reason)),
+        connection_hint(str(reason)))
+
+
 def real_opener(env=None):
     """Default opener over urllib with a cookie jar — wraps GET/POST into
     (status, bytes). The jar persists the ZIA legacy session cookie across
@@ -417,10 +445,8 @@ def real_opener(env=None):
                 return e.code, e.read(), retry_after
             except urllib.error.URLError as e:
                 # Self-explanatory on this side — no traceback relay needed.
-                raise SystemExit(
-                    "cannot reach %s: %s\n%s"
-                    % (url.split("?")[0], e.reason, connection_hint(str(e.reason)))
-                )
+                # Identifiers masked: this surfaces in the failure summary.
+                raise SystemExit(_unreachable_message(url, e.reason))
         # 429s are retried HERE (honoring Retry-After), so every request —
         # data GETs and auth POSTs alike — paces itself transparently and
         # callers keep their simple (status, body) contract.
@@ -665,11 +691,16 @@ def debug_config(env, ctx, auth_mode, products):
                      % ident(env.get("ZSCALER_VANITY_DOMAIN")))
         if ctx.get("customer_id"):
             lines.append("fetch: ZPA_CUSTOMER_ID = %s" % ident(ctx["customer_id"]))
-        # An explicit login override IS a base host — show it. Otherwise the
-        # derived token host embeds the vanity domain, so mask the vanity
-        # (keeping the cloud suffix, which is the diagnostic part).
+        # The token host embeds the vanity domain whether derived OR supplied
+        # via the login override, so mask the vanity in both (keeping the
+        # cloud suffix, which is the diagnostic part) unless verbose.
         if ctx.get("oneapi_login"):
-            token = ctx["oneapi_login"]
+            if verbose:
+                token = ctx["oneapi_login"]
+            else:
+                token = _mask_identifiers(ctx["oneapi_login"])
+                if token != ctx["oneapi_login"]:
+                    masked.append(1)   # so the reveal-hint footer fires
         else:
             vanity = env.get("ZSCALER_VANITY_DOMAIN")
             if not verbose:
@@ -741,11 +772,17 @@ def run_diag(env):
         if "<" in host:
             sys.stderr.write("%s: skipped (env vars not set)\n" % host)
             continue
+        # Probe the REAL host, but print a vanity-masked name so a relayed
+        # --diag log does not reveal the tenant's vanity (in <vanity>.zslogin).
+        shown = _mask_identifiers(host)
         ok, detail = _try_tls(host, system_ctx)
-        line = "%s: system-trust %s (%s)" % (host, "OK" if ok else "FAIL", detail)
+        # detail is a TLS/connection reason that can itself name the host.
+        line = "%s: system-trust %s (%s)" % (
+            shown, "OK" if ok else "FAIL", _mask_identifiers(detail))
         if bundle_ctx is not None:
             ok2, detail2 = _try_tls(host, bundle_ctx)
-            line += "; +bundle %s (%s)" % ("OK" if ok2 else "FAIL", detail2)
+            line += "; +bundle %s (%s)" % (
+                "OK" if ok2 else "FAIL", _mask_identifiers(detail2))
         else:
             line += "; no CA bundle configured (set REQUESTS_CA_BUNDLE)"
         sys.stderr.write(line + "\n")

@@ -77,8 +77,12 @@ SHOWABLE = frozenset((
 # Showable but tenant-IDENTIFYING: not secret, but they pin down which org/
 # tenant this is. Shown as "set" unless FETCH_DEBUG is truthy, so a pipeline
 # log that someone might paste into a shared channel does not leak identity.
+# ZSCALER_LOGIN_BASE_URL is here because the OneAPI token host structurally
+# embeds the vanity domain (<vanity>.zslogin.net) — the other base-URL
+# overrides (gateway/zia/zpa) are shared-infra hosts and stay shown.
 IDENTIFYING = frozenset((
     "ZSCALER_VANITY_DOMAIN", "ZPA_CUSTOMER_ID", "ZPA_MICROTENANT_ID",
+    "ZSCALER_LOGIN_BASE_URL",
 ))
 
 
