@@ -80,52 +80,33 @@ steps:
   - publish: reports/$(TENANT)
     artifact: drift-report
     condition: eq(variables.DRIFTED, 'true')
-  - script: |
-      branch="drift/$(TENANT)/$(date -u +%Y%m%dT%H%M)"
-      git checkout -b "$branch"
-      git add config/$(TENANT) imports/$(TENANT)
-      git -c user.name=drift-bot -c user.email=drift-bot@invalid \
-        commit -m "Backfill drift: $(TENANT)"
-      git push -u origin "$branch"
-      # Requires the build service identity granted, on this repository:
-      #   - "Contribute" -- needed by `git push -u origin "$branch"` to create
-      #     the backfill branch (without it the push fails 403/TF401027 and no
-      #     PR is created); it also covers PR creation.
-      # PR creation uses plain curl + System.AccessToken (same idiom as the
-      # plan-comment pipeline) — NOT the az CLI: on restricted agents
-      # `az extension add` hangs on egress and `az repos pr create` hangs
-      # waiting for a token on stdin when the PAT env is missing. Both are
-      # silent; curl fails loud or works.
-      # A HUMAN merges -- the PR carries the diff summary + audit attribution,
-      # and the plan build policy shows merge-readiness; review is
-      # read-and-click, not investigate.
-      # Truncate the description to stay under the ADO 4,000-character server
-      # limit; append a pointer to the full published artifact.
-      # NEVER fatal: under set -e a missing report file here would kill
-      # the script AFTER the branch push and BEFORE the PR call — branch
-      # exists, no PR, and the log shows nothing (field-hit in an adapted
-      # copy of this block). Uncomment `set -x` above when diagnosing.
-      _desc="$(head -c 3800 "reports/$(TENANT)/drift.md" 2>/dev/null || echo "Drift backfill (report missing from workspace)")"
-      _desc="${_desc}
-
-_Full report in pipeline artifact: drift-report_"
-      python3 - "$branch" "$_desc" > /tmp/pr.json <<'PYEOF'
-      import json, sys
-      print(json.dumps({
-          "sourceRefName": "refs/heads/" + sys.argv[1],
-          "targetRefName": "refs/heads/main",
-          "title": "Drift backfill: $(TENANT)",
-          "description": sys.argv[2],
-      }))
-      PYEOF
-      curl -sf --max-time 60 -X POST \
-        -H "Authorization: Bearer $(System.AccessToken)" \
-        -H "Content-Type: application/json" \
-        -d @/tmp/pr.json \
-        "$(System.CollectionUri)$(System.TeamProject)/_apis/git/repositories/$(Build.Repository.ID)/pullrequests?api-version=7.0" \
-        > /dev/null && echo "backfill PR opened from $branch"
+  # Branch + commit + push + PR live in pipelines/commitback.sh — a
+  # PULLED script, deliberately not inline YAML: adapted pipeline
+  # definitions do not update on repo pull, and every commit-back
+  # incident so far happened in an adapted inline block. The script is
+  # az-free, checkpointed (the last `[commit-back N/5]` line printed
+  # names the failing step), and never hangs: stdin is closed, git
+  # prompts are disabled, curl is time-capped.
+  # Requires the build service identity granted "Contribute" on this
+  # repository (covers the branch push AND PR creation; without it the
+  # push fails 403/TF401027) plus persistCredentials on checkout above.
+  # A HUMAN merges — the PR carries the diff summary + audit
+  # attribution, and the plan build policy shows merge-readiness;
+  # review is read-and-click, not investigate.
+  - script: bash pipelines/commitback.sh
     displayName: Open backfill PR
     condition: eq(variables.DRIFTED, 'true')
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken) # never auto-exposed
+      TENANT: $(TENANT)
+      BRANCH_PREFIX: drift
+      PR_TITLE: "Drift backfill: $(TENANT)"
+      DESCRIPTION_FILE: reports/$(TENANT)/drift.md
+      ARTIFACT_NOTE: "_Full report in pipeline artifact: drift-report_"
+      # Proxied egress? Declare it HERE too — curl reads only the env;
+      # agent-level git proxy config gets the push through and then the
+      # REST call hangs (field-hit):
+      #   HTTPS_PROXY: $(HTTPS_PROXY)
 
 # Merge-readiness build policy for drift/* PR branches (REAL creds):
 #   - script: make plan-changed BASE=origin/main SAVE=1 BACKEND_CONFIG=backend.conf

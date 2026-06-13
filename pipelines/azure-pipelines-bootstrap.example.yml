@@ -103,28 +103,25 @@ variables:
 #             # the PR gate for hand edits. It is a make target rather
 #             # than inline shell so gate behavior updates on repo pull —
 #             # adapted pipeline YAML does not.
-#           - script: |
-#               if [ -z "$(git status --porcelain config/ imports/)" ]; then
-#                 echo "config unchanged -- nothing to commit"; exit 0
-#               fi
-#               branch="bootstrap/${{ parameters.tenant }}/$(date -u +%Y%m%dT%H%M)"
-#               git checkout -b "$branch"
-#               git add config/ imports/
-#               git -c user.name=bootstrap-bot -c user.email=bootstrap-bot@invalid \
-#                 commit -m "bootstrap refresh: ${{ parameters.tenant }}"
-#               git push -u origin "$branch"
-#               printf '{"sourceRefName":"refs/heads/%s","targetRefName":"refs/heads/main","title":"bootstrap refresh: ${{ parameters.tenant }}","description":"Agent-generated config/imports backing this bootstrap run."}' "$branch" > /tmp/pr.json
-#               curl -sf --max-time 60 -X POST \
-#                 -H "Authorization: Bearer $(System.AccessToken)" \
-#                 -H "Content-Type: application/json" \
-#                 -d @/tmp/pr.json \
-#                 "$(System.CollectionUri)$(System.TeamProject)/_apis/git/repositories/$(Build.Repository.ID)/pullrequests?api-version=7.0" \
-#                 > /dev/null && echo "commit-back PR opened from $branch"
+#           - script: bash pipelines/commitback.sh
 #             displayName: Commit-back (the durable record of what was imported)
-#           # curl + System.AccessToken, NOT az: on restricted agents
-#           # `az extension add` hangs on egress and `az repos pr create`
-#           # hangs waiting for a token on stdin -- both silently. curl
-#           # fails loud or works (field-hit: branch pushed, PR step hung).
+#             env:
+#               SYSTEM_ACCESSTOKEN: $(System.AccessToken) # never auto-exposed
+#               TENANT: ${{ parameters.tenant }}
+#               BRANCH_PREFIX: bootstrap
+#               PR_TITLE: "bootstrap refresh: ${{ parameters.tenant }}"
+#               # Proxied egress? Declare it HERE too — curl reads only
+#               # the env; agent-level git proxy config gets the push
+#               # through and then the REST call hangs (field-hit):
+#               #   HTTPS_PROXY: $(HTTPS_PROXY)
+#           # Branch + commit + push + PR live in pipelines/commitback.sh
+#           # — a PULLED script, deliberately not inline YAML: adapted
+#           # pipeline definitions do not update on repo pull, and every
+#           # commit-back incident so far happened in an adapted inline
+#           # block (az hangs, set -e killing the PR call after the
+#           # push). The script is az-free, checkpointed, hang-proofed.
+#           # Needs "Contribute" for the build service identity on this
+#           # repo + the persistCredentials: true on checkout above.
 #           # pulls/ contains REAL tenant data -- never publish it as a
 #           # pipeline artifact; it dies with the workspace by design.
 # ---------------------------------------------------------------------------
