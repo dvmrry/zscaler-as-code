@@ -73,7 +73,6 @@ def fetch_audit_csv(env, hours, sleep=time.sleep, now_ms=None):
     ctx = {
         "cloud": env.get("ZIA_CLOUD", "") or env.get("ZSCALER_CLOUD", ""),
         "customer_id": env.get("ZPA_CUSTOMER_ID", ""),
-        "zcc_cloud": env.get("ZCC_CLOUD", ""),
     }
     token = acquire_token(auth_mode, "zia", env, ctx, opener)
     end_ms = now_ms if now_ms is not None else int(time.time() * 1000)

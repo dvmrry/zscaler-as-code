@@ -81,7 +81,11 @@ Notes that apply to every platform:
   warned, never silent — then resolve in a step with
   `eval "$(python3 -m tools.cred_env <tenant>)"`. The mapping is a
   tested allowlist in code; tenant-specific values stay pipeline-side.
-  Don't run that step under `set -x`.
+  It exports only the active auth mode's variables (legacy vs OneAPI,
+  never a mix) and fails loud if a product's set is half-configured, so a
+  stray wrong-mode var can't crash a provider; the resolved mode and safe
+  vars are echoed to stderr (secrets shown as `set`). Don't run that step
+  under `set -x`.
 - **Agents without terraform**: `make install-tf VERSION=1.15.4`
   downloads and checksum-verifies the binary into `bin/`; either PATH
   it or pass `TF=bin/terraform` to subsequent make calls.
