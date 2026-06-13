@@ -8,7 +8,7 @@ TF     ?= terraform
 # the python side expands those.
 SCOPE_GLOB = $(if $(RESOURCE),$(if $(word 2,$(RESOURCE)),$(RESOURCE),$(if $(filter zia zpa zcc,$(RESOURCE)),$(RESOURCE)_*,$(RESOURCE))),*)
 
-.PHONY: help env install-tf bump-check mine issue-watch triage surface plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck refresh-gates conformance
+.PHONY: help env install-tf bump-check mine issue-watch triage surface plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports import-one statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck refresh-gates conformance
 
 # Company/deployment extensions: a private repo adds its own targets and
 # variable overrides in local.mk — NEVER by editing this file, which is
@@ -332,6 +332,17 @@ unlock: ## Break a stale state lock after a killed run (TENANT=<label> RESOURCE=
 	@echo "If a pipeline run is currently active on this root, cancel it instead."
 	$(TF) -chdir=envs/$(TENANT)/$(RESOURCE) init -input=false $(if $(BACKEND_CONFIG),-reconfigure -backend-config="$(abspath $(BACKEND_CONFIG))" -backend-config="key=$(TENANT)/$(RESOURCE).tfstate") > /dev/null
 	$(TF) -chdir=envs/$(TENANT)/$(RESOURCE) force-unlock -force "$(LOCK_ID)"
+
+import-one: ## CLI-import ONE address into state (TENANT= RESOURCE= KEY= IMPORT_ID= [BACKEND_CONFIG=]) — the statefill pre-import for a provider-unreadable required field; reads the API (GET only), writes STATE, never the tenant. Needs provider creds (and HTTPS_PROXY on proxied egress, same as fetch)
+	@test -n "$(TENANT)" -a -n "$(RESOURCE)" -a -n "$(KEY)" -a -n "$(IMPORT_ID)" || { echo "usage: make import-one TENANT=<label> RESOURCE=<type> KEY=<config key> IMPORT_ID=<api id> [BACKEND_CONFIG=<file>]"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
+	@test -d "envs/$(TENANT)/$(RESOURCE)" || { echo "error: envs/$(TENANT)/$(RESOURCE) is not an env root — RESOURCE must be ONE concrete type"; exit 2; }
+	@vf="$(abspath config/$(TENANT))/$(RESOURCE).auto.tfvars.json"; \
+	test -f "$$vf" || { echo "error: $$vf not found — run make transform first (import evaluates config, which needs the var-file: it lives in config/, not the env root, so it is NOT auto-loaded)"; exit 1; }; \
+	if grep -q '^  backend "' "envs/$(TENANT)/$(RESOURCE)/main.tf" && [ -z "$(BACKEND_CONFIG)" ]; then \
+		echo "error: $(RESOURCE) declares a remote backend; run with BACKEND_CONFIG=<file>"; exit 1; fi; \
+	$(TF) -chdir="envs/$(TENANT)/$(RESOURCE)" init -input=false $(if $(BACKEND_CONFIG),-reconfigure -backend-config="$(abspath $(BACKEND_CONFIG))" -backend-config="key=$(TENANT)/$(RESOURCE).tfstate") > /dev/null; \
+	$(TF) -chdir="envs/$(TENANT)/$(RESOURCE)" import -input=false -var-file="$$vf" 'module.$(RESOURCE).$(RESOURCE).this["$(KEY)"]' '$(IMPORT_ID)'
 
 statefill: ## Fill ONE config-carried field into STATE, zero tenant writes (TENANT= RESOURCE= KEY= FIELD= [BACKEND_CONFIG=]) — for provider reads that cannot return a required field (ISOLATE cbi_profile class); RE-FETCH+RE-TRANSFORM FIRST (the fill copies committed config); preview by default, STATE_FILL=1 pushes
 	@test -n "$(TENANT)" -a -n "$(RESOURCE)" -a -n "$(KEY)" -a -n "$(FIELD)" || { echo "usage: make statefill TENANT=<label> RESOURCE=<type> KEY=<config key> FIELD=<field> [BACKEND_CONFIG=<file>] [STATE_FILL=1]"; exit 2; }
