@@ -123,31 +123,47 @@ access — that is by design, not a problem to fix. If this machine
 cannot reach the backend, do NOT run Parts 3, 4, or 5.1 here. Do this
 instead:
 
+REQUIRES the import-one target — `grep -c '^import-one:' Makefile`
+must print `1`. If it prints `0`, re-sync the repo first (it shipped
+2026-06-12); the raw-terraform fallback at the bottom of this section
+works without it but is more error-prone.
+
 1. Take the step below, replace the three REPLACE_ values with the
    literals found in Part 2 (paste literal values — no shell
    variables), and add it to the bootstrap pipeline in the SAME JOB as
    the plan step, BEFORE the stage-imports step. Give it the SAME
-   `env:` block as the plan step (it needs the provider credentials
-   for the import read and the backend credentials for state).
+   `env:` block as the plan/fetch steps — it needs provider creds for
+   the import GET, backend creds for the state write, AND `HTTPS_PROXY`
+   if your egress is proxied (the import calls the ZIA API, same as
+   fetch; a missing proxy makes it hang/timeout). Copy the env block
+   verbatim from the fetch step, do not retype it.
 
 ```yaml
 # TEMPORARY one-off — DELETE THIS STEP after one successful run.
+# Reuse the fetch/plan step's full env: block (provider creds, backend
+# creds, HTTPS_PROXY) — abbreviated here as a reminder, not a value.
 - script: |
     set -e
-    terraform -chdir="envs/REPLACE_LABEL/zia_url_filtering_rules" init -input=false -reconfigure \
-      -backend-config="$(System.DefaultWorkingDirectory)/backend.conf" \
-      -backend-config="key=REPLACE_LABEL/zia_url_filtering_rules.tfstate"
-    terraform -chdir="envs/REPLACE_LABEL/zia_url_filtering_rules" import -input=false \
-      'module.zia_url_filtering_rules.zia_url_filtering_rules.this["REPLACE_KEY"]' 'REPLACE_RULE_ID' \
+    make import-one TENANT=REPLACE_LABEL RESOURCE=zia_url_filtering_rules \
+      KEY=REPLACE_KEY IMPORT_ID=REPLACE_RULE_ID BACKEND_CONFIG=backend.conf \
       || echo "import returned non-zero (already managed from a prior run?) — statefill verifies next"
     make statefill TENANT=REPLACE_LABEL RESOURCE=zia_url_filtering_rules KEY=REPLACE_KEY \
       FIELD=cbi_profile BACKEND_CONFIG=backend.conf STATE_FILL=1
   displayName: One-off cbi_profile state fill (DELETE AFTER SUCCESS)
+  env:
+    # ↓ paste the SAME keys the fetch step uses (ZSCALER_*/ZIA_* creds,
+    #   the backend storage key, and HTTPS_PROXY on proxied egress)
+    ZSCALER_CLIENT_ID: $(ZSCALER_CLIENT_ID)
+    # ... (all the rest, verbatim from fetch) ...
+    HTTPS_PROXY: $(HTTPS_PROXY)   # omit only if egress is direct
 ```
 
-   (If the pipeline's plan step passes a BACKEND_CONFIG file other
-   than `backend.conf` at the repo root, use that path in BOTH places
-   above — always match the plan step.)
+   `make import-one` carries the `-var-file` the import REQUIRES (the
+   env root's `items` variable has no default and the var-file is not
+   auto-loaded from `config/`). Do NOT hand-write `terraform import` —
+   without `-var-file` it dies on "No value for required variable".
+   (If the plan step passes a BACKEND_CONFIG file other than
+   `backend.conf` at the repo root, match that path here.)
 
 2. In the SAME pipeline edit, find the existing stage-imports step and
    add `STATE_AWARE=1 BACKEND_CONFIG=backend.conf` to its make
@@ -174,26 +190,41 @@ pipeline step above.
 
 ## Part 3 — import the ONE rule (this CREATES the state file)
 
-`terraform import` does not require an existing state file: it reads
-the object from the API (a GET — tenant untouched) and WRITES a new
-state object to the backend containing just this rule. "There is no
-tfstate yet" is the expected before-state, not a blocker.
+`make import-one` does not require an existing state file: it reads the
+object from the API (a GET — tenant untouched) and WRITES a new state
+object to the backend containing just this rule. "There is no tfstate
+yet" is the expected before-state, not a blocker. It does init +
+import in one shot, and crucially passes the `-var-file` the import
+REQUIRES (the env root's `items` variable has no default and the
+var-file is not auto-loaded from `config/`; a hand-written `terraform
+import` without it dies on "No value for required variable").
 
-Step 3.1: Init the env root against the backend. Use the SAME backend
-config file the plan pipeline uses (assumed `backend.conf` at repo
-root; adjust the filename only if your pipeline passes a different
-BACKEND_CONFIG):
+PRE: provider creds must be in the environment (same vars as `make
+fetch`), plus `HTTPS_PROXY` if egress is proxied — the import GET hits
+the ZIA API exactly like fetch.
+
+Step 3.1: Import the rule (state-only; zero tenant writes). Use the
+SAME BACKEND_CONFIG the plan pipeline uses (assumed `backend.conf` at
+repo root; adjust only if your pipeline passes a different one):
+```
+make import-one TENANT="$LABEL" RESOURCE=zia_url_filtering_rules KEY="$KEY" IMPORT_ID="$RULE_ID" BACKEND_CONFIG=backend.conf
+```
+EXPECT: ends with "Import successful!". If it errors "Resource already
+managed", that is fine — continue. If it says `^import-one` is not a
+target, the checkout predates 2026-06-12 — re-sync, or use the
+raw-terraform fallback in Part 3-ALT below. Any other error: STOP and
+report.
+
+## Part 3-ALT — raw-terraform fallback (ONLY if import-one is absent)
+
+Use this ONLY if `grep -c '^import-one:' Makefile` printed `0` and you
+cannot re-sync right now. Two commands; the second MUST carry the
+`-var-file` or it fails on the required `items` variable:
 ```
 terraform -chdir="envs/$LABEL/zia_url_filtering_rules" init -input=false -reconfigure -backend-config="$(pwd)/backend.conf" -backend-config="key=$LABEL/zia_url_filtering_rules.tfstate"
+terraform -chdir="envs/$LABEL/zia_url_filtering_rules" import -input=false -var-file="$(pwd)/config/$LABEL/zia_url_filtering_rules.auto.tfvars.json" "module.zia_url_filtering_rules.zia_url_filtering_rules.this[\"$KEY\"]" "$RULE_ID"
 ```
-EXPECT: "Terraform has been successfully initialized!".
-
-Step 3.2: Import the rule (state-only; zero tenant writes):
-```
-terraform -chdir="envs/$LABEL/zia_url_filtering_rules" import -input=false "module.zia_url_filtering_rules.zia_url_filtering_rules.this[\"$KEY\"]" "$RULE_ID"
-```
-EXPECT: "Import successful!". If it errors "Resource already managed",
-that is fine — continue. Any other error: STOP and report.
+EXPECT: "Import successful!". Same proxy/creds prerequisites as Part 3.
 
 ## Part 4 — fill the field into state
 
