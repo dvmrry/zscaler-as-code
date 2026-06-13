@@ -90,9 +90,13 @@ on any network.
     ZSCALER_CLOUD            optional — cloud suffix (empty for production)
     ZPA_CUSTOMER_ID          required only when a zpa_* resource is in scope
 
-**Legacy** (`ZSCALER_USE_LEGACY_CLIENT=true`) — per-product. Each product's
-set is all-or-nothing: a half-set product is a loud error, an absent product
-is simply not fetched.
+**Legacy** (`ZSCALER_USE_LEGACY_CLIENT=true`) — per-product. In `cred_env`
+each product's set is all-or-nothing: a half-set product is a loud error,
+and a product with no credentials is tolerated (it isn't required). That
+tolerance is about resolution, not fetch scope — `make fetch` still attempts
+every manifest product unless you scope it with `RESOURCE`, so a
+single-product tenant should pass e.g. `RESOURCE=zia` to keep the
+unconfigured products from failing auth (see **Scoped fetch** above).
 
     ZIA_API_KEY              obfuscated per request; session cookie auth
     ZIA_USERNAME

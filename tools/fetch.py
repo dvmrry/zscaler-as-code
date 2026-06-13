@@ -265,6 +265,22 @@ def _legacy_zia_base(cloud):
     return "https://zsapi.%s.net" % cloud
 
 
+def host_overrides(env):
+    """The host-override ctx keys resolved from the environment (empty value
+    == derive from the cloud). Shared by the fetcher and the audit attribution
+    flow so the two never drift on which overrides they honor — both compose
+    URLs and acquire tokens through the same helpers, which read these keys.
+    See tools/FETCH.md 'Host overrides'.
+    """
+    return {
+        "zpa_cloud": env.get("ZPA_CLOUD", ""),
+        "oneapi_gateway": env.get("ZSCALER_API_BASE_URL", ""),
+        "oneapi_login": env.get("ZSCALER_LOGIN_BASE_URL", ""),
+        "zia_legacy_base": env.get("ZIA_LEGACY_BASE_URL", ""),
+        "zpa_legacy_base": env.get("ZPA_LEGACY_BASE_URL", ""),
+    }
+
+
 def _gateway_for(ctx):
     """OneAPI gateway base: explicit override (ZSCALER_API_BASE_URL, carried
     in ctx) wins over cloud derivation."""
@@ -745,13 +761,8 @@ def main(argv=None):
     ctx = {
         "cloud": env.get("ZIA_CLOUD", "") or env.get("ZSCALER_CLOUD", ""),
         "customer_id": customer_id,
-        "zpa_cloud": env.get("ZPA_CLOUD", ""),
-        # Host overrides (empty == derive from cloud); see tools/FETCH.md.
-        "oneapi_gateway": env.get("ZSCALER_API_BASE_URL", ""),
-        "oneapi_login": env.get("ZSCALER_LOGIN_BASE_URL", ""),
-        "zia_legacy_base": env.get("ZIA_LEGACY_BASE_URL", ""),
-        "zpa_legacy_base": env.get("ZPA_LEGACY_BASE_URL", ""),
     }
+    ctx.update(host_overrides(env))
     for line in debug_config(env, ctx, auth_mode, needed_products):
         sys.stderr.write(line + "\n")
     out_dir = os.path.join("pulls", tenant)

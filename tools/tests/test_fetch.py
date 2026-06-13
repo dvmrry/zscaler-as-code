@@ -5,7 +5,7 @@ import os
 import sys
 import unittest
 
-from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, paginate_single, paginate_zcc_v2, build_headers, compose_url, fetch_resource, acquire_token, products_in_manifest, auth_mode_from_env, _zslogin_host, _legacy_zpa_base, ca_bundle_path, connection_hint, diag_hosts, debug_config, expand_paths, _retry_delay, _request_with_retry, _RETRY_BASE, _RETRY_CAP
+from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, paginate_single, paginate_zcc_v2, build_headers, compose_url, fetch_resource, acquire_token, products_in_manifest, auth_mode_from_env, _zslogin_host, _legacy_zpa_base, ca_bundle_path, connection_hint, diag_hosts, debug_config, host_overrides, expand_paths, _retry_delay, _request_with_retry, _RETRY_BASE, _RETRY_CAP
 
 
 class ManifestTest(unittest.TestCase):
@@ -663,6 +663,38 @@ class DiagHostsTest(unittest.TestCase):
 
     def test_placeholder_when_unset(self):
         self.assertEqual(diag_hosts({}), ["<vanity>.zslogin.net", "api.zsapi.net"])
+
+
+class HostOverridesTest(unittest.TestCase):
+    """The shared override ctx-builder — fetch and audit both spread this so
+    they can't drift on which overrides they honor."""
+
+    def test_maps_env_to_ctx_keys(self):
+        env = {
+            "ZPA_CLOUD": "ZPATWO",
+            "ZSCALER_API_BASE_URL": "https://api.x",
+            "ZSCALER_LOGIN_BASE_URL": "https://login.x",
+            "ZIA_LEGACY_BASE_URL": "https://zia.x",
+            "ZPA_LEGACY_BASE_URL": "https://zpa.x",
+        }
+        self.assertEqual(host_overrides(env), {
+            "zpa_cloud": "ZPATWO",
+            "oneapi_gateway": "https://api.x",
+            "oneapi_login": "https://login.x",
+            "zia_legacy_base": "https://zia.x",
+            "zpa_legacy_base": "https://zpa.x",
+        })
+
+    def test_absent_overrides_are_empty_so_derivation_applies(self):
+        ov = host_overrides({})
+        self.assertEqual(set(ov.values()), {""})
+        # an empty override means "derive": compose_url falls back cleanly
+        ctx = {"customer_id": "C"}
+        ctx.update(ov)
+        self.assertEqual(
+            compose_url("oneapi", "zia", "x", ctx),
+            "https://api.zsapi.net/zia/api/v1/x",
+        )
 
 
 class DebugConfigTest(unittest.TestCase):
