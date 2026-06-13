@@ -48,6 +48,49 @@ def obfuscate_api_key(api_key, timestamp):
 from urllib.parse import quote as _quote, urlencode
 
 
+# HTTP 429 (rate-limit) backoff. Request-dense resources fan out into many
+# rapid GETs (e.g. zia_cloud_app_control_rule = one GET per rule type) and
+# trip ZIA's per-second GET limit; the fetcher must pace itself and retry
+# rather than die on the first 429.
+_MAX_RETRIES = 5
+_RETRY_BASE = 1.0    # seconds — exponential base
+_RETRY_CAP = 30.0    # seconds — ceiling on any single wait
+
+
+def _retry_delay(attempt, retry_after):
+    """Seconds to wait before retry `attempt` (0-based) of a 429.
+
+    A numeric `Retry-After` (delta-seconds) wins — ZIA's per-second limit
+    returns a precise value — but is capped so a hostile or huge value
+    cannot stall the run. `Retry-After` may also be an HTTP-date (RFC 7231);
+    we do not parse that and fall back to capped exponential backoff, which
+    is correct for the per-second limits we actually hit.
+    """
+    if retry_after is not None:
+        try:
+            return max(0.0, min(float(retry_after), _RETRY_CAP))
+        except (TypeError, ValueError):
+            pass
+    return min(_RETRY_BASE * (2 ** attempt), _RETRY_CAP)
+
+
+def _request_with_retry(request_fn, sleep, max_retries=_MAX_RETRIES):
+    """Call `request_fn() -> (status, body, retry_after)`; on HTTP 429 sleep
+    and retry up to `max_retries` times, then return the final (status, body).
+
+    `request_fn` carries the actual HTTP call, so this stays transport-agnostic
+    and unit-testable. Only 429 is retried — every other status flows straight
+    back to the caller's existing handling untouched.
+    """
+    attempt = 0
+    while True:
+        status, body, retry_after = request_fn()
+        if status != 429 or attempt >= max_retries:
+            return status, body
+        sleep(_retry_delay(attempt, retry_after))
+        attempt += 1
+
+
 def _get_json(opener, url, headers, query):
     full = url + ("?" + urlencode(query) if query else "")
     status, body = opener("GET", full, headers, None)
@@ -299,18 +342,25 @@ def real_opener(env=None):
     url_opener = urllib.request.build_opener(*handlers)
 
     def _open(method, url, headers, body):
-        req = urllib.request.Request(url, data=body, headers=headers or {}, method=method)
-        try:
-            resp = url_opener.open(req)
-            return resp.getcode(), resp.read()
-        except urllib.error.HTTPError as e:  # surface status for caller
-            return e.code, e.read()
-        except urllib.error.URLError as e:
-            # Self-explanatory on this side — no traceback relay needed.
-            raise SystemExit(
-                "cannot reach %s: %s\n%s"
-                % (url.split("?")[0], e.reason, connection_hint(str(e.reason)))
-            )
+        def once():
+            req = urllib.request.Request(
+                url, data=body, headers=headers or {}, method=method)
+            try:
+                resp = url_opener.open(req)
+                return resp.getcode(), resp.read(), None
+            except urllib.error.HTTPError as e:  # surface status for caller
+                retry_after = e.headers.get("Retry-After") if e.headers else None
+                return e.code, e.read(), retry_after
+            except urllib.error.URLError as e:
+                # Self-explanatory on this side — no traceback relay needed.
+                raise SystemExit(
+                    "cannot reach %s: %s\n%s"
+                    % (url.split("?")[0], e.reason, connection_hint(str(e.reason)))
+                )
+        # 429s are retried HERE (honoring Retry-After), so every request —
+        # data GETs and auth POSTs alike — paces itself transparently and
+        # callers keep their simple (status, body) contract.
+        return _request_with_retry(once, time.sleep)
 
     return _open
 
