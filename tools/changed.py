@@ -22,6 +22,7 @@ from tools.registry import generated_types
 
 CONFIG_SUFFIX = ".auto.tfvars.json"
 IMPORTS_SUFFIX = "_imports.tf"
+MOVES_SUFFIX = "_moves.tf"
 GLOBAL_PREFIXES = ("tools/", "schemas/", "Makefile")
 
 
@@ -43,36 +44,61 @@ def discover_config_pairs(config_root="config"):
     return pairs
 
 
-def pairs_from_paths(paths, config_pairs):
+def discover_env_root_pairs(envs_root="envs"):
+    """All (tenant, resource_type) pairs that have a generated env ROOT —
+    what `make plan` actually operates on. A pair can have a root but no
+    config (its config was DELETED upstream to remove the resource): planning
+    it shows the destroy, which is exactly what a deletion must surface. So
+    this is unioned with the config pairs to bound plan-changed expansion —
+    without it a delete-only commit plans nothing and the removal is lost."""
+    pairs = set()
+    if not os.path.isdir(envs_root):
+        return pairs
+    types = set(generated_types())
+    for tenant in sorted(os.listdir(envs_root)):
+        tdir = os.path.join(envs_root, tenant)
+        if not os.path.isdir(tdir):
+            continue
+        for rt in sorted(os.listdir(tdir)):
+            if rt in types and os.path.isdir(os.path.join(tdir, rt)):
+                pairs.add((tenant, rt))
+    return pairs
+
+
+def pairs_from_paths(paths, plannable):
     """Map changed file paths to the (tenant, type) pairs they affect.
 
-    config_pairs bounds every expansion: a pair is only ever emitted if
-    the tenant actually has config for that type, so renames/typos can't
-    fan out into nonexistent roots.
+    `plannable` bounds every expansion: a pair is only ever emitted if it has
+    a committed config OR an existing env root, so renames/typos can't fan out
+    into nonexistent roots — while a DELETED config (root still present) and a
+    `_moves.tf`-only rename still plan, instead of being silently dropped.
     """
     pairs = set()
     for path in paths:
         parts = path.split("/")
         if path.startswith("config/") and len(parts) == 3 and parts[2].endswith(CONFIG_SUFFIX):
             pair = (parts[1], parts[2][: -len(CONFIG_SUFFIX)])
-            if pair in config_pairs:
+            if pair in plannable:
                 pairs.add(pair)
-        elif path.startswith("imports/") and len(parts) == 3 and parts[2].endswith(IMPORTS_SUFFIX):
-            pair = (parts[1], parts[2][: -len(IMPORTS_SUFFIX)])
-            if pair in config_pairs:
+        elif path.startswith("imports/") and len(parts) == 3 and (
+                parts[2].endswith(IMPORTS_SUFFIX) or parts[2].endswith(MOVES_SUFFIX)):
+            suffix = (IMPORTS_SUFFIX if parts[2].endswith(IMPORTS_SUFFIX)
+                      else MOVES_SUFFIX)
+            pair = (parts[1], parts[2][: -len(suffix)])
+            if pair in plannable:
                 pairs.add(pair)
         elif path.startswith("envs/") and len(parts) >= 3:
             pair = (parts[1], parts[2])
-            if pair in config_pairs:
+            if pair in plannable:
                 pairs.add(pair)
         elif path.startswith("modules/") and len(parts) >= 2:
             rt = parts[1]
-            for tenant, pair_rt in config_pairs:
+            for tenant, pair_rt in plannable:
                 if pair_rt == rt:
                     pairs.add((tenant, rt))
         elif path.startswith(GLOBAL_PREFIXES):
-            # Shared machinery changed: every configured pair is in scope.
-            return set(config_pairs)
+            # Shared machinery changed: every plannable pair is in scope.
+            return set(plannable)
     return pairs
 
 
@@ -98,7 +124,9 @@ def main(argv=None):
             "without the base? fetch it first)\n" % argv[0]
         )
         return 2
-    pairs = pairs_from_paths(paths, discover_config_pairs())
+    pairs = pairs_from_paths(
+        paths, discover_config_pairs() | discover_env_root_pairs()
+    )
     for tenant, rt in sorted(pairs):
         sys.stdout.write("%s %s\n" % (tenant, rt))
     if not pairs:
