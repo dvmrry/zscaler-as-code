@@ -12,6 +12,11 @@ Output: one "tenant resource_type" line per pair, sorted. Empty output
 with exit 0 means the diff touched nothing plannable (docs-only change)
 — a PR pipeline must treat that as success, not failure.
 
+Pass --tenant <label> to emit only that tenant's pairs: a per-tenant
+delivery pipeline authenticates with one tenant's credentials (the auth
+template's tenant is compile-time), so it must not try to plan a foreign
+tenant a cross-tenant merge happened to touch.
+
 Stdlib-only, Python 3.6-floor — see AGENTS.md rule 5.
 """
 import os
@@ -111,26 +116,52 @@ def changed_paths(base_ref):
     return [line for line in out.decode().splitlines() if line.strip()]
 
 
+_USAGE = "usage: python -m tools.changed <base-ref> [--tenant <label>]\n"
+
+
 def main(argv=None):
     argv = argv if argv is not None else sys.argv[1:]
-    if len(argv) != 1:
-        sys.stderr.write("usage: python -m tools.changed <base-ref>\n")
+    base_ref = None
+    tenant = None
+    i = 0
+    while i < len(argv):
+        a = argv[i]
+        if a == "--tenant" and i + 1 < len(argv):
+            i += 1
+            tenant = argv[i]
+        elif a.startswith("-") or base_ref is not None:
+            sys.stderr.write(_USAGE)
+            return 2
+        else:
+            base_ref = a
+        i += 1
+    if base_ref is None:
+        sys.stderr.write(_USAGE)
         return 2
     try:
-        paths = changed_paths(argv[0])
+        paths = changed_paths(base_ref)
     except subprocess.CalledProcessError:
         sys.stderr.write(
             "error: git diff against %r failed (unknown ref? shallow clone "
-            "without the base? fetch it first)\n" % argv[0]
+            "without the base? fetch it first)\n" % base_ref
         )
         return 2
     pairs = pairs_from_paths(
         paths, discover_config_pairs() | discover_env_root_pairs()
     )
-    for tenant, rt in sorted(pairs):
-        sys.stdout.write("%s %s\n" % (tenant, rt))
+    # A per-tenant delivery pipeline authenticates with ONE tenant's creds
+    # (the auth template's tenant is compile-time), so it must plan only that
+    # tenant's changed pairs — a cross-tenant merge otherwise tries to plan a
+    # foreign tenant with the wrong credentials. Filter to the named tenant.
+    if tenant is not None:
+        pairs = {(t, rt) for (t, rt) in pairs if t == tenant}
+    for t, rt in sorted(pairs):
+        sys.stdout.write("%s %s\n" % (t, rt))
     if not pairs:
-        sys.stderr.write("no plannable changes vs %s\n" % argv[0])
+        sys.stderr.write(
+            "no plannable changes vs %s%s\n"
+            % (base_ref, " for tenant %s" % tenant if tenant else "")
+        )
     return 0
 
 

@@ -154,6 +154,67 @@ class MainDeletionPlannableTest(unittest.TestCase):
         self.assertEqual(out, "demo zia_rule_labels\n")
 
 
+class MainTenantFilterTest(unittest.TestCase):
+    """--tenant scopes output to one tenant — a per-tenant delivery pipeline
+    must not emit a foreign tenant a cross-tenant merge happened to touch."""
+
+    def _run(self, paths, argv):
+        orig_paths = changed.changed_paths
+        orig_cfg = changed.discover_config_pairs
+        orig_env = changed.discover_env_root_pairs
+        old_out, old_err = sys.stdout, sys.stderr
+        sys.stdout, sys.stderr = io.StringIO(), io.StringIO()
+        changed.changed_paths = lambda base_ref: paths
+        changed.discover_config_pairs = lambda: {
+            ("zs2", "zia_rule_labels"),
+            ("zs3", "zia_rule_labels"),
+        }
+        changed.discover_env_root_pairs = lambda: set()
+        try:
+            rc = changed.main(argv)
+            return rc, sys.stdout.getvalue(), sys.stderr.getvalue()
+        finally:
+            changed.changed_paths = orig_paths
+            changed.discover_config_pairs = orig_cfg
+            changed.discover_env_root_pairs = orig_env
+            sys.stdout, sys.stderr = old_out, old_err
+
+    def test_tenant_filter_keeps_only_named_tenant(self):
+        # A module change fans out to BOTH tenants; --tenant zs2 keeps one.
+        rc, out, _ = self._run(
+            ["modules/zia_rule_labels/main.tf"], ["HEAD~1", "--tenant", "zs2"]
+        )
+        self.assertEqual(rc, 0)
+        self.assertEqual(out, "zs2 zia_rule_labels\n")
+
+    def test_unfiltered_emits_both_tenants(self):
+        rc, out, _ = self._run(
+            ["modules/zia_rule_labels/main.tf"], ["HEAD~1"]
+        )
+        self.assertEqual(rc, 0)
+        self.assertEqual(out, "zs2 zia_rule_labels\nzs3 zia_rule_labels\n")
+
+    def test_tenant_with_no_changes_is_empty_success(self):
+        # zs3's config didn't change; scoping to it yields nothing, exit 0.
+        rc, out, err = self._run(
+            ["config/zs2/zia_rule_labels.auto.tfvars.json"],
+            ["HEAD~1", "--tenant", "zs3"],
+        )
+        self.assertEqual(rc, 0)
+        self.assertEqual(out, "")
+        self.assertIn("for tenant zs3", err)
+
+    def test_missing_base_ref_is_usage_error(self):
+        rc, _, err = self._run([], ["--tenant", "zs2"])
+        self.assertEqual(rc, 2)
+        self.assertIn("usage", err)
+
+    def test_extra_positional_is_usage_error(self):
+        rc, _, err = self._run([], ["HEAD~1", "HEAD~2"])
+        self.assertEqual(rc, 2)
+        self.assertIn("usage", err)
+
+
 class MainEmptyDiffTest(unittest.TestCase):
     def test_docs_only_diff_exits_0(self):
         # Contract: an empty plan-target set (docs-only diff) is success,

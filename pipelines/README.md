@@ -12,7 +12,7 @@ The landscape is three pipelines:
 | Pipeline | Trigger | Credentials | State | Make targets |
 |---|---|---|---|---|
 | **Validation** (PR gate) | every PR | none | never touched (`-backend=false` everywhere) | `test`, `lint-pipelines`, `validate`, `typecheck`, `lint`, `test-envs`, `validate-imports` (the ADO example ships `test-envs`/`validate-imports` commented — tenant-specific wiring is an adopter choice; the GitHub/Bitbucket examples run them too) |
-| **Plan → Apply** (delivery) | merge / manual | real API creds + state auth | locked during plan/apply | `plan-changed SAVE=1` → approval → `apply` |
+| **Plan → Apply** (delivery, one per tenant) | merge to main | real API creds + state auth | locked during plan/apply | `plan-changed TENANT=<t> SAVE=1` (auto-scoped to what the merge touched) → short-lived approval → `apply` — see `azure-pipelines-delivery.example.yml` |
 | **Bootstrap** (manual, per tenant/wave) | run-pipeline button | real API creds + state auth | locked; writes the FIRST state (imports only — never mutates the tenant) | optional agent-side refresh (`fetch` → `DROPS_CHECK=1 transform` → inline gates → **commit-back PR**, drift-style) → `stage-imports` → `plan SAVE=1` → `assert-clean` (imports-only proof, BEFORE approval) → approval → `apply` |
 | **Bump check** (scheduled) | weekly cron | none (public registries) | not used | `bump-check` → orange run (`SucceededWithIssues`) + deduplicated ADO work item on a board (no webhooks/email needed); red = the check itself failed. Second step: `issue-watch` → orange on NEW upstream issues/PRs mentioning our resource types (other operators hit problems first — the signingCertId class); triage, then `UPDATE_BASELINE=1 make issue-watch` and commit |
 | **Drift** (scheduled) | cron (hourly scoped + weekly broad) | read-only API creds | not used | `drift [RESOURCE=…]` → non-zero + changed worktree (make flattens the tool's exit 3) → backfill PR (`drift-report` output: drift summary + audit body); `assert-clean` shows merge-readiness, a human merges |
@@ -70,6 +70,14 @@ Notes that apply to every platform:
   `reports/plan.md` (run Summary tab / artifact): per-root
   import/add/change/destroy counts with a loud banner when any destroys
   are present.
+- **Bound the plan's lifetime** with a short approval timeout (the delivery
+  example suggests 15 minutes). The approval holds the environment's
+  exclusive lock while it waits; an unattended plan that auto-rejects in
+  minutes frees the lock instead of pinning the state for hours. A plan that
+  ages out is meant to be re-run on current main, not approved late — and
+  even a late approval can't silently wipe: the apply job re-checks out the
+  plan's own commit, and terraform's saved-plan serial guard rejects the
+  apply if state moved under a concurrent merge to the same root.
 - **Serialize applies** per tenant (ADO environment exclusive lock /
   GitHub environment concurrency) so two merges can't interleave.
 - **Manual scoped runs**: every platform's manual-run parameters map

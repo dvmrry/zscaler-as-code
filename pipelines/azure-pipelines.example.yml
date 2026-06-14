@@ -57,64 +57,13 @@ steps:
   #   displayName: Import-address check (PR gate; verifies each import block resolves)
 
 # ---------------------------------------------------------------------------
-# Delivery pipeline (separate yaml in practice): plan -> approval -> apply.
-# Scope is derived from the merge diff (make plan-changed) and apply is
-# bounded to the saved-plan artifacts — there is no apply-all to misfire.
-# Needs: variable group with ZSCALER_* creds, state-backend auth via
-# ARM_SAS_TOKEN secret variable (SAS mode) or a service connection /
-# ARM_* vars (Entra ID mode) — see backend.conf.example — plus
-# backend.conf in the repo,
-# and an ADO environment with approvals + exclusive lock for the apply.
-# Set fetchDepth: 0 on checkout — plan-changed diffs against the merge-base.
-#
-# stages:
-#   - stage: plan
-#     jobs:
-#       - job: plan
-#         workspace:
-#           clean: all   # self-hosted agents reuse workspaces; a stale tfplan
-#                        # from a cancelled run must never survive into this
-#                        # one (field incident — see the bootstrap pipeline's
-#                        # layering note). plan-changed also runs the in-band
-#                        # layer (make clean-plans) itself.
-#         steps:
-#           - checkout: self
-#             fetchDepth: 0
-#           - script: make plan-changed BASE=origin/main~1 SAVE=1 BACKEND_CONFIG=backend.conf
-#             displayName: Plan changed roots
-#             env: # creds from the variable group
-#               ZSCALER_CLIENT_ID: $(ZSCALER_CLIENT_ID)
-#               ZSCALER_CLIENT_SECRET: $(ZSCALER_CLIENT_SECRET)
-#               ZSCALER_VANITY_DOMAIN: $(ZSCALER_VANITY_DOMAIN)
-#               ZSCALER_CLOUD: $(ZSCALER_CLOUD)
-#           - publish: envs
-#             artifact: tfplans   # plans can contain sensitive values; restrict retention
-#   - stage: apply
-#     dependsOn: plan
-#     jobs:
-#       - deployment: apply
-#         environment: <protected-environment>   # approvals + exclusive lock HERE
-#         workspace:
-#           clean: all   # same guard for the apply workspace; the artifact
-#                        # download below defines EXACTLY which plans exist.
-#                        # If you materialize backend.conf from variables
-#                        # (instead of committing it), re-materialize it in
-#                        # THIS job — the clean wipes generated files.
-#         strategy:
-#           runOnce:
-#             deploy:
-#               steps:
-#                 - checkout: self
-#                 - download: current
-#                   artifact: tfplans
-#                 - script: cp -R "$(Pipeline.Workspace)/tfplans/"* envs/
-#                 - script: make apply BACKEND_CONFIG=backend.conf
-#                   displayName: Apply saved plans (refuses destroys without ALLOW_DESTROY=1)
-#                   env:
-#                     ZSCALER_CLIENT_ID: $(ZSCALER_CLIENT_ID)
-#                     ZSCALER_CLIENT_SECRET: $(ZSCALER_CLIENT_SECRET)
-#                     ZSCALER_VANITY_DOMAIN: $(ZSCALER_VANITY_DOMAIN)
-#                     ZSCALER_CLOUD: $(ZSCALER_CLOUD)
+# Delivery (plan -> approval -> apply) is its OWN pipeline, one per tenant:
+# see azure-pipelines-delivery.example.yml. It triggers on a merge to main,
+# plans only the roots the merge touched (make plan-changed, tenant-scoped),
+# gates on a short-lived approval, and applies only the saved plans — there is
+# no apply-all to misfire. Kept separate because its credentials, protected
+# environment, and approval chain are per-tenant; this validation pipeline
+# stays creds-free.
 
 # ---------------------------------------------------------------------------
 # Plan-as-PR-comment (PR build-policy pipeline): after plan-changed SAVE=1,
