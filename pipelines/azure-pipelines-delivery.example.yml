@@ -133,10 +133,9 @@ stages:
     dependsOn: plan
     # Skip apply entirely when the merge changed nothing for this tenant —
     # otherwise `make apply` would (correctly) error on an empty plan set and
-    # red a run that is really a clean no-op. Cross-stage output reference.
-    condition: >-
-      and(succeeded(),
-          eq(stageDependencies.plan.plan.outputs['detect.hasPlans'], 'true'))
+    # red a run that is really a clean no-op. Cross-stage output reference:
+    # stageDependencies.<stage>.<job>.outputs['<step>.<var>'].
+    condition: and(succeeded(), eq(stageDependencies.plan.plan.outputs['detect.hasPlans'], 'true'))
     jobs:
       - deployment: apply
         pool:
