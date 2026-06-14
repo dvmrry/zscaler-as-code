@@ -209,11 +209,13 @@ lock: ## Pin provider HASHES per env root (TENANT=<label>; one registry fetch pe
 plan: ## Terraform plan for a tenant's roots (TENANT=<label> [RESOURCE=<type>] [IMPORTS_ONLY=1] [BACKEND_CONFIG=<file>]; real creds via env)
 	@test -n "$(TENANT)" || { echo "usage: make plan TENANT=<label> [RESOURCE=<type>] [IMPORTS_ONLY=1] [BACKEND_CONFIG=<file>]"; exit 2; }
 	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
-	@set -e; planned=0; for d in envs/$(TENANT)/$(SCOPE_GLOB)/; do \
+	@set -e; planned=0; derived=""; \
+	if [ -n "$(IMPORTS_ONLY)" ]; then derived=" $$($(PYTHON) -c 'from tools.registry import derived_types; print(" ".join(derived_types()))') "; fi; \
+	for d in envs/$(TENANT)/$(SCOPE_GLOB)/; do \
 		test -d "$$d" || continue; \
 		rt=$$(basename $$d); \
-		if [ -n "$(IMPORTS_ONLY)" ] && ! ls "$$d"/*_imports.tf >/dev/null 2>&1; then \
-			echo "skip $$rt (IMPORTS_ONLY: no staged imports — non-importable/derived root, e.g. a *_reorder resource)"; continue; fi; \
+		if [ -n "$$derived" ]; then case "$$derived" in *" $$rt "*) \
+			echo "skip $$rt (IMPORTS_ONLY: derived/non-importable — created by normal delivery, not the imports-only bootstrap)"; continue ;; esac; fi; \
 		vf="$(abspath config/$(TENANT))/$$rt.auto.tfvars.json"; \
 		test -f "$$vf" || { echo "skip $$rt (no $$vf)"; continue; }; \
 		if grep -q '^  backend "' "$$d/main.tf" && [ -z "$(BACKEND_CONFIG)" ]; then \

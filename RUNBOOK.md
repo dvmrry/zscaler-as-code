@@ -176,10 +176,12 @@ Python side expands it.) The committed `config/`/`imports/` hold the FULL
 tenant, so scoping is selection here, not artifact pruning.
 
 **Planning a whole scope at once?** Pass `IMPORTS_ONLY=1` — `plan` then
-covers only the roots that received a staged `*_imports.tf`, so a
-non-importable/derived root (a `*_reorder`, which is a CREATE, not an
-import) is skipped automatically and a broad or product-token scope stays
-safe for the imports-only proof:
+skips **derived/non-importable** roots (per the registry — a `*_reorder`,
+which is a CREATE, not an import), so a broad or product-token scope stays
+safe for the imports-only proof. It keys off the resource *type*, not the
+presence of a staged `*_imports.tf` — so an importable root with an empty
+delta (every import already managed on a rerun) or a `*_moves.tf`-only
+rename is still planned, as it should be:
 
 ```
 make stage-imports TENANT=<label> RESOURCE=zpa STATE_AWARE=1
