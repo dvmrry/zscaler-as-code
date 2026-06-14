@@ -43,3 +43,18 @@ def fetch_entry(resource_type):
     entry = dict(reg[resource_type]["fetch"])
     entry["product"] = reg[resource_type]["product"]
     return entry
+
+
+def derive_entry(resource_type):
+    """Derive config {from, ...} for a resource whose config is built from
+    ANOTHER resource's pull (it has no fetch/import of its own, e.g.
+    zpa_policy_access_rule_reorder derived from zpa_policy_access_rule's order),
+    or None for a normally-fetched resource."""
+    reg = load_registry()
+    return reg.get(resource_type, {}).get("derive")
+
+
+def derived_types():
+    """Generated resource types that are derived from another, sorted."""
+    reg = load_registry()
+    return sorted(rt for rt in generated_types() if reg[rt].get("derive"))

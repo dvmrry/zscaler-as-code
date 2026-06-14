@@ -86,6 +86,12 @@
     },
     {
       "fileMatch": [
+        "config/*/zpa_policy_access_rule_reorder.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_policy_access_rule_reorder.schema.json"
+    },
+    {
+      "fileMatch": [
         "config/*/zpa_segment_group.auto.tfvars.json"
       ],
       "url": "./schemas/tfvars/zpa_segment_group.schema.json"

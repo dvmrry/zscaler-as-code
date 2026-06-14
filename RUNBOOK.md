@@ -173,6 +173,19 @@ not apply until you understand the difference. Common fixes: add a
 `tools/overrides/<type>.json`, then re-run `make transform` and re-check.
 Never hand-edit `config/<label>/` to force the plan clean.
 
+**Exception — `zpa_policy_access_rule_reorder` is created, not imported.**
+This resource manages access-rule *ordering* (it replaces the deprecated
+per-rule `rule_order`). The provider gives no way to import its state, so it
+has **no import block**; its config is *derived* from the access rules' current
+order by `make transform`. Its plan therefore shows **1 to add, 0 to
+change** — and because the derived `order` values are the rules' *current*
+order, the create re-asserts the existing order (no rule actually moves). It
+cannot satisfy the imports-only/0-add bootstrap proof, so **scope it out of
+bootstrap** (e.g. `RESOURCE="zia zpa_app* zpa_application* zpa_policy_access_rule
+zpa_segment* zpa_server*"`, omitting `_reorder`) and let it be created on the
+first normal `plan`/`apply`. Review that first plan: it should add one reorder
+resource per policy type and change nothing else.
+
 ### 7a. Remote state (Azure Blob Storage) — before first apply
 
 Plans are stateless, but the first apply writes tfstate. To use Azure

@@ -10,27 +10,43 @@ import os
 import sys
 
 from tools.registry import generated_types
-from tools.tfschema import block_is_single, classify_attributes, json_schema_type, load_resource
+from tools.tfschema import (
+    block_is_single,
+    classify_attributes,
+    json_schema_type,
+    load_resource,
+    resource_input_attrs,
+)
 
 OUT_DIR = os.path.join("schemas", "tfvars")
 
 
-def _block_schema(block):
-    cls = classify_attributes(block)
+def _block_schema(block, top_level=False):
+    # Top level: drop the resource-identity id so the schema matches the module
+    # (which rejects it as an input) and typecheck.
+    cls = resource_input_attrs(block) if top_level else classify_attributes(block)
     props = {}
+    required = list(cls["required"])
     for name in cls["required"] + cls["optional"]:
         props[name] = json_schema_type(block["attributes"][name]["type"])
     for name, bt in sorted((block.get("block_types") or {}).items()):
         inner = _block_schema(bt["block"])
+        min_items = bt.get("min_items") or 0
         if block_is_single(bt):
             props[name] = inner
         elif bt["nesting_mode"] == "set":
             props[name] = {"type": "array", "items": inner, "uniqueItems": True}
         else:
             props[name] = {"type": "array", "items": inner}
+        if min_items >= 1:
+            # required (min_items>=1) block: enforce presence + count so the
+            # schema rejects what the provider would (e.g. reorder `rules`).
+            required.append(name)
+            if props[name].get("type") == "array":
+                props[name]["minItems"] = min_items
     out = {"type": "object", "additionalProperties": False, "properties": props}
-    if cls["required"]:
-        out["required"] = cls["required"]
+    if required:
+        out["required"] = sorted(required)
     return out
 
 
@@ -43,7 +59,8 @@ def build_schema(resource_type, resource_schema):
         "properties": {
             "items": {
                 "type": "object",
-                "additionalProperties": _block_schema(resource_schema["block"]),
+                "additionalProperties": _block_schema(
+                    resource_schema["block"], top_level=True),
             }
         },
         "required": ["items"],

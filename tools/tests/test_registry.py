@@ -1,7 +1,14 @@
 """Tests for tools/registry.py."""
 import unittest
 
-from tools.registry import fetch_entry, generated_types, load_registry, reload_registry
+from tools.registry import (
+    derive_entry,
+    derived_types,
+    fetch_entry,
+    generated_types,
+    load_registry,
+    reload_registry,
+)
 
 
 class RegistryTest(unittest.TestCase):
@@ -23,10 +30,20 @@ class RegistryTest(unittest.TestCase):
                 "zpa_application_segment",
                 "zpa_application_server",
                 "zpa_policy_access_rule",
+                "zpa_policy_access_rule_reorder",
                 "zpa_segment_group",
                 "zpa_server_group",
             ],
         )
+
+    def test_derived_resource_has_no_fetch(self):
+        # a derived resource is generated from another's pull, never fetched
+        self.assertEqual(derived_types(), ["zpa_policy_access_rule_reorder"])
+        d = derive_entry("zpa_policy_access_rule_reorder")
+        self.assertEqual(d["from"], "zpa_policy_access_rule")
+        with self.assertRaises(KeyError):
+            fetch_entry("zpa_policy_access_rule_reorder")
+        self.assertIsNone(derive_entry("zpa_policy_access_rule"))
 
     def test_fetch_entry_shape(self):
         e = fetch_entry("zpa_segment_group")
