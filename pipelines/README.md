@@ -11,7 +11,7 @@ The landscape is three pipelines:
 
 | Pipeline | Trigger | Credentials | State | Make targets |
 |---|---|---|---|---|
-| **Validation** (PR gate) | every PR | none | never touched (`-backend=false` everywhere) | `test`, `validate`, `typecheck`, `lint`, `test-envs`, `validate-imports` (the ADO example ships `test-envs`/`validate-imports` commented — tenant-specific wiring is an adopter choice; the GitHub/Bitbucket examples run all six) |
+| **Validation** (PR gate) | every PR | none | never touched (`-backend=false` everywhere) | `test`, `lint-pipelines`, `validate`, `typecheck`, `lint`, `test-envs`, `validate-imports` (the ADO example ships `test-envs`/`validate-imports` commented — tenant-specific wiring is an adopter choice; the GitHub/Bitbucket examples run them too) |
 | **Plan → Apply** (delivery) | merge / manual | real API creds + state auth | locked during plan/apply | `plan-changed SAVE=1` → approval → `apply` |
 | **Bootstrap** (manual, per tenant/wave) | run-pipeline button | real API creds + state auth | locked; writes the FIRST state (imports only — never mutates the tenant) | optional agent-side refresh (`fetch` → `DROPS_CHECK=1 transform` → inline gates → **commit-back PR**, drift-style) → `stage-imports` → `plan SAVE=1` → `assert-clean` (imports-only proof, BEFORE approval) → approval → `apply` |
 | **Bump check** (scheduled) | weekly cron | none (public registries) | not used | `bump-check` → orange run (`SucceededWithIssues`) + deduplicated ADO work item on a board (no webhooks/email needed); red = the check itself failed. Second step: `issue-watch` → orange on NEW upstream issues/PRs mentioning our resource types (other operators hit problems first — the signingCertId class); triage, then `UPDATE_BASELINE=1 make issue-watch` and commit |
@@ -108,6 +108,47 @@ Notes that apply to every platform:
   line. `tenant` must be compile-time (a `parameter` or `${{ variables.X }}`),
   since ADO doesn't substitute macros in env-var keys. (See the bootstrap and
   drift examples.)
+- **Deduplicate the per-job preamble** (ADO, self-hosted agents):
+  `pipelines/steps/job-setup.yml` is the companion to the auth template for
+  the *structural* repetition — checkout, the pinned `make install-tf`, and
+  optional `backend.conf` materialization — that recurs once per job on agents
+  which lack terraform or clean the workspace each run. Reference it at the top
+  of a job, then add the per-command `zscaler-auth.yml` step(s):
+  ```yaml
+  steps:
+    - template: steps/job-setup.yml
+      parameters: { installTf: 1.15.4, backendConf: true }
+    - template: steps/zscaler-auth.yml
+      parameters: { tenant: ${{ parameters.tenant }}, command: make plan ... }
+  ```
+  Its three knobs — `installTf` (a version to install+PATH), `backendConf`
+  (materialize from `STATE_*` vars), and `persistCredentials: true` (for
+  commit-back jobs that push a branch) — all default off, so on hosted agents
+  (terraform present, `backend.conf` committed) it's just a consistent
+  `checkout`. It deliberately does **not**
+  bundle auth (credentials are per-command — a job authenticates more than
+  once) and does **not** set `workspace: clean: all` (a job property, not a
+  step). Its main payoff is the terraform-version invariant: pin the version in
+  ONE template reference instead of in every job, so it can't drift.
+- **Catch pipeline drift before it ships** (`make lint-pipelines`): the same
+  inconsistencies that keep biting — a terraform version bumped in one pipeline
+  but not its siblings, a hand-rolled auth `env:` block that drops a var
+  (the `Plugin did not respond` provider crash), a non-secret config var typed
+  into a step `env:` (where it gets dropped) instead of the variable group, a
+  runtime `$(...)` tenant the template can't use, a split `backend.conf`
+  strategy (this last one a warning; the rest fail the gate) — are checked by
+  `make lint-pipelines`. It's a stdlib gate (no YAML
+  library; it scans the YAML as structured text), so it lives in the repo and
+  updates on pull — run it deployment-side over your operative pipelines:
+  `make lint-pipelines DIR=<your pipelines dir>` (optionally
+  `TF_VERSION=<pin>` to assert a specific version, `STRICT=1` to gate on
+  warnings). If your pipelines share a directory with other YAML — the repo
+  root, alongside the shipped `pipelines/*.example.yml` — name the operative
+  files instead of scanning a tree, so the cross-file rules don't compare your
+  pipelines against the examples: `make lint-pipelines FILES="azure-pipelines-bootstrap.yml azure-pipelines-drift.yml"`.
+  Each rule is grounded in an incident this project actually hit;
+  it's the automated form of the "re-sync after pulling" advice above. Add it
+  as a PR-gate step alongside `make test`/`validate`.
 - **Agents without terraform**: `make install-tf VERSION=1.15.4`
   downloads and checksum-verifies the binary into `bin/`; either PATH
   it or pass `TF=bin/terraform` to subsequent make calls.

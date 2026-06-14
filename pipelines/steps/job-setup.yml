@@ -1,0 +1,66 @@
+# Reusable per-JOB preamble — define the job-setup boilerplate ONCE.
+#
+# On self-hosted agents that clean the workspace each run, every job repeats
+# the same structural opening: check out the repo, install the pinned
+# terraform (the hosted images don't carry it), and materialize backend.conf.
+# Re-typing that per job is how the terraform version drifts in one pipeline
+# but not another (the install-tf-pinned-in-8-places problem). Reference this
+# template instead, and `make lint-pipelines` keeps the version consistent.
+#
+# SCOPE — what this does and deliberately does NOT do:
+#   * DOES: checkout (+ optional persistCredentials), optional terraform
+#     install (PATHed for later steps), optional backend.conf materialize.
+#   * NOT auth: provider credentials are per-COMMAND, not per-job — a job
+#     checks out once but may authenticate several times (e.g. the bootstrap
+#     apply job re-stages AND applies). Keep using steps/zscaler-auth.yml for
+#     each authenticating command; bundling auth into checkout would be wrong.
+#   * NOT `workspace: clean: all`: that is a JOB property, not a step, so it
+#     stays on the job (one line — leave it visible).
+#
+# Defaults are off, so on hosted agents (terraform present, backend.conf
+# committed) a bare reference is just `- checkout: self` with consistent
+# wiring. Turn the knobs on for self-hosted/blob-locked environments.
+#
+# Usage:
+#   - template: steps/job-setup.yml
+#     parameters:
+#       installTf: 1.15.4          # omit if terraform is on the image
+#       backendConf: true          # materialize from STATE_* variables
+#       persistCredentials: true   # for commit-back jobs that push a branch
+#   # ...then the auth step(s):
+#   - template: steps/zscaler-auth.yml
+#     parameters: { tenant: ..., command: ... }
+#
+parameters:
+  - name: installTf
+    type: string
+    default: ''          # a version (e.g. 1.15.4) installs+PATHs terraform; '' skips
+  - name: backendConf
+    type: boolean
+    default: false       # materialize backend.conf from STATE_STORAGE_ACCOUNT/STATE_CONTAINER
+  - name: persistCredentials
+    type: boolean
+    default: false       # true for jobs that push a branch (commit-back)
+
+steps:
+  - checkout: self
+    persistCredentials: ${{ parameters.persistCredentials }}
+  # Pinned terraform, installed once and PATHed for every later step in the
+  # job. Keep the SAME version across all pipelines — that's the invariant
+  # lint-pipelines enforces. Skipped entirely when installTf is ''.
+  - ${{ if ne(parameters.installTf, '') }}:
+    - script: |
+        set -euo pipefail
+        make install-tf VERSION=${{ parameters.installTf }} DEST=bin
+        echo "##vso[task.prependpath]$(System.DefaultWorkingDirectory)/bin"
+      displayName: Install pinned terraform (${{ parameters.installTf }})
+  # backend.conf from variables, for shops that don't commit it. workspace
+  # cleans wipe generated files, so a job that needs the backend must do this
+  # itself — but pick ONE strategy repo-wide (commit it OR materialize it
+  # everywhere), never a mix; lint-pipelines warns on a split.
+  - ${{ if parameters.backendConf }}:
+    - script: |
+        set -euo pipefail
+        printf 'storage_account_name = "%s"\ncontainer_name       = "%s"\n' \
+          "$(STATE_STORAGE_ACCOUNT)" "$(STATE_CONTAINER)" > backend.conf
+      displayName: Materialize backend.conf

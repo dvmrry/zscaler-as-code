@@ -8,7 +8,7 @@ TF     ?= terraform
 # the python side expands those.
 SCOPE_GLOB = $(if $(RESOURCE),$(if $(word 2,$(RESOURCE)),$(RESOURCE),$(if $(filter zia zpa zcc,$(RESOURCE)),$(RESOURCE)_*,$(RESOURCE))),*)
 
-.PHONY: help env install-tf bump-check mine issue-watch triage surface plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports import-one statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck refresh-gates conformance
+.PHONY: help env install-tf bump-check mine issue-watch triage surface plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports import-one statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint lint-pipelines fmt-config typecheck refresh-gates conformance
 
 # Company/deployment extensions: a private repo adds its own targets and
 # variable overrides in local.mk — NEVER by editing this file, which is
@@ -488,6 +488,12 @@ refresh-gates: ## Gates for freshly-FETCHED config: advisory lint + strict typec
 
 conformance: ## Schema-driven adversarial conformance report (synthesize -> transform -> typecheck) for every registry resource
 	$(PYTHON) -m tools.conformance
+
+# Lives HERE, not in adapted pipeline YAML, so a repo pull updates the gate
+# (same reason as refresh-gates). Run it deployment-side over the operative
+# pipelines: make lint-pipelines DIR=<your pipelines dir>.
+lint-pipelines: ## Cross-pipeline consistency lint — terraform-version drift, hand-rolled auth, config in step env, backend.conf strategy ([DIR=pipelines | FILES="a.yml b.yml"] [TF_VERSION=x.y.z] [STRICT=1])
+	$(PYTHON) -m tools.lint_pipelines $(if $(FILES),$(FILES),$(if $(DIR),--dir $(DIR),)) $(if $(TF_VERSION),--tf-version $(TF_VERSION),) $(if $(STRICT),--strict,)
 
 validate-config: ## Validate config/ against generated JSON Schemas (dev-only; jsonschema via python or uv)
 	@if $(PYTHON) -c "import jsonschema" 2>/dev/null; then \
