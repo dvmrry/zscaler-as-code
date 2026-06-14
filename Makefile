@@ -246,10 +246,10 @@ clean-plans: ## Delete saved tfplan artifacts ([TENANT=<label>] [RESOURCE=<type>
 	done; \
 	echo "$$removed stale plan(s) removed"
 
-plan-changed: ## Plan only the (tenant, resource) pairs changed vs BASE (default origin/main); SAVE/BACKEND_CONFIG pass through
+plan-changed: ## Plan only the (tenant, resource) pairs changed vs BASE (default origin/main; [TENANT=<label>] scopes to one tenant); SAVE/BACKEND_CONFIG pass through
 	@$(MAKE) clean-plans > /dev/null
-	@set -e; $(PYTHON) -m tools.changed "$(or $(BASE),origin/main)" > .plan-changed.tmp; \
-	if ! [ -s .plan-changed.tmp ]; then rm -f .plan-changed.tmp; echo "nothing to plan — no plannable changes vs $(or $(BASE),origin/main)"; exit 0; fi; \
+	@set -e; $(PYTHON) -m tools.changed "$(or $(BASE),origin/main)" $(if $(TENANT),--tenant $(TENANT)) > .plan-changed.tmp; \
+	if ! [ -s .plan-changed.tmp ]; then rm -f .plan-changed.tmp; echo "nothing to plan — no plannable changes vs $(or $(BASE),origin/main)$(if $(TENANT), for tenant $(TENANT))"; exit 0; fi; \
 	while read t rt; do \
 		$(MAKE) plan TENANT=$$t RESOURCE=$$rt $(if $(SAVE),SAVE=1) $(if $(BACKEND_CONFIG),BACKEND_CONFIG=$(BACKEND_CONFIG)) || { rm -f .plan-changed.tmp; exit 1; }; \
 	done < .plan-changed.tmp; \

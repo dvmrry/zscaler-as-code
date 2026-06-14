@@ -12,6 +12,11 @@ Output: one "tenant resource_type" line per pair, sorted. Empty output
 with exit 0 means the diff touched nothing plannable (docs-only change)
 — a PR pipeline must treat that as success, not failure.
 
+Pass --tenant <label> to emit only that tenant's pairs: a per-tenant
+delivery pipeline authenticates with one tenant's credentials (the auth
+template's tenant is compile-time), so it must not try to plan a foreign
+tenant a cross-tenant merge happened to touch.
+
 Stdlib-only, Python 3.6-floor — see AGENTS.md rule 5.
 """
 import os
@@ -22,6 +27,7 @@ from tools.registry import generated_types
 
 CONFIG_SUFFIX = ".auto.tfvars.json"
 IMPORTS_SUFFIX = "_imports.tf"
+MOVES_SUFFIX = "_moves.tf"
 GLOBAL_PREFIXES = ("tools/", "schemas/", "Makefile")
 
 
@@ -43,36 +49,61 @@ def discover_config_pairs(config_root="config"):
     return pairs
 
 
-def pairs_from_paths(paths, config_pairs):
+def discover_env_root_pairs(envs_root="envs"):
+    """All (tenant, resource_type) pairs that have a generated env ROOT —
+    what `make plan` actually operates on. A pair can have a root but no
+    config (its config was DELETED upstream to remove the resource): planning
+    it shows the destroy, which is exactly what a deletion must surface. So
+    this is unioned with the config pairs to bound plan-changed expansion —
+    without it a delete-only commit plans nothing and the removal is lost."""
+    pairs = set()
+    if not os.path.isdir(envs_root):
+        return pairs
+    types = set(generated_types())
+    for tenant in sorted(os.listdir(envs_root)):
+        tdir = os.path.join(envs_root, tenant)
+        if not os.path.isdir(tdir):
+            continue
+        for rt in sorted(os.listdir(tdir)):
+            if rt in types and os.path.isdir(os.path.join(tdir, rt)):
+                pairs.add((tenant, rt))
+    return pairs
+
+
+def pairs_from_paths(paths, plannable):
     """Map changed file paths to the (tenant, type) pairs they affect.
 
-    config_pairs bounds every expansion: a pair is only ever emitted if
-    the tenant actually has config for that type, so renames/typos can't
-    fan out into nonexistent roots.
+    `plannable` bounds every expansion: a pair is only ever emitted if it has
+    a committed config OR an existing env root, so renames/typos can't fan out
+    into nonexistent roots — while a DELETED config (root still present) and a
+    `_moves.tf`-only rename still plan, instead of being silently dropped.
     """
     pairs = set()
     for path in paths:
         parts = path.split("/")
         if path.startswith("config/") and len(parts) == 3 and parts[2].endswith(CONFIG_SUFFIX):
             pair = (parts[1], parts[2][: -len(CONFIG_SUFFIX)])
-            if pair in config_pairs:
+            if pair in plannable:
                 pairs.add(pair)
-        elif path.startswith("imports/") and len(parts) == 3 and parts[2].endswith(IMPORTS_SUFFIX):
-            pair = (parts[1], parts[2][: -len(IMPORTS_SUFFIX)])
-            if pair in config_pairs:
+        elif path.startswith("imports/") and len(parts) == 3 and (
+                parts[2].endswith(IMPORTS_SUFFIX) or parts[2].endswith(MOVES_SUFFIX)):
+            suffix = (IMPORTS_SUFFIX if parts[2].endswith(IMPORTS_SUFFIX)
+                      else MOVES_SUFFIX)
+            pair = (parts[1], parts[2][: -len(suffix)])
+            if pair in plannable:
                 pairs.add(pair)
         elif path.startswith("envs/") and len(parts) >= 3:
             pair = (parts[1], parts[2])
-            if pair in config_pairs:
+            if pair in plannable:
                 pairs.add(pair)
         elif path.startswith("modules/") and len(parts) >= 2:
             rt = parts[1]
-            for tenant, pair_rt in config_pairs:
+            for tenant, pair_rt in plannable:
                 if pair_rt == rt:
                     pairs.add((tenant, rt))
         elif path.startswith(GLOBAL_PREFIXES):
-            # Shared machinery changed: every configured pair is in scope.
-            return set(config_pairs)
+            # Shared machinery changed: every plannable pair is in scope.
+            return set(plannable)
     return pairs
 
 
@@ -85,24 +116,52 @@ def changed_paths(base_ref):
     return [line for line in out.decode().splitlines() if line.strip()]
 
 
+_USAGE = "usage: python -m tools.changed <base-ref> [--tenant <label>]\n"
+
+
 def main(argv=None):
     argv = argv if argv is not None else sys.argv[1:]
-    if len(argv) != 1:
-        sys.stderr.write("usage: python -m tools.changed <base-ref>\n")
+    base_ref = None
+    tenant = None
+    i = 0
+    while i < len(argv):
+        a = argv[i]
+        if a == "--tenant" and i + 1 < len(argv):
+            i += 1
+            tenant = argv[i]
+        elif a.startswith("-") or base_ref is not None:
+            sys.stderr.write(_USAGE)
+            return 2
+        else:
+            base_ref = a
+        i += 1
+    if base_ref is None:
+        sys.stderr.write(_USAGE)
         return 2
     try:
-        paths = changed_paths(argv[0])
+        paths = changed_paths(base_ref)
     except subprocess.CalledProcessError:
         sys.stderr.write(
             "error: git diff against %r failed (unknown ref? shallow clone "
-            "without the base? fetch it first)\n" % argv[0]
+            "without the base? fetch it first)\n" % base_ref
         )
         return 2
-    pairs = pairs_from_paths(paths, discover_config_pairs())
-    for tenant, rt in sorted(pairs):
-        sys.stdout.write("%s %s\n" % (tenant, rt))
+    pairs = pairs_from_paths(
+        paths, discover_config_pairs() | discover_env_root_pairs()
+    )
+    # A per-tenant delivery pipeline authenticates with ONE tenant's creds
+    # (the auth template's tenant is compile-time), so it must plan only that
+    # tenant's changed pairs — a cross-tenant merge otherwise tries to plan a
+    # foreign tenant with the wrong credentials. Filter to the named tenant.
+    if tenant is not None:
+        pairs = {(t, rt) for (t, rt) in pairs if t == tenant}
+    for t, rt in sorted(pairs):
+        sys.stdout.write("%s %s\n" % (t, rt))
     if not pairs:
-        sys.stderr.write("no plannable changes vs %s\n" % argv[0])
+        sys.stderr.write(
+            "no plannable changes vs %s%s\n"
+            % (base_ref, " for tenant %s" % tenant if tenant else "")
+        )
     return 0
 
 

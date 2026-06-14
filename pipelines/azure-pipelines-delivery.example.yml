@@ -1,0 +1,218 @@
+# Example DELIVERY pipeline — reference material, not a working config.
+# This is the steady-state path AFTER bootstrap: a config change merges to
+# main, and this pipeline plans only what that merge touched, shows the plan
+# for a human to approve, then applies exactly the plans it saved:
+#
+#   merge to main -> plan (auto-scoped) -> human approval -> apply
+#
+# The contrast with the bootstrap pipeline is the whole point. Bootstrap
+# adopts existing tenant objects into state and PROVES imports-only (0
+# add/change/destroy) before any approval. Delivery EXPECTS real changes —
+# there is no assert-clean here; the plan report IS the thing the approver
+# reads. Both share the same safety spine: a saved plan is the unit of
+# apply (no apply-all to misfire), the destroy guard refuses deletions
+# without ALLOW_DESTROY=1, and apply runs only off merged main.
+#
+# Scope is DERIVED, not typed: tools/changed.py maps the merge diff to the
+# exact (tenant, resource_type) roots it affects, so no one hand-enumerates
+# "which of the resource types changed" — the tedious, miss-one-and-drift
+# step. A deleted config still plans (its destroy is surfaced for the
+# approver); a docs-only merge plans nothing and the run is a clean no-op.
+#
+# ONE PIPELINE PER TENANT. Provider credentials are per-tenant and the auth
+# template's tenant is compile-time, so a single job cannot authenticate as
+# two tenants. Set TENANT below to this pipeline's tenant; plan-changed is
+# scoped to it (--tenant), so a merge that touches ANOTHER tenant's config
+# yields "nothing to plan" and this run is a clean no-op. Stand up one copy
+# of this pipeline per tenant, each with its own TENANT, variable group, and
+# protected environment. (A single multi-tenant pipeline would need a
+# per-tenant job matrix built from the diff — more machinery than two YAML
+# files, and the auth template can't take a runtime tenant anyway.)
+#
+# Keep pipelines thin shells over make — all logic lives in the Makefile
+# (AGENTS.md rule 9).
+
+parameters:
+  # Diff base for scope derivation. Default HEAD~1 = "what this merge brought
+  # to main": for a merge or squash commit M, `git diff HEAD~1...HEAD` is M's
+  # net change (HEAD~1 is the previous main tip, so three-dot == two-dot).
+  # Override on a MANUAL run if commits batched (CI was paused, several merges
+  # landed in one run): set base to the last successfully-applied commit so
+  # nothing in the window is skipped. Over-scoping is safe-ish here (extra
+  # roots plan empty and apply nothing); under-scoping silently drifts — and
+  # the scheduled drift pipeline is the backstop that re-proposes anything a
+  # delivery run missed.
+  - name: base
+    displayName: Diff base for scope (default = this merge's changes)
+    type: string
+    default: HEAD~1
+
+# A merge to main is the trigger. The PR build (plan-only, posted as a PR
+# comment) is a SEPARATE policy pipeline — see the plan-as-PR-comment block
+# in azure-pipelines.example.yml; this one only runs on merged main.
+trigger:
+  branches:
+    include:
+      - main
+pr: none
+
+variables:
+  # Variable group: this tenant's ZSCALER_* creds (resolved via cred_env) +
+  # ARM_SAS_TOKEN for the state container (SAS mode; see backend.conf.example).
+  - group: zscaler-credentials
+  # This pipeline's tenant. MUST be a statically-defined variable, not a
+  # runtime value: the auth template builds secret env-var KEYS from it at
+  # compile time, and ADO does not macro-substitute env-var keys.
+  - name: TENANT
+    value: FILL-tenant-label
+
+stages:
+  - stage: plan
+    jobs:
+      - job: plan
+        pool:
+          vmImage: ubuntu-latest
+        # Fresh workspace EVERY run — the structural guard against a stale
+        # tfplan from a failed/cancelled run riding into this one's apply.
+        # plan-changed also runs `make clean-plans` itself (in-band layer);
+        # this is the platform layer. (Bootstrap learned this the hard way.)
+        workspace:
+          clean: all
+        steps:
+          - checkout: self
+            # plan-changed diffs base...HEAD — the parent commit must exist,
+            # so no shallow clone.
+            fetchDepth: 0
+          # backend.conf: same strategy as the bootstrap pipeline — commit it
+          # to the deployment repo (checkout restores it). If you instead
+          # materialize it from variables, do so IN THIS JOB and again in the
+          # apply job (each clean: all wipes generated files); never split the
+          # strategy across pipelines (a job then plans against no backend).
+          # Auth env (creds + `eval cred_env` + secret mapping) lives once in
+          # steps/zscaler-auth.yml. Non-secret vars (CLOUD, VANITY_DOMAIN, the
+          # legacy flag, proxy) auto-expose from the variable group — never
+          # hand-map them in an env: block (that is how one gets dropped).
+          - template: steps/zscaler-auth.yml
+            parameters:
+              tenant: ${{ variables.TENANT }}
+              displayName: Plan changed roots
+              stateToken: true
+              secrets: [ ZSCALER_CLIENT_SECRET ]   # OneAPI; legacy set differs
+              command: |
+                # Auto-scoped, tenant-filtered plan. SAVE=1 writes one tfplan
+                # per changed root; apply's scope IS those saved plans. A merge
+                # touching no config for $(TENANT) prints "nothing to plan" and
+                # exits 0 — the detect step below then skips apply.
+                make plan-changed TENANT=$(TENANT) BASE=${{ parameters.base }} SAVE=1 BACKEND_CONFIG=backend.conf
+          # Detect step is SEPARATE and named so its output variable can gate
+          # the apply stage — the auth template's inner step has no name to
+          # reference. It needs no creds (terraform show reads the saved plan;
+          # the roots are already init'd from the plan above), so a bare
+          # script is correct here and the auth-routing lint leaves it alone.
+          - script: |
+              if ls envs/*/*/tfplan >/dev/null 2>&1; then
+                make plan-report
+                echo "##vso[task.setvariable variable=hasPlans;isOutput=true]true"
+              else
+                echo "no changed roots for $(TENANT) in this merge — apply will be skipped"
+                echo "##vso[task.setvariable variable=hasPlans;isOutput=true]false"
+              fi
+            name: detect
+            displayName: Plan report + detect saved plans
+          - script: echo "##vso[task.uploadsummary]$(System.DefaultWorkingDirectory)/reports/plan.md"
+            displayName: Plan in the run Summary tab
+            condition: eq(variables['detect.hasPlans'], 'true')
+          - publish: envs
+            artifact: tfplans   # plans can contain sensitive values; restrict retention
+            condition: eq(variables['detect.hasPlans'], 'true')
+          - publish: reports
+            artifact: plan-report
+            condition: eq(variables['detect.hasPlans'], 'true')
+
+  - stage: apply
+    dependsOn: plan
+    # Skip apply entirely when the merge changed nothing for this tenant —
+    # otherwise `make apply` would (correctly) error on an empty plan set and
+    # red a run that is really a clean no-op. Cross-stage output reference:
+    # stageDependencies.<stage>.<job>.outputs['<step>.<var>'].
+    condition: and(succeeded(), eq(stageDependencies.plan.plan.outputs['detect.hasPlans'], 'true'))
+    jobs:
+      - deployment: apply
+        pool:
+          vmImage: ubuntu-latest
+        workspace:
+          clean: all
+        # THE REVIEW GATE LIVES HERE — and it is PORTAL CONFIG, not yaml.
+        # Naming an environment does nothing by itself. In ADO: Pipelines >
+        # Environments > <this environment> > Approvals and checks, then add:
+        #   - Approvals (the reviewers) with a 15-MINUTE TIMEOUT. The timeout
+        #     is the deliberate "short plan lifetime": an unattended plan auto-
+        #     rejects in 15 minutes and releases the lock, instead of sitting
+        #     for hours holding the TFD hostage. If no one is watching, the
+        #     safe outcome is to re-run on current main, not to apply a plan
+        #     that has been aging. (Tune to your team's responsiveness; the
+        #     point is bounded, not zero.)
+        #   - Exclusive Lock — serializes deploys to this environment so two
+        #     applies never race the same state.
+        # Approval instructions worth pasting: "Open the run's Summary tab —
+        # the plan table is at the top. A DESTROY banner there means a resource
+        # is being removed; confirm that is intended before approving."
+        #
+        # WHY A STALE APPROVED PLAN DOES NOT SILENTLY WIPE ANYTHING — the
+        # scenario where plan A sits, plan B merges and applies, then someone
+        # finally approves A:
+        #   * checkout: self pins Build.SourceVersion (A's commit), so this job
+        #     re-materializes A's exact config — the saved plan stays valid
+        #     against the worktree it was built from.
+        #   * If B changed the SAME root, terraform's saved-plan guard
+        #     (lineage/serial) rejects apply A: "saved plan is stale". No wipe.
+        #   * If B changed a DIFFERENT root, A's root is untouched by B and
+        #     applying A is exactly correct.
+        #   * The 15-minute approval timeout shrinks this window to near zero.
+        # The optional guard below adds an explicit early "main moved, re-run"
+        # signal on top of all that, for teams that want maximum caution.
+        environment: FILL-protected-environment-name
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                  fetchDepth: 0
+                # OPTIONAL extra-caution guard — refuse to apply if main has
+                # advanced past this plan's commit. The terraform serial guard
+                # above already blocks the only DANGEROUS case (same-root
+                # concurrent change); this just turns "main moved at all" into
+                # a friendly re-run prompt instead of a later serial error. It
+                # adds friction (a same-root-untouched advance is safe to
+                # apply), so enable it only if you prefer re-running to
+                # reasoning about blast radius. Creds-free (pure git):
+                # - script: |
+                #     git fetch --quiet origin main
+                #     if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then
+                #       echo "origin/main advanced past this plan ($(git rev-parse --short HEAD) -> $(git rev-parse --short origin/main))."
+                #       echo "Re-run delivery on current main rather than applying an aged plan."
+                #       exit 1
+                #     fi
+                #   displayName: Refuse aged plan (main advanced)
+                - download: current
+                  artifact: tfplans
+                - script: cp -R "$(Pipeline.Workspace)/tfplans/"* envs/
+                  displayName: Restore saved plans
+                - template: steps/zscaler-auth.yml
+                  parameters:
+                    tenant: ${{ variables.TENANT }}
+                    displayName: Apply saved plans
+                    stateToken: true
+                    secrets: [ ZSCALER_CLIENT_SECRET ]
+                    command: |
+                      # Scope IS the saved plans (the tfplans artifact). TENANT
+                      # is passed for defense-in-depth: even a contaminated
+                      # artifact cannot apply a root outside this tenant. Apply
+                      # refuses any plan that destroys/replaces a resource
+                      # unless you re-run with ALLOW_DESTROY=1 — a deleted
+                      # config reaches here as a destroy the approver already
+                      # saw flagged in the plan report.
+                      make apply TENANT=$(TENANT) BACKEND_CONFIG=backend.conf
+# After a successful apply the saved plans have served their purpose; the
+# next merge starts the cycle again, and the scheduled drift run confirms the
+# tenant now matches committed config (green by construction).
