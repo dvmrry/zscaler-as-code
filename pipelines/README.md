@@ -132,15 +132,20 @@ Notes that apply to every platform:
     - template: steps/zscaler-auth.yml
       parameters: { tenant: ${{ parameters.tenant }}, command: make plan ... }
   ```
-  Its three knobs — `installTf` (a version to install+PATH), `backendConf`
-  (materialize from `STATE_*` vars), and `persistCredentials: true` (for
-  commit-back jobs that push a branch) — all default off, so on hosted agents
-  (terraform present, `backend.conf` committed) it's just a consistent
-  `checkout`. It deliberately does **not**
-  bundle auth (credentials are per-command — a job authenticates more than
-  once) and does **not** set `workspace: clean: all` (a job property, not a
-  step). Its main payoff is the terraform-version invariant: pin the version in
-  ONE template reference instead of in every job, so it can't drift.
+  Its knobs — `installTf` (a version to install+PATH), `backendConf`
+  (materialize from `STATE_*` vars), `persistCredentials: true` (for
+  commit-back jobs that push a branch), and `fetchDepth` (default `0` = full
+  history, which `make plan-changed` needs) — all default to a safe value, so
+  on hosted agents (terraform present, `backend.conf` committed) it's just a
+  consistent full-history `checkout`. **The template owns the checkout — do
+  not add your own `checkout: self` next to it.** A second checkout step flips
+  ADO into its multi-repo layout and nests the repo in a subfolder, so `make`
+  then runs where there is no Makefile (`No rule to make target`). It
+  deliberately does **not** bundle auth (credentials are per-command — a job
+  authenticates more than once) and does **not** set `workspace: clean: all`
+  (a job property, not a step). Its main payoff is the terraform-version
+  invariant: pin the version in ONE template reference instead of in every
+  job, so it can't drift.
 - **Catch pipeline drift before it ships** (`make lint-pipelines`): the same
   inconsistencies that keep biting — a terraform version bumped in one pipeline
   but not its siblings, a hand-rolled auth `env:` block that drops a var
