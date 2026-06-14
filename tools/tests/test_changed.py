@@ -94,6 +94,59 @@ class PairsFromPathsTest(unittest.TestCase):
         )
 
 
+class DerivedExpansionTest(unittest.TestCase):
+    """A change to a SOURCE type also plans its derived dependents. The
+    reorder mutates rule order on apply and its config no longer travels with
+    the rules (order is deprecated off the access rule), so a rule change can
+    move ordering without touching the reorder config — plan it anyway, so the
+    mutation is in a plan the reviewer sees. Uses the real registry, where
+    zpa_policy_access_rule_reorder derives from zpa_policy_access_rule."""
+
+    PAIRS = {
+        ("demo", "zpa_policy_access_rule"),
+        ("demo", "zpa_policy_access_rule_reorder"),
+        ("demo", "zia_rule_labels"),
+    }
+
+    def test_source_config_change_also_plans_reorder(self):
+        out = pairs_from_paths(
+            ["config/demo/zpa_policy_access_rule.auto.tfvars.json"], self.PAIRS
+        )
+        self.assertEqual(out, {("demo", "zpa_policy_access_rule"),
+                               ("demo", "zpa_policy_access_rule_reorder")})
+
+    def test_source_module_change_also_plans_reorder(self):
+        out = pairs_from_paths(
+            ["modules/zpa_policy_access_rule/main.tf"], self.PAIRS
+        )
+        self.assertEqual(out, {("demo", "zpa_policy_access_rule"),
+                               ("demo", "zpa_policy_access_rule_reorder")})
+
+    def test_reorder_change_does_not_pull_in_source(self):
+        # Expansion is one-directional: a reorder-only change plans only the
+        # reorder (the rules' content is unaffected by reordering them).
+        out = pairs_from_paths(
+            ["config/demo/zpa_policy_access_rule_reorder.auto.tfvars.json"],
+            self.PAIRS,
+        )
+        self.assertEqual(out, {("demo", "zpa_policy_access_rule_reorder")})
+
+    def test_derived_skipped_when_not_plannable(self):
+        # A tenant that carries the source but has no reorder root/config:
+        # the derived pair isn't in `plannable`, so it is not invented.
+        out = pairs_from_paths(
+            ["config/demo/zpa_policy_access_rule.auto.tfvars.json"],
+            {("demo", "zpa_policy_access_rule")},
+        )
+        self.assertEqual(out, {("demo", "zpa_policy_access_rule")})
+
+    def test_non_source_change_is_unaffected(self):
+        out = pairs_from_paths(
+            ["config/demo/zia_rule_labels.auto.tfvars.json"], self.PAIRS
+        )
+        self.assertEqual(out, {("demo", "zia_rule_labels")})
+
+
 class DiscoverConfigPairsTest(unittest.TestCase):
     def test_discovers_committed_demo_pairs(self):
         # The committed demo tenant must be discovered (registry-bounded).

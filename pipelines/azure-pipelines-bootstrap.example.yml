@@ -181,7 +181,14 @@ stages:
                 # off the resource type, not staged-imports presence, so an
                 # already-managed rerun (empty delta) or a moves-only rename is
                 # still planned. A broad/product $(SCOPE) is therefore safe
-                # here; reorder is created later by the normal delivery pipeline.
+                # here. The skipped reorder is created+validated later: the
+                # delivery pipeline plans it whenever its source policy is
+                # delivered (plan-changed expands a source to its derived
+                # dependents). To CREATE it right after bootstrap instead of
+                # waiting for the first policy change, run a full regular plan
+                # for the tenant once — `make plan TENANT=<t> BACKEND_CONFIG=...`
+                # with NO IMPORTS_ONLY includes the reorder root — review the
+                # reorder-only diff, then apply.
                 make plan TENANT=${{ parameters.tenant }} SAVE=1 IMPORTS_ONLY=1 BACKEND_CONFIG=backend.conf $(SCOPE)
                 # The adoption gate: every saved plan must be imports/no-op
                 # ONLY. Real changes mean transform and the tenant disagree —

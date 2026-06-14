@@ -17,13 +17,22 @@ delivery pipeline authenticates with one tenant's credentials (the auth
 template's tenant is compile-time), so it must not try to plan a foreign
 tenant a cross-tenant merge happened to touch.
 
+A change to a SOURCE type also plans its DERIVED dependents (e.g. a change
+to zpa_policy_access_rule also plans zpa_policy_access_rule_reorder). The
+derived resource MUTATES on apply — the reorder re-sequences the rules — and
+its config no longer travels with the source (rule order is deprecated off
+the access rule), so a rule change can move ordering even when the reorder
+config didn't change in the diff. Planning it whenever its source is in scope
+keeps that mutation in a plan the reviewer actually sees; if it has nothing
+to do the plan is a no-op they can confirm.
+
 Stdlib-only, Python 3.6-floor — see AGENTS.md rule 5.
 """
 import os
 import subprocess
 import sys
 
-from tools.registry import generated_types
+from tools.registry import derive_entry, derived_types, generated_types
 
 CONFIG_SUFFIX = ".auto.tfvars.json"
 IMPORTS_SUFFIX = "_imports.tf"
@@ -102,9 +111,43 @@ def pairs_from_paths(paths, plannable):
                 if pair_rt == rt:
                     pairs.add((tenant, rt))
         elif path.startswith(GLOBAL_PREFIXES):
-            # Shared machinery changed: every plannable pair is in scope.
+            # Shared machinery: every plannable pair (derived included) is
+            # already in scope, so no separate derived expansion is needed.
             return set(plannable)
-    return pairs
+    return expand_derived(pairs, plannable)
+
+
+def _derived_by_source():
+    """source resource_type -> set of derived types that track it
+    (e.g. zpa_policy_access_rule -> {zpa_policy_access_rule_reorder})."""
+    out = {}
+    for dt in derived_types():
+        src = (derive_entry(dt) or {}).get("from")
+        if src:
+            out.setdefault(src, set()).add(dt)
+    return out
+
+
+def expand_derived(pairs, plannable):
+    """Add each selected pair's DERIVED dependents, bounded by `plannable`.
+
+    A derived resource mutates on apply (zpa_policy_access_rule_reorder
+    re-sequences the rules) and must be validated in the SAME plan as the
+    source it tracks — never applied from a plan the reviewer never saw. Its
+    config can stay byte-identical while the source moves ordering, so select
+    it whenever its source is in scope; a tenant without the derived root/config
+    (it isn't in `plannable`) is left alone. One level — the registry has no
+    derived-of-derived chains.
+    """
+    by_source = _derived_by_source()
+    if not by_source:
+        return pairs
+    extra = set()
+    for tenant, rt in pairs:
+        for dt in by_source.get(rt, ()):
+            if (tenant, dt) in plannable:
+                extra.add((tenant, dt))
+    return pairs | extra
 
 
 def changed_paths(base_ref):
