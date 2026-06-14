@@ -85,13 +85,13 @@ variables:
 #         steps:
 #           - checkout: self
 #             persistCredentials: true # branch push uses the build token
-#           - script: make fetch TENANT=${{ parameters.tenant }} $(SCOPE)
-#             displayName: Fetch (creds from the variable group)
-#             env:
-#               ZSCALER_CLIENT_ID: $(ZSCALER_CLIENT_ID)
-#               ZSCALER_CLIENT_SECRET: $(ZSCALER_CLIENT_SECRET)
-#               ZSCALER_VANITY_DOMAIN: $(ZSCALER_VANITY_DOMAIN)
-#               ZSCALER_CLOUD: $(ZSCALER_CLOUD)
+#           - template: steps/zscaler-auth.yml   # the deduplicated auth block
+#             parameters:
+#               tenant: ${{ parameters.tenant }}
+#               command: make fetch TENANT=${{ parameters.tenant }} $(SCOPE)
+#               # Only the SECRET needs mapping; VANITY_DOMAIN / CLOUD are
+#               # non-secret and auto-expose from the variable group.
+#               secrets: [ ZSCALER_CLIENT_SECRET ]   # OneAPI (add ZSCALER_CLIENT_ID if you marked it secret)
 #           - script: DROPS_CHECK=1 make transform IN=pulls/${{ parameters.tenant }} TENANT=${{ parameters.tenant }}
 #             displayName: Transform (red = new API surface; triage, commit, re-run)
 #           - script: make refresh-gates TENANT=${{ parameters.tenant }}
@@ -156,27 +156,31 @@ stages:
           # set SSL_EXEMPT_CATEGORY to your exemptions category's config key):
           #   terraform -chdir=envs/${{ parameters.tenant }}/zia_url_categories show -json tfplan > plan.json
           #   make plan-checks FILE=plan.json TENANT=${{ parameters.tenant }}
-          - script: |
-              eval "$(python3 -m tools.cred_env ${{ parameters.tenant }})"
-              # Stale-plan hygiene: self-hosted agents REUSE workspaces, so a
-              # failed/cancelled previous run leaves tfplans behind — and
-              # apply's scope IS the saved plans. The run defines the plan set.
-              make clean-plans
-              # STATE_AWARE: re-runs are delta-only. Terraform errors on
-              # importing an already-managed address, so already-imported
-              # blocks are filtered against `terraform state list` — a full
-              # re-run after partial success (or after drift adds new
-              # objects) imports exactly what is missing.
-              make stage-imports TENANT=${{ parameters.tenant }} STATE_AWARE=1 BACKEND_CONFIG=backend.conf $(SCOPE)
-              make plan TENANT=${{ parameters.tenant }} SAVE=1 BACKEND_CONFIG=backend.conf $(SCOPE)
-              # The adoption gate: every saved plan must be imports/no-op
-              # ONLY. Real changes mean transform and the tenant disagree —
-              # fix overrides and re-run; never approve past this red.
-              make assert-clean
-              make plan-report
-            displayName: Stage imports, plan, prove imports-only
-            env:
-              ARM_SAS_TOKEN: $(ARM_SAS_TOKEN)
+          # Auth env block lives once in steps/zscaler-auth.yml — it runs
+          # `eval cred_env` and maps the secrets. Set `secrets` to your mode's
+          # secret base-names (legacy: ZIA_PASSWORD/ZIA_API_KEY/ZPA_CLIENT_SECRET).
+          - template: steps/zscaler-auth.yml
+            parameters:
+              tenant: ${{ parameters.tenant }}
+              displayName: Stage imports, plan, prove imports-only
+              stateToken: true
+              secrets: [ ZSCALER_CLIENT_SECRET ]
+              command: |
+                # Stale-plan hygiene: self-hosted agents REUSE workspaces, so a
+                # failed/cancelled previous run leaves tfplans behind — and
+                # apply's scope IS the saved plans. The run defines the plan set.
+                make clean-plans
+                # STATE_AWARE: re-runs are delta-only. Already-imported blocks
+                # are filtered against `terraform state list`, so a re-run after
+                # partial success (or after drift adds new objects) imports
+                # exactly what is missing.
+                make stage-imports TENANT=${{ parameters.tenant }} STATE_AWARE=1 BACKEND_CONFIG=backend.conf $(SCOPE)
+                make plan TENANT=${{ parameters.tenant }} SAVE=1 BACKEND_CONFIG=backend.conf $(SCOPE)
+                # The adoption gate: every saved plan must be imports/no-op
+                # ONLY. Real changes mean transform and the tenant disagree —
+                # fix overrides and re-run; never approve past this red.
+                make assert-clean
+                make plan-report
           - script: echo "##vso[task.uploadsummary]$(System.DefaultWorkingDirectory)/reports/plan.md"
             displayName: Plan in the run Summary tab
           - publish: envs
@@ -208,33 +212,37 @@ stages:
                 - checkout: self
                 # If backend.conf is materialized from variables, repeat the
                 # materialize step HERE — this job's workspace was cleaned.
-                - script: |
-                    # Reproduce the EXACT plan-time worktree: a saved plan
-                    # is only valid against identical configuration, so the
-                    # import blocks must be staged identically (state has
-                    # not changed between the stages — same filter result).
-                    eval "$(python3 -m tools.cred_env ${{ parameters.tenant }})"
-                    make stage-imports TENANT=${{ parameters.tenant }} STATE_AWARE=1 BACKEND_CONFIG=backend.conf $(SCOPE)
-                  displayName: Re-stage imports (config parity for saved plans)
-                  env:
-                    ARM_SAS_TOKEN: $(ARM_SAS_TOKEN)
+                - template: steps/zscaler-auth.yml
+                  parameters:
+                    tenant: ${{ parameters.tenant }}
+                    displayName: Re-stage imports (config parity for saved plans)
+                    stateToken: true
+                    secrets: [ ZSCALER_CLIENT_SECRET ]
+                    command: |
+                      # Reproduce the EXACT plan-time worktree: a saved plan is
+                      # only valid against identical configuration, so the import
+                      # blocks must be staged identically (state has not changed
+                      # between the stages — same filter result).
+                      make stage-imports TENANT=${{ parameters.tenant }} STATE_AWARE=1 BACKEND_CONFIG=backend.conf $(SCOPE)
                 - download: current
                   artifact: tfplans
                 - script: cp -R "$(Pipeline.Workspace)/tfplans/"* envs/
                   displayName: Restore saved plans
-                - script: |
-                    eval "$(python3 -m tools.cred_env ${{ parameters.tenant }})"
-                    # Imports only mutate STATE, never the tenant; the
-                    # destroy guard still applies (nothing to allow here).
-                    # TENANT + $(SCOPE) on apply too — DEFENSE IN DEPTH:
-                    # even a contaminated artifact (stale tfplans from a
-                    # reused workspace published alongside) cannot apply
-                    # outside the run's declared scope. Field-hit: a
-                    # ZIA-targeted run applied stale ZPA plans.
-                    make apply TENANT=${{ parameters.tenant }} BACKEND_CONFIG=backend.conf $(SCOPE)
-                  displayName: Apply (state-only import adoption)
-                  env:
-                    ARM_SAS_TOKEN: $(ARM_SAS_TOKEN)
+                - template: steps/zscaler-auth.yml
+                  parameters:
+                    tenant: ${{ parameters.tenant }}
+                    displayName: Apply (state-only import adoption)
+                    stateToken: true
+                    secrets: [ ZSCALER_CLIENT_SECRET ]
+                    command: |
+                      # Imports only mutate STATE, never the tenant; the destroy
+                      # guard still applies (nothing to allow here). TENANT +
+                      # $(SCOPE) on apply too — DEFENSE IN DEPTH: even a
+                      # contaminated artifact (stale tfplans from a reused
+                      # workspace published alongside) cannot apply outside the
+                      # run's declared scope. Field-hit: a ZIA-targeted run
+                      # applied stale ZPA plans.
+                      make apply TENANT=${{ parameters.tenant }} BACKEND_CONFIG=backend.conf $(SCOPE)
 # After a successful bootstrap: the staged import copies lived only in
 # this agent's workspace — nothing to clean up in git. Subsequent changes
 # ride the normal delivery pipeline; drift goes green-by-construction.

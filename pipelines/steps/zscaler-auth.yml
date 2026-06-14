@@ -1,0 +1,74 @@
+# Reusable auth step — define the credential env block ONCE.
+#
+# Every step that authenticates (fetch / plan / drift / import / apply) needs
+# the same environment: the tenant's credentials, and `eval cred_env` to map
+# the tenant-prefixed variables to the canonical names + pick the auth mode.
+# Copy-pasting that block per step is how a variable silently gets dropped or
+# mistyped. Reference this template instead — the block lives in one place.
+#
+# THE KEY FACT (Azure DevOps): only SECRET variables need explicit `env:`
+# mapping. Non-secret variables from a linked variable group are already
+# exposed to every step's environment automatically. So your *_CLOUD,
+# *_ZPA_CUSTOMER_ID, *_ZSCALER_USE_LEGACY_CLIENT, HTTPS_PROXY, etc. need NO
+# mapping — keep them as ordinary (non-secret) variables in the group and
+# cred_env reads them. The `ZSCALER_USE_LEGACY_CLIENT` flag in particular is
+# NOT a secret; it belongs in the variable group, not a hand-typed env block.
+#
+# Only the actual secrets (passwords, API keys, client secrets) are mapped
+# here, via the `secrets` parameter.
+#
+# NOTE: `tenant` must be a COMPILE-TIME value — a pipeline `parameter` or a
+# statically-defined `variable` (pass `${{ variables.TENANT }}`). The secret
+# env-var names are built at template-expansion time, and ADO does not
+# substitute macros in env-var KEYS, so a runtime `$(TENANT)` can't drive them.
+#
+# Usage:
+#   - template: steps/zscaler-auth.yml
+#     parameters:
+#       tenant: zs2
+#       command: make fetch TENANT=zs2 RESOURCE="zia zpa"
+#       secrets: [ ZIA_PASSWORD, ZIA_API_KEY, ZPA_CLIENT_SECRET ]   # legacy set
+#       # secrets: [ ZSCALER_CLIENT_SECRET ]                        # OneAPI set
+#       stateToken: true   # add for steps that touch azurerm remote state
+#
+parameters:
+  - name: tenant
+    type: string
+  - name: command
+    type: string          # one command or a multi-line block
+  - name: displayName
+    type: string
+    default: ''
+  - name: secrets
+    type: object
+    # The SECRET credential base-names for YOUR auth mode (mapped per step).
+    # Set this to the secrets your variable group actually holds — mapping a
+    # name the group does not define passes a literal "$(...)" through.
+    default: [ ZSCALER_CLIENT_SECRET ]
+  - name: stateToken
+    type: boolean
+    default: false        # true for plan / apply / import / unlock (azurerm state)
+
+steps:
+  - script: |
+      set -euo pipefail
+      # Resolve tenant-prefixed vars -> canonical, pick the mode (legacy vs
+      # OneAPI), fail loud on a half-set product, and print a secret-safe
+      # startup summary. The assignment (not `eval "$(...)"`) is deliberate:
+      # it lets `set -e` catch a cred_env failure instead of eval'ing empty.
+      # Do NOT run this step under `set -x` (the export lines carry secrets).
+      creds="$(python3 -m tools.cred_env ${{ parameters.tenant }})"
+      eval "$creds"
+      ${{ parameters.command }}
+    displayName: ${{ coalesce(parameters.displayName, parameters.command) }}
+    env:
+      # SECRETS only — one place, no per-step copy/paste. The tenant prefix is
+      # applied here so the variable-group names (e.g. ZS2_ZIA_PASSWORD) reach
+      # the shell for cred_env to resolve.
+      ${{ each s in parameters.secrets }}:
+        ${{ format('{0}_{1}', upper(parameters.tenant), s) }}: $(${{ format('{0}_{1}', upper(parameters.tenant), s) }})
+      ${{ if parameters.stateToken }}:
+        ARM_SAS_TOKEN: $(ARM_SAS_TOKEN)
+      # If your proxy variable is marked SECRET, map it too (otherwise a
+      # non-secret HTTPS_PROXY/NO_PROXY auto-exposes and needs nothing here):
+      # HTTPS_PROXY: $(HTTPS_PROXY)
