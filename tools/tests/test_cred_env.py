@@ -160,6 +160,26 @@ class SelectModeTest(unittest.TestCase):
         self.assertEqual(mode, "oneapi")
         self.assertTrue(warn)
 
+    def test_bare_global_flag_applies_when_no_prefixed_flag(self):
+        # an unprefixed ZSCALER_USE_LEGACY_CLIENT in the env sets the mode for
+        # every tenant — the one-flag-for-the-whole-deployment case.
+        mode, warn = select_mode(dict(LEGACY_ZIA_FULL), global_flag="true")
+        self.assertEqual(mode, "legacy")
+        self.assertFalse(warn)
+        self.assertEqual(select_mode({}, global_flag="false")[0], "oneapi")
+
+    def test_tenant_prefixed_flag_overrides_global(self):
+        # a per-tenant flag wins over the bare global one (e.g. one OneAPI
+        # tenant in an otherwise-legacy deployment).
+        mode, _ = select_mode({"ZSCALER_USE_LEGACY_CLIENT": "false"},
+                              global_flag="true")
+        self.assertEqual(mode, "oneapi")
+
+    def test_empty_global_flag_is_treated_as_unset(self):
+        mode, warn = select_mode(dict(LEGACY_ZIA_FULL), global_flag=None)
+        self.assertEqual(mode, "oneapi")
+        self.assertTrue(warn)
+
 
 class ScopedExportOneApiTest(unittest.TestCase):
     def test_complete_oneapi_exports_only_oneapi_vars(self):
@@ -279,6 +299,19 @@ class MainEndToEndTest(unittest.TestCase):
         self.assertIn("export ZSCALER_USE_LEGACY_CLIENT='true'", out)
         self.assertIn("export ZIA_CLOUD='zscalertwo'", out)
         self.assertNotIn("export ZSCALER_CLIENT_ID", out)  # mode-scoped
+
+    def test_bare_global_flag_drives_legacy_for_any_tenant(self):
+        # No tenant-prefixed flag — a single unprefixed ZSCALER_USE_LEGACY_CLIENT
+        # selects legacy and is re-emitted canonically (not clobbered to false).
+        env = dict(LEGACY_ZIA_FULL)
+        env.update(LEGACY_ZPA_FULL)
+        env = {"ZS2_" + k: v for k, v in env.items()}
+        env["ZSCALER_USE_LEGACY_CLIENT"] = "true"  # bare / global
+        rc, out, err = self._run("zs2", env)
+        self.assertEqual(rc, 0)
+        self.assertIn("export ZSCALER_USE_LEGACY_CLIENT='true'", out)
+        self.assertIn("export ZIA_API_KEY='k'", out)        # legacy creds exported
+        self.assertNotIn("defaulting to OneAPI", err)       # no forgotten-flag warning
 
     def test_incomplete_oneapi_fails_loud_without_exports(self):
         env = {"ZS2_ZSCALER_CLIENT_ID": "cid"}  # secret + vanity missing

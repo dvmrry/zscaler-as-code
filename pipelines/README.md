@@ -81,6 +81,13 @@ Notes that apply to every platform:
   warned, never silent — then resolve in a step with
   `eval "$(python3 -m tools.cred_env <tenant>)"`. The mapping is a
   tested allowlist in code; tenant-specific values stay pipeline-side.
+  The auth mode itself (`ZSCALER_USE_LEGACY_CLIENT`) takes the same
+  prefix treatment — set it per-tenant (`ZS2_ZSCALER_USE_LEGACY_CLIENT`)
+  OR set one bare, unprefixed `ZSCALER_USE_LEGACY_CLIENT` to cover every
+  tenant (whole-legacy or whole-OneAPI deployments); a tenant-prefixed
+  flag overrides the bare one, so a single tenant can opt to the other
+  mode. cred_env re-emits the resolved flag canonically, so the bare
+  global value is honored, not clobbered.
   It exports only the active auth mode's variables (legacy vs OneAPI,
   never a mix) and fails loud if a product's set is half-configured, so a
   stray wrong-mode var can't crash a provider; the resolved mode and safe
