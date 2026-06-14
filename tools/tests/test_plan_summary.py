@@ -1,7 +1,7 @@
 """Tests for tools/plan_summary.py — the reviewer's counts-first row."""
 import unittest
 
-from tools.plan_summary import summarize
+from tools.plan_summary import counts, summarize
 
 
 def plan(*changes):
@@ -36,6 +36,53 @@ class SummarizeTest(unittest.TestCase):
         self.assertEqual(row, "| t/r | 0 | 0 | 0 | 0 |")
         self.assertEqual(destroys, 0)
 
+
+
+class CountsTest(unittest.TestCase):
+    """counts() backs both the markdown row and the aggregate one-line
+    summary (make plan-summary-line); the integer tuple is what marshals
+    safely into an approval prompt."""
+
+    def test_counts_tuple(self):
+        p = plan({"actions": ["create"]},
+                 {"actions": ["update"]},
+                 {"actions": ["delete"]},
+                 {"actions": ["no-op"], "importing": {"id": "1"}})
+        self.assertEqual(counts(p), (1, 1, 1, 1))
+
+    def test_replace_is_add_and_destroy(self):
+        self.assertEqual(counts(plan({"actions": ["delete", "create"]})), (0, 1, 0, 1))
+
+    def test_counts_guards_non_plan_json(self):
+        with self.assertRaises(ValueError):
+            counts({"unexpected": "document"})
+
+
+class CountsCliTest(unittest.TestCase):
+    def _run(self, stdin_obj, argv):
+        import io
+        import json
+        import sys
+        from tools import plan_summary
+        old_in, old_out, old_err = sys.stdin, sys.stdout, sys.stderr
+        sys.stdin = io.StringIO(json.dumps(stdin_obj))
+        sys.stdout, sys.stderr = io.StringIO(), io.StringIO()
+        try:
+            rc = plan_summary.main(argv)
+            return rc, sys.stdout.getvalue()
+        finally:
+            sys.stdin, sys.stdout, sys.stderr = old_in, old_out, old_err
+
+    def test_counts_flag_emits_four_integers(self):
+        p = plan({"actions": ["create"]}, {"actions": ["delete", "create"]})
+        rc, out = self._run(p, ["--counts"])
+        self.assertEqual(rc, 0)
+        self.assertEqual(out, "0 2 0 1\n")  # imports adds changes destroys
+
+    def test_counts_flag_on_skewed_json_errors(self):
+        rc, out = self._run({"unexpected": "x"}, ["--counts"])
+        self.assertEqual(rc, 1)
+        self.assertEqual(out, "")
 
 
 class FormatVersionGuardTest(unittest.TestCase):
