@@ -276,6 +276,11 @@ stages:
 #
 #                    Full plan -> $(System.CollectionUri)$(System.TeamProject)/_build/results?buildId=$(Build.BuildId)&view=ms.vss-build-web.run-extensions-tab
 #
+#    NOTE: `view=ms.vss-build-web.run-extensions-tab` is the Extensions-tab id
+#    and can differ by ADO version. Confirm it against your own run: open that
+#    tab in the browser and copy the `view=` value from the URL. The link still
+#    resolves to the run without the param — it just preselects the tab.
+#
 # 3) Make the deployment job depend on the gate, and drop the env Approval
 #    check (keep Exclusive Lock) since ManualValidation is now the human gate:
 #
