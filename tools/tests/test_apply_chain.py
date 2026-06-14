@@ -409,5 +409,59 @@ class ApplyChainTest(unittest.TestCase):
         self.assertNotEqual(rc, 0, "assert-clean reported clean on show output with no resource_changes")
 
 
+@unittest.skipUnless(shutil.which("make"), "make not available")
+class PlanImportsOnlyTest(unittest.TestCase):
+    """IMPORTS_ONLY=1 skips DERIVED/non-importable roots (per the registry —
+    e.g. zpa_policy_access_rule_reorder, a create) from the bootstrap
+    imports-only proof, so a broad/product scope is safe without hand-
+    enumerating around them. It keys off registry derived_types(), NOT the
+    presence of a staged *_imports.tf: an importable root with an empty delta
+    (every import already managed) or a *_moves.tf-only rename has no imports
+    file this run but is still legitimate state work and MUST still be planned."""
+
+    def setUp(self):
+        self.tenant = "tmpimportsonly"
+        self.envs = os.path.join("envs", self.tenant)
+        self.config_dir = os.path.join("config", self.tenant)
+        self.addCleanup(shutil.rmtree, self.envs, True)
+        self.addCleanup(shutil.rmtree, self.config_dir, True)
+        os.makedirs(self.config_dir, exist_ok=True)
+        # Importable root with NO staged *_imports.tf — the empty-delta /
+        # already-managed rerun case. Must still be planned under IMPORTS_ONLY.
+        self.imp = os.path.join(self.envs, "fake_rt")
+        os.makedirs(self.imp, exist_ok=True)
+        self._write(os.path.join(self.imp, "main.tf"), "# importable root\n")
+        self._write(os.path.join(self.config_dir, "fake_rt.auto.tfvars.json"),
+                    '{"items": {}}\n')
+        # A real DERIVED type (in the registry): must be skipped.
+        self.der_rt = "zpa_policy_access_rule_reorder"
+        self.der = os.path.join(self.envs, self.der_rt)
+        os.makedirs(self.der, exist_ok=True)
+        self._write(os.path.join(self.der, "main.tf"), "# derived root\n")
+        self._write(
+            os.path.join(self.config_dir, self.der_rt + ".auto.tfvars.json"),
+            '{"items": {}}\n')
+
+    def _write(self, path, text):
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(text)
+
+    def test_skips_derived_but_still_plans_importable_with_empty_delta(self):
+        rc, out = _run(["make", "plan", "TENANT=" + self.tenant,
+                        "IMPORTS_ONLY=1", "SAVE=1", "TF=" + FAKE_TF])
+        self.assertEqual(rc, 0, out)                    # not "no roots planned"
+        self.assertIn("skip %s (IMPORTS_ONLY" % self.der_rt, out)
+        self.assertFalse(os.path.isfile(os.path.join(self.der, "tfplan")), out)
+        # importable root has NO *_imports.tf this run yet is still planned
+        self.assertTrue(os.path.isfile(os.path.join(self.imp, "tfplan")), out)
+
+    def test_without_imports_only_plans_both(self):
+        rc, out = _run(["make", "plan", "TENANT=" + self.tenant,
+                        "SAVE=1", "TF=" + FAKE_TF])
+        self.assertEqual(rc, 0, out)
+        self.assertTrue(os.path.isfile(os.path.join(self.imp, "tfplan")), out)
+        self.assertTrue(os.path.isfile(os.path.join(self.der, "tfplan")), out)
+
+
 if __name__ == "__main__":
     unittest.main()

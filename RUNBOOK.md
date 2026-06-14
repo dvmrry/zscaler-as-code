@@ -164,6 +164,36 @@ cp imports/<label>/<type>_imports.tf envs/<label>/<type>/
 make plan TENANT=<label> RESOURCE=<type> SAVE=1
 ```
 
+**One selector per call.** The per-root targets (`plan`/`apply`/
+`stage-imports`/`assert-clean`/…) take a SINGLE `RESOURCE`: one type, one
+glob (`zia_*`), or one product token (`zia`|`zpa`|`zcc`). A **multi-token**
+`RESOURCE` (e.g. `"zia zpa_app_connector_group …"`) is rejected with a loud
+error — it would shell-split inside the per-root globs and adopt the wrong
+set. To scope a multi-type bootstrap (e.g. ZIA + several ZPA types, ZCC and
+`zpa_policy_access_rule_reorder` excluded), **loop this step per type** —
+don't pass a list. (Multi-token `RESOURCE` is fetch/drift-only, where the
+Python side expands it.) The committed `config/`/`imports/` hold the FULL
+tenant, so scoping is selection here, not artifact pruning.
+
+**Planning a whole scope at once?** Pass `IMPORTS_ONLY=1` — `plan` then
+skips **derived/non-importable** roots (per the registry — a `*_reorder`,
+which is a CREATE, not an import), so a broad or product-token scope stays
+safe for the imports-only proof. It keys off the resource *type*, not the
+presence of a staged `*_imports.tf` — so an importable root with an empty
+delta (every import already managed on a rerun) or a `*_moves.tf`-only
+rename is still planned, as it should be:
+
+```
+make stage-imports TENANT=<label> RESOURCE=zpa STATE_AWARE=1
+make plan TENANT=<label> RESOURCE=zpa IMPORTS_ONLY=1 SAVE=1
+make assert-clean
+```
+
+`assert-clean` checks only saved plans, so the skipped reorder root never
+trips it. The reorder resource is created later by normal delivery
+(`make plan TENANT=<label> RESOURCE=zpa_policy_access_rule_reorder` — see
+the reorder note below), not during bootstrap.
+
 Expected result: **N imports, 0 changes.** Terraform will import the
 existing objects and apply no modifications.
 

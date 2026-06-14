@@ -5,8 +5,14 @@ TF     ?= terraform
 # clean-plans/stage-imports/unstage-imports): a resource type, a glob
 # (zia_*), or a SINGLE product token (zia|zpa|zcc) which expands to
 # <product>_*. Multi-selector scoping ("zia zpa") is fetch/drift-only —
-# the python side expands those.
-SCOPE_GLOB = $(if $(RESOURCE),$(if $(word 2,$(RESOURCE)),$(RESOURCE),$(if $(filter zia zpa zcc,$(RESOURCE)),$(RESOURCE)_*,$(RESOURCE))),*)
+# the python side expands those. A multi-token RESOURCE here is a loud
+# error, NOT a silent mis-scope: the literal multi-word string would
+# shell-split inside the per-root globs (only the last token matches, the
+# rest become no-ops), so a multi-type bootstrap scope passed to plan/
+# stage-imports adopts the wrong set without saying so. Loop the per-root
+# target once per type instead (RESOURCE=<type>). Only SCOPE_GLOB is
+# guarded, so fetch/transform (which DO take multi-token) are unaffected.
+SCOPE_GLOB = $(if $(word 2,$(RESOURCE)),$(error RESOURCE takes a SINGLE selector for per-root targets (plan/apply/stage-imports/assert-clean/...) — got "$(RESOURCE)". Use one resource type, one glob (zia_*), or one product token (zia|zpa|zcc); for a multi-type scope, loop the target once per type. Multi-token RESOURCE is fetch/drift-only.),$(if $(RESOURCE),$(if $(filter zia zpa zcc,$(RESOURCE)),$(RESOURCE)_*,$(RESOURCE)),*))
 
 .PHONY: help env install-tf bump-check mine issue-watch triage surface plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports import-one statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint lint-pipelines fmt-config typecheck refresh-gates conformance
 
@@ -200,12 +206,16 @@ lock: ## Pin provider HASHES per env root (TENANT=<label>; one registry fetch pe
 	test $$locked -gt 0 || { echo "error: no env roots found for TENANT=$(TENANT) — run make gen-env first"; exit 1; }; \
 	echo "locked $$locked root(s); commit envs/$(TENANT)/**/.terraform.lock.hcl"
 
-plan: ## Terraform plan for a tenant's roots (TENANT=<label> [RESOURCE=<type>] [BACKEND_CONFIG=<file>]; real creds via env)
-	@test -n "$(TENANT)" || { echo "usage: make plan TENANT=<label> [RESOURCE=<type>] [BACKEND_CONFIG=<file>]"; exit 2; }
+plan: ## Terraform plan for a tenant's roots (TENANT=<label> [RESOURCE=<type>] [IMPORTS_ONLY=1] [BACKEND_CONFIG=<file>]; real creds via env)
+	@test -n "$(TENANT)" || { echo "usage: make plan TENANT=<label> [RESOURCE=<type>] [IMPORTS_ONLY=1] [BACKEND_CONFIG=<file>]"; exit 2; }
 	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
-	@set -e; planned=0; for d in envs/$(TENANT)/$(SCOPE_GLOB)/; do \
+	@set -e; planned=0; derived=""; \
+	if [ -n "$(IMPORTS_ONLY)" ]; then derived=" $$($(PYTHON) -c 'from tools.registry import derived_types; print(" ".join(derived_types()))') "; fi; \
+	for d in envs/$(TENANT)/$(SCOPE_GLOB)/; do \
 		test -d "$$d" || continue; \
 		rt=$$(basename $$d); \
+		if [ -n "$$derived" ]; then case "$$derived" in *" $$rt "*) \
+			echo "skip $$rt (IMPORTS_ONLY: derived/non-importable — created by normal delivery, not the imports-only bootstrap)"; continue ;; esac; fi; \
 		vf="$(abspath config/$(TENANT))/$$rt.auto.tfvars.json"; \
 		test -f "$$vf" || { echo "skip $$rt (no $$vf)"; continue; }; \
 		if grep -q '^  backend "' "$$d/main.tf" && [ -z "$(BACKEND_CONFIG)" ]; then \
