@@ -69,6 +69,15 @@ def classify_attributes(block):
     input. All lists sorted for deterministic rendering. Fails loudly on
     plugin-framework nested_type attributes — none exist in the pinned
     schemas, and silent mishandling would corrupt generated modules.
+
+    Provider-DEPRECATED non-required attributes are treated as computed_only:
+    excluded from input everywhere (modules, config JSON Schema, typecheck,
+    transform) so we never write a dying field. Setting one emits a provider
+    deprecation warning on every plan (e.g. zpa_policy_access_rule.rule_order,
+    deprecated in favor of the zpa_policy_access_rule_reorder resource); these
+    are computed, so the provider still populates them. A deprecated *required*
+    attribute is kept (the resource can't be created without it) — add an
+    override if one ever appears.
     """
     out = {"required": [], "optional": [], "computed_only": []}
     for name, attr in sorted((block.get("attributes") or {}).items()):
@@ -77,7 +86,9 @@ def classify_attributes(block):
                 "attribute %r uses nested_type (plugin framework); "
                 "the generator does not support it — add an override" % name
             )
-        if attr.get("required"):
+        if attr.get("deprecated") and not attr.get("required"):
+            out["computed_only"].append(name)
+        elif attr.get("required"):
             out["required"].append(name)
         elif attr.get("optional"):
             out["optional"].append(name)
