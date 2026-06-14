@@ -837,6 +837,7 @@ def expand_selectors(args):
     """
     if not args:
         return None
+    from tools.registry import derive_entry
     products = set(products_in_manifest())
     out = set()
     for arg in args:
@@ -844,8 +845,13 @@ def expand_selectors(args):
             for rt in load_manifest():
                 if manifest_entry(rt)["product"] == arg:
                     out.add(rt)
-        else:
-            out.add(arg)
+            continue
+        # A DERIVED type (e.g. zpa_policy_access_rule_reorder) has no fetch of
+        # its own — fetch its SOURCE instead, so `RESOURCE=<derived>` scopes
+        # the fetch to what the later transform derives from, rather than
+        # erroring "unknown resource type" in the manifest validation below.
+        derive = derive_entry(arg)
+        out.add(derive["from"] if derive else arg)
     return out
 
 

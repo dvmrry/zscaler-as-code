@@ -20,7 +20,6 @@ variable "items" {
     reauth_default_rule       = optional(bool)
     reauth_idle_timeout       = optional(string)
     reauth_timeout            = optional(string)
-    rule_order                = optional(string)
     zpn_cbi_profile_id        = optional(string)
     zpn_inspection_profile_id = optional(string)
     zpn_isolation_profile_id  = optional(string)

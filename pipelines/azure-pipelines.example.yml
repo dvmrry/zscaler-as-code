@@ -18,6 +18,12 @@ steps:
     displayName: Toolchain versions
   - script: make test
     displayName: Python unit tests
+  # Cross-pipeline consistency: terraform-version drift, hand-rolled auth
+  # blocks, config vars in step env, backend.conf strategy. Lints the YAML in
+  # pipelines/ (no terraform/creds needed). Point DIR at your operative
+  # pipelines if they live elsewhere.
+  - script: make lint-pipelines
+    displayName: Pipeline consistency lint
   # `make validate` requires terraform on the agent. Hosted ubuntu images
   # ship it; for self-hosted pools either bake terraform into the agent
   # image or insert your installer task above this step, e.g. the

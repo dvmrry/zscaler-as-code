@@ -148,9 +148,6 @@
           "reauth_timeout": {
             "type": "string"
           },
-          "rule_order": {
-            "type": "string"
-          },
           "zpn_cbi_profile_id": {
             "type": "string"
           },

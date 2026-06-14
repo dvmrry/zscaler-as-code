@@ -20,7 +20,6 @@ resource "zpa_policy_access_rule" "this" {
   reauth_default_rule       = each.value.reauth_default_rule
   reauth_idle_timeout       = each.value.reauth_idle_timeout
   reauth_timeout            = each.value.reauth_timeout
-  rule_order                = each.value.rule_order
   zpn_cbi_profile_id        = each.value.zpn_cbi_profile_id
   zpn_inspection_profile_id = each.value.zpn_inspection_profile_id
   zpn_isolation_profile_id  = each.value.zpn_isolation_profile_id

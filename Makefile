@@ -14,7 +14,7 @@ TF     ?= terraform
 # guarded, so fetch/transform (which DO take multi-token) are unaffected.
 SCOPE_GLOB = $(if $(word 2,$(RESOURCE)),$(error RESOURCE takes a SINGLE selector for per-root targets (plan/apply/stage-imports/assert-clean/...) — got "$(RESOURCE)". Use one resource type, one glob (zia_*), or one product token (zia|zpa|zcc); for a multi-type scope, loop the target once per type. Multi-token RESOURCE is fetch/drift-only.),$(if $(RESOURCE),$(if $(filter zia zpa zcc,$(RESOURCE)),$(RESOURCE)_*,$(RESOURCE)),*))
 
-.PHONY: help env install-tf bump-check mine issue-watch triage surface plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports import-one statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck refresh-gates conformance
+.PHONY: help env install-tf bump-check mine issue-watch triage surface plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports import-one statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint lint-pipelines fmt-config typecheck refresh-gates conformance
 
 # Company/deployment extensions: a private repo adds its own targets and
 # variable overrides in local.mk — NEVER by editing this file, which is
@@ -130,10 +130,11 @@ transform: ## Transform pulled API JSON into tfvars + imports (IN=<dir> TENANT=<
 			done; \
 			[ -n "$$match" ] || continue; \
 		fi; \
-		if [ -f "$(IN)/$$rt.json" ]; then \
-			$(PYTHON) -m tools.transform "$$rt" "$(IN)/$$rt.json" "$(TENANT)" || failed="$$failed $$rt"; \
+		src=$$($(PYTHON) -c "from tools.registry import derive_entry; d=derive_entry('$$rt'); print(d['from'] if d else '$$rt')"); \
+		if [ -f "$(IN)/$$src.json" ]; then \
+			$(PYTHON) -m tools.transform "$$rt" "$(IN)/$$src.json" "$(TENANT)" || failed="$$failed $$rt"; \
 		else \
-			echo "skip $$rt (no $(IN)/$$rt.json)"; \
+			echo "skip $$rt (no $(IN)/$$src.json)"; \
 		fi; \
 	done; \
 	test -z "$$failed" || { echo ""; echo "transform FAILED for:$$failed"; \
@@ -455,7 +456,8 @@ check-envs: ## Regenerate committed tenants' env roots and fail on drift
 
 demo: ## Materialize the demo tenant from the public demo dataset (config/demo + imports/demo)
 	@set -e; materialized=0; for rt in $$($(PYTHON) -c "from tools.registry import generated_types; print('\n'.join(generated_types()))"); do \
-		f="tools/tests/fixtures/demo/$$rt.json"; \
+		src=$$($(PYTHON) -c "from tools.registry import derive_entry; d=derive_entry('$$rt'); print(d['from'] if d else '$$rt')"); \
+		f="tools/tests/fixtures/demo/$$src.json"; \
 		test -f "$$f" || { echo "missing $$f"; exit 1; }; \
 		$(PYTHON) -m tools.transform "$$rt" "$$f" demo; \
 		materialized=$$((materialized+1)); \
@@ -496,6 +498,12 @@ refresh-gates: ## Gates for freshly-FETCHED config: advisory lint + strict typec
 
 conformance: ## Schema-driven adversarial conformance report (synthesize -> transform -> typecheck) for every registry resource
 	$(PYTHON) -m tools.conformance
+
+# Lives HERE, not in adapted pipeline YAML, so a repo pull updates the gate
+# (same reason as refresh-gates). Run it deployment-side over the operative
+# pipelines: make lint-pipelines DIR=<your pipelines dir>.
+lint-pipelines: ## Cross-pipeline consistency lint — terraform-version drift, hand-rolled auth, config in step env, backend.conf strategy ([DIR=pipelines | FILES="a.yml b.yml"] [TF_VERSION=x.y.z] [STRICT=1])
+	$(PYTHON) -m tools.lint_pipelines $(if $(FILES),$(FILES),$(if $(DIR),--dir $(DIR),)) $(if $(TF_VERSION),--tf-version $(TF_VERSION),) $(if $(STRICT),--strict,)
 
 validate-config: ## Validate config/ against generated JSON Schemas (dev-only; jsonschema via python or uv)
 	@if $(PYTHON) -c "import jsonschema" 2>/dev/null; then \

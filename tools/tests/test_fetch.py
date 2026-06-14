@@ -5,7 +5,7 @@ import os
 import sys
 import unittest
 
-from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, paginate_single, paginate_zcc_v2, build_headers, compose_url, fetch_resource, acquire_token, products_in_manifest, auth_mode_from_env, _zslogin_host, _legacy_zpa_base, ca_bundle_path, connection_hint, diag_hosts, debug_config, host_overrides, expand_paths, _get_json, _mask_identifiers, _unreachable_message, _retry_delay, _request_with_retry, _RETRY_BASE, _RETRY_CAP
+from tools.fetch import load_manifest, manifest_entry, obfuscate_api_key, paginate_zia, paginate_zpa, paginate_single, paginate_zcc_v2, build_headers, compose_url, fetch_resource, acquire_token, products_in_manifest, auth_mode_from_env, _zslogin_host, _legacy_zpa_base, ca_bundle_path, connection_hint, diag_hosts, debug_config, host_overrides, expand_paths, expand_selectors, _get_json, _mask_identifiers, _unreachable_message, _retry_delay, _request_with_retry, _RETRY_BASE, _RETRY_CAP
 
 
 class ManifestTest(unittest.TestCase):
@@ -22,6 +22,29 @@ class ManifestTest(unittest.TestCase):
         for rt, e in load_manifest().items():
             self.assertIn(e["product"], ("zcc", "zia", "zpa"), rt)
             self.assertIn("path", e)
+
+
+class ExpandSelectorsTest(unittest.TestCase):
+    def test_none_for_no_args(self):
+        self.assertIsNone(expand_selectors([]))
+
+    def test_product_token_expands(self):
+        out = expand_selectors(["zpa"])
+        self.assertTrue(out)
+        self.assertTrue(all(rt.startswith("zpa_") for rt in out))
+
+    def test_derived_type_maps_to_its_source(self):
+        # the derived reorder type has no fetch of its own — scoping to it
+        # fetches its SOURCE (so a later transform can derive it), instead of
+        # failing manifest validation as an unknown resource.
+        self.assertEqual(
+            expand_selectors(["zpa_policy_access_rule_reorder"]),
+            {"zpa_policy_access_rule"},
+        )
+
+    def test_plain_type_passes_through(self):
+        self.assertEqual(expand_selectors(["zpa_segment_group"]),
+                         {"zpa_segment_group"})
 
 
 class ObfuscateTest(unittest.TestCase):

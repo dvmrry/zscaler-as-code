@@ -11,6 +11,7 @@ import os
 import re
 import sys
 
+from tools.registry import derive_entry
 from tools.tfschema import block_is_single, classify_attributes, load_resource
 
 _SNAKE_1 = re.compile(r"(.)([A-Z][a-z]+)")
@@ -641,6 +642,50 @@ def render_tfvars(items):
     return json.dumps({"items": items}, indent=2, sort_keys=True) + "\n"
 
 
+def _order_key(order):
+    """Sort rules numerically when the order is an integer string, else
+    lexically — deterministic either way."""
+    try:
+        return (0, int(order))
+    except (TypeError, ValueError):
+        return (1, str(order))
+
+
+def derive_reorder(source_items, derive):
+    """Build zpa_policy_access_rule_reorder config from the SOURCE policy
+    rules' order. The reorder resource has no fetch or import of its own —
+    its ordering is each rule's still-returned (deprecated) order value,
+    re-expressed as the replacement resource. Emits one item per policy_type
+    (keyed by it), with the rules sorted by order for a stable map.
+
+    Every source rule MUST carry id + rule_order: the create's safety (it
+    re-asserts the CURRENT order, so nothing moves) depends on the list being
+    COMPLETE. A rule missing either field would yield a partial reorder that
+    silently re-ranks the omitted rules, so it is a loud failure — never a
+    quietly partial config. An empty source list yields no reorder item.
+    """
+    policy_type = derive["policy_type"]
+    rules = []
+    for raw in source_items:
+        item = snake_keys(raw)
+        rid = item.get("id")
+        order = item.get("rule_order")
+        if rid is None or order is None:
+            missing = "id" if rid is None else "rule_order"
+            raise ValueError(
+                "cannot derive the reorder resource from %s: a source rule is "
+                "missing %s (id=%r rule_order=%r). The reorder must list EVERY "
+                "rule with its current order, or applying it would silently "
+                "re-rank the omitted rules — refusing to emit a partial "
+                "reorder. (A slim API response can cause this; re-fetch.)"
+                % (derive["from"], missing, rid, order))
+        rules.append({"id": str(rid), "order": str(order)})
+    rules.sort(key=lambda r: (_order_key(r["order"]), r["id"]))
+    if not rules:
+        return {}
+    return {policy_type: {"policy_type": policy_type, "rules": rules}}
+
+
 def render_imports(resource_type, originals, override):
     template = override.get("import_id", "{id}")
     blocks = []
@@ -745,9 +790,24 @@ def main(argv=None):
             "fetcher wrote an envelope instead of the item list\n"
             % (input_path, type(raw_items).__name__, tenant, resource_type))
         return 2
+    config_dir = os.path.join("config", tenant)
+    # Derived resource (no fetch, no import): build its config from the SOURCE
+    # pull passed as input_path, write config only, and stop. It is created on
+    # apply (the provider gives no way to import its state) — order-preserving
+    # because the order values are the source rules' current order.
+    derive = derive_entry(resource_type)
+    if derive is not None:
+        items = derive_reorder(raw_items, derive)
+        os.makedirs(config_dir, exist_ok=True)
+        tfvars_path = os.path.join(config_dir, resource_type + ".auto.tfvars.json")
+        with open(tfvars_path, "w", encoding="utf-8") as f:
+            f.write(render_tfvars(items))
+        sys.stderr.write(
+            "wrote %s (derived from %s; not importable — no imports)\n"
+            % (tfvars_path, derive["from"]))
+        return 0
     _warn_if_slim(raw_items, load_resource(resource_type)["block"], resource_type)
     items, originals, drops = transform_items(raw_items, resource_type, override)
-    config_dir = os.path.join("config", tenant)
     imports_dir = os.path.join("imports", tenant)
     os.makedirs(config_dir, exist_ok=True)
     os.makedirs(imports_dir, exist_ok=True)
