@@ -133,6 +133,14 @@
     "generate": true,
     "product": "zpa"
   },
+  "zpa_policy_access_rule_reorder": {
+    "derive": {
+      "from": "zpa_policy_access_rule",
+      "policy_type": "ACCESS_POLICY"
+    },
+    "generate": true,
+    "product": "zpa"
+  },
   "zpa_segment_group": {
     "fetch": {
       "pagination": "zpa",

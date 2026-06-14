@@ -5,9 +5,15 @@ import json
 import os
 import unittest
 
-from tools.registry import generated_types
+from tools.registry import derive_entry, generated_types
 from tools.tfschema import classify_attributes, load_resource
-from tools.transform import load_override, render_imports, render_tfvars, transform_items
+from tools.transform import (
+    derive_reorder,
+    load_override,
+    render_imports,
+    render_tfvars,
+    transform_items,
+)
 
 DEMO_DIR = os.path.join("tools", "tests", "fixtures", "demo")
 DEMO_EXPECTED_DIR = os.path.join("tools", "tests", "fixtures", "demo-expected")
@@ -23,7 +29,20 @@ def _demo_types():
 
 class DemoPipelineTest(unittest.TestCase):
     def test_demo_files_exist_for_generated_types(self):
-        missing = [rt for rt in generated_types() if rt not in _demo_types()]
+        demo = _demo_types()
+        missing = []
+        for rt in generated_types():
+            derive = derive_entry(rt)
+            if derive:
+                # A derived type has no fixture of its own — its demo coverage
+                # is the SOURCE fixture (+ the derive test below).
+                self.assertIn(
+                    derive["from"], demo,
+                    "%s derives from %s but there is no demo fixture for it"
+                    % (rt, derive["from"]),
+                )
+            elif rt not in demo:
+                missing.append(rt)
         # Every generated resource should eventually have demo coverage;
         # tolerate gaps explicitly so additions are deliberate.
         self.assertEqual(
@@ -31,6 +50,27 @@ class DemoPipelineTest(unittest.TestCase):
             "generated types without demo data: %r (extract from the SDK "
             "cassettes or document why not)" % missing,
         )
+
+    def test_derived_demo_config_matches_source_order(self):
+        # The reorder config is derived from the access-rule demo fixture's
+        # ruleOrder; assert it round-trips deterministically and carries one
+        # {id, order} per source rule, keyed by policy_type, with no `id`.
+        for rt in generated_types():
+            derive = derive_entry(rt)
+            if not derive:
+                continue
+            with open(os.path.join(DEMO_DIR, derive["from"] + ".json"),
+                      encoding="utf-8") as f:
+                source = json.load(f)
+            items = derive_reorder(source, derive)
+            self.assertEqual(render_tfvars(items),
+                             render_tfvars(derive_reorder(source, derive)), rt)
+            self.assertEqual(list(items), [derive["policy_type"]], rt)
+            entry = items[derive["policy_type"]]
+            self.assertNotIn("id", entry)
+            self.assertEqual(len(entry["rules"]), len(source), rt)
+            for r in entry["rules"]:
+                self.assertEqual(set(r), {"id", "order"}, rt)
 
     def test_pipeline_handles_demo_data(self):
         for rt in _demo_types():

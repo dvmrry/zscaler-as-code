@@ -10,7 +10,12 @@ import os
 import sys
 
 from tools.registry import generated_types
-from tools.tfschema import block_is_single, classify_attributes, load_resource
+from tools.tfschema import (
+    block_is_single,
+    classify_attributes,
+    load_resource,
+    resource_input_attrs,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -92,15 +97,17 @@ def check_value(value, encoding):
     return []
 
 
-def check_item(item, block):
+def check_item(item, block, top_level=False):
     """Walk one item's keys against a block schema.
 
     Returns list of (item_key_placeholder, field_path, expected, got_repr).
     item_key_placeholder is always "" here; callers supply the real item key.
+    At the resource top level the computed `id` (resource identity) is not a
+    valid input — same exclusion the module and JSON Schema apply.
     """
     attrs = block.get("attributes") or {}
     block_types = block.get("block_types") or {}
-    cls = classify_attributes(block)
+    cls = resource_input_attrs(block) if top_level else classify_attributes(block)
     valid_attrs = set(cls["required"] + cls["optional"])
 
     issues = []
@@ -160,7 +167,7 @@ def check_config_file(resource_type, path):
     results = []
     for item_key in sorted(items):
         item = items[item_key]
-        for _, field_path, expected, got_repr in check_item(item, block):
+        for _, field_path, expected, got_repr in check_item(item, block, top_level=True):
             results.append((item_key, field_path, expected, got_repr))
     return results
 

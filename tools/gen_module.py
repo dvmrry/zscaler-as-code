@@ -10,7 +10,13 @@ import re
 import subprocess
 import sys
 from tools.registry import generated_types
-from tools.tfschema import block_is_single, classify_attributes, hcl_type, load_resource
+from tools.tfschema import (
+    block_is_single,
+    classify_attributes,
+    hcl_type,
+    load_resource,
+    resource_input_attrs,
+)
 
 
 def _header(resource_type, provider):
@@ -128,16 +134,19 @@ def _block_input_type(block_type, indent, name="<unknown>"):
     raise ValueError("unsupported nesting_mode %r" % mode)
 
 
-def _render_block_body(block, ref, indent):
+def _render_block_body(block, ref, indent, top_level=False):
     """Body lines for a resource or dynamic-content block.
 
     ref: expression prefix for reading values (e.g. "each.value" or
-    "applications.value"). Computed-only attributes are never assigned.
+    "applications.value"). Computed-only attributes are never assigned; at
+    the resource top level the computed `id` (resource identity) is dropped too
+    (resource_input_attrs), the same exclusion the schema and typecheck apply.
     """
     pad = " " * indent
-    cls = classify_attributes(block)
+    cls = resource_input_attrs(block) if top_level else classify_attributes(block)
+    names = cls["required"] + cls["optional"]
     lines = []
-    for name in cls["required"] + cls["optional"]:
+    for name in names:
         lines.append("%s%s = %s.%s" % (pad, name, ref, name))
     for name, bt in sorted((block.get("block_types") or {}).items()):
         _check_block_has_inputs(name, bt["block"])
@@ -157,7 +166,8 @@ def _render_block_body(block, ref, indent):
 
 
 def render_main(resource_type, resource_schema):
-    body = _render_block_body(resource_schema["block"], "each.value", 2)
+    body = _render_block_body(resource_schema["block"], "each.value", 2,
+                             top_level=True)
     return (
         _header(resource_type, _provider_of(resource_type))
         + 'resource "%s" "this" {\n' % resource_type
@@ -169,7 +179,7 @@ def render_main(resource_type, resource_schema):
 
 def render_variables(resource_type, resource_schema):
     block = resource_schema["block"]
-    cls = classify_attributes(block)
+    cls = resource_input_attrs(block)  # drops the top-level resource-identity id
     lines = []
     for name in cls["required"]:
         lines.append("    %s = %s" % (name, hcl_type(block["attributes"][name]["type"])))
@@ -277,12 +287,24 @@ def _sample_value(enc):
     return []
 
 
-def render_sample(resource_type, resource_schema, sample_override=None):
-    cls = classify_attributes(resource_schema["block"])
+def _sample_item(block):
+    """Minimal VALID item for a block: required attributes plus any required
+    (min_items>=1) nested block — a set/list block carries one entry, a
+    single block an object. Without the block terraform rejects the sample
+    ("Insufficient <name> blocks are required")."""
+    cls = classify_attributes(block)
     item = {}
     for name in cls["required"]:
-        enc = resource_schema["block"]["attributes"][name]["type"]
-        item[name] = _sample_value(enc)
+        item[name] = _sample_value(block["attributes"][name]["type"])
+    for name, bt in sorted((block.get("block_types") or {}).items()):
+        if (bt.get("min_items") or 0) >= 1:
+            inner = _sample_item(bt["block"])
+            item[name] = inner if block_is_single(bt) else [inner]
+    return item
+
+
+def render_sample(resource_type, resource_schema, sample_override=None):
+    item = _sample_item(resource_schema["block"])
     if sample_override:
         item.update(sample_override)
     return json.dumps({"items": {"example": item}}, indent=2, sort_keys=True) + "\n"
