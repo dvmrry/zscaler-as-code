@@ -767,7 +767,22 @@ class QuirkClosureTest(unittest.TestCase):
                 "sourceCountries": ["COUNTRY_US", "COUNTRY_CA"]}]
         ov = load_override("zia_url_filtering_rules")
         items, _, _ = transform_items(raw, "zia_url_filtering_rules", ov)
-        self.assertEqual(items["r"]["source_countries"], ["US", "CA"])
+        # source_countries is a SET — canonicalized to sorted order (CA before
+        # US) so a re-fetch in a different API order doesn't churn the config.
+        self.assertEqual(items["r"]["source_countries"], ["CA", "US"])
+
+    def test_set_typed_fields_are_canonically_sorted(self):
+        from tools.transform import coerce_item
+
+        block = {"attributes": {
+            "keywords": {"type": ["set", "string"]},   # set -> sort
+            "urls": {"type": ["list", "string"]},       # list -> keep order
+        }}
+        out = coerce_item(
+            {"keywords": ["zebra", "apple", "mango"],
+             "urls": ["z.example", "a.example"]}, block)
+        self.assertEqual(out["keywords"], ["apple", "mango", "zebra"])
+        self.assertEqual(out["urls"], ["z.example", "a.example"])
 
     def test_predefined_cloud_app_rules_skipped(self):
         from tools.transform import load_override, transform_items

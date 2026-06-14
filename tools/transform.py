@@ -309,6 +309,16 @@ def coerce_item(item, block):
                 out[key] = value
             else:
                 out[key] = [_coerce_primitive(_unwrap_ref(value), enc[1])]
+            if enc[0] == "set" and isinstance(out[key], list):
+                # A set is unordered by definition: terraform compares its
+                # elements without order, but the API returns them UNSTABLY, so
+                # emitting API order makes a re-fetch reorder the committed
+                # config — a phantom git diff that fires a no-op drift/bootstrap
+                # commit-back every run. Canonicalize to sorted order (rule 7:
+                # byte-identical output). LIST-typed fields that are
+                # semantically sets (zia urls) stay opt-in via sort_lists.
+                out[key] = sorted(
+                    out[key], key=lambda v: ("" if v is None else str(v)))
         elif (
             isinstance(enc, list) and len(enc) == 2
             and isinstance(enc[1], list) and len(enc[1]) == 2 and enc[1][0] == "object"
