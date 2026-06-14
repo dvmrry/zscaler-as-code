@@ -105,9 +105,12 @@ Notes that apply to every platform:
   every step's environment. So `*_CLOUD`, `*_ZPA_CUSTOMER_ID`, `HTTPS_PROXY`,
   and **`*_ZSCALER_USE_LEGACY_CLIENT`** need no mapping; keep the legacy flag
   as an ordinary (non-secret) variable in the group, never a hand-typed env
-  line. `tenant` must be compile-time (a `parameter` or `${{ variables.X }}`),
-  since ADO doesn't substitute macros in env-var keys. (See the bootstrap and
-  drift examples.)
+  line. The template maps secrets in either spelling — `naming: tenant-first`
+  (default, `ZS2_ZIA_PASSWORD`) or `naming: product-first` (`ZIA_ZS2_PASSWORD`)
+  — so no variable-group rename is needed (cred_env resolves both). `tenant`
+  must be compile-time (a `parameter` or `${{ variables.X }}`), since ADO
+  doesn't substitute macros in env-var keys. (See the bootstrap and drift
+  examples.)
 - **Deduplicate the per-job preamble** (ADO, self-hosted agents):
   `pipelines/steps/job-setup.yml` is the companion to the auth template for
   the *structural* repetition — checkout, the pinned `make install-tf`, and
