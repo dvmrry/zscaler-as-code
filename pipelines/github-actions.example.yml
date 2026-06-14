@@ -23,6 +23,7 @@ jobs:
         with:
           terraform_version: "1.15.4"
       - run: make test
+      - run: make lint-pipelines   # cross-pipeline consistency (no tf/creds)
       - run: make validate
       - run: make typecheck TENANT=FILL-tenant-label
       - run: make lint TENANT=FILL-tenant-label

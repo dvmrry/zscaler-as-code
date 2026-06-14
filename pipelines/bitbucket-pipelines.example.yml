@@ -21,6 +21,7 @@ pipelines:
           name: Validate (no creds, no state)
           script:
             - make test
+            - make lint-pipelines   # cross-pipeline consistency (no tf/creds)
             - make validate
             - make typecheck TENANT=FILL-tenant-label
             - make lint TENANT=FILL-tenant-label
