@@ -19,6 +19,14 @@ not a misleading "missing required env var" three steps downstream. A
 product with no credentials at all is simply absent (a ZIA-only tenant is
 fine); a product with *some but not all* is a misconfiguration.
 
+The auth mode comes from ZSCALER_USE_LEGACY_CLIENT. It may be set
+tenant-prefixed (ZS2_ZSCALER_USE_LEGACY_CLIENT) OR as a bare, unprefixed
+ZSCALER_USE_LEGACY_CLIENT that applies to every tenant — set it once for a
+whole-legacy (or whole-OneAPI) deployment. A tenant-prefixed flag overrides
+the bare one, so a single tenant can opt to the other mode. cred_env always
+re-emits the resolved flag canonically, so the bare global value is honored,
+not clobbered.
+
 ZCC has no legacy path — it is OneAPI-only (the provider is too) — so no
 ZCC-specific variables exist; under OneAPI it shares the ZSCALER_* client.
 
@@ -149,15 +157,23 @@ def resolve(environ, tenant):
     return out, conflicts
 
 
-def select_mode(resolved):
-    """(resolved dict) -> (mode, warn). mode is 'legacy' or 'oneapi'.
+def select_mode(resolved, global_flag=None):
+    """(resolved dict, global_flag) -> (mode, warn). mode is 'legacy'|'oneapi'.
 
-    The mode flag, if set, is authoritative. If it is unset we default to
-    OneAPI but set warn=True when legacy credentials are present — that
-    combination almost always means the operator forgot to set the flag,
-    and a silent OneAPI attempt would fail confusingly.
+    Precedence for the auth mode:
+      1. a TENANT-PREFIXED flag (resolved) — per-tenant, authoritative;
+      2. else a bare/unprefixed ZSCALER_USE_LEGACY_CLIENT in the environment
+         (global_flag) — set ONCE, applies to every tenant (the common case
+         where a whole deployment is legacy or OneAPI);
+      3. else default OneAPI, with warn=True when legacy credentials are
+         present (almost always a forgotten flag).
+
+    A tenant-prefixed flag overrides the global one, so a mostly-legacy
+    deployment can flip a single tenant to OneAPI with ZS3_..._USE_LEGACY...
     """
     flag = resolved.get(MODE_FLAG)
+    if flag is None:
+        flag = global_flag
     if flag is not None:
         return ("legacy" if is_truthy(flag) else "oneapi"), False
     warn = any(marker in resolved for marker in LEGACY_MARKERS)
@@ -239,14 +255,18 @@ def main(argv=None, environ=None):
     tenant = argv[0]
     pairs, conflicts = resolve(environ, tenant)
     resolved = dict(pairs)
-    mode, warn_legacy = select_mode(resolved)
+    # A bare (unprefixed) ZSCALER_USE_LEGACY_CLIENT in the environment is the
+    # global fallback — set once for all tenants. A tenant-prefixed flag
+    # (in `resolved`) still wins. Empty string counts as unset.
+    mode, warn_legacy = select_mode(resolved, global_flag=environ.get(MODE_FLAG) or None)
     export_pairs, missing, has_creds = scoped_export(resolved, mode)
 
     if warn_legacy:
         sys.stderr.write(
             "warning: legacy credentials are set but %s is not — defaulting "
-            "to OneAPI. Set %s%s=true (or the product-first spelling) if you "
-            "meant legacy.\n" % (MODE_FLAG, tenant_prefix(tenant), MODE_FLAG)
+            "to OneAPI. Set %s%s=true (the tenant-prefixed flag), or set a bare "
+            "%s=true to apply to all tenants, if you meant legacy.\n"
+            % (MODE_FLAG, tenant_prefix(tenant), MODE_FLAG, MODE_FLAG)
         )
 
     if missing:
