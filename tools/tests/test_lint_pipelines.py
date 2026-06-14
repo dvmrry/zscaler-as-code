@@ -131,6 +131,18 @@ class TerraformVersionTest(unittest.TestCase):
                                 expected="1.16.0")
         self.assertTrue(any("!= expected 1.16.0" in e for e in r.errors))
 
+    def test_installtf_param_version_is_counted(self):
+        # the job-setup.yml `installTf:` knob is a real version pin; two
+        # pipelines pinning different installTf values must read as drift.
+        a = parse("    - template: steps/job-setup.yml\n"
+                  "      parameters: { installTf: 1.15.4 }\n")
+        b = parse("    - template: steps/job-setup.yml\n"
+                  "      parameters: { installTf: 1.16.0 }\n")
+        r = report()
+        check_terraform_version(collect_versions([("a", a), ("b", b)]), r)
+        self.assertTrue(any("DIFFERENT terraform versions" in e
+                            for e in r.errors))
+
     def test_version_in_trailing_comment_is_ignored(self):
         # a version mentioned in a trailing comment is not a live pin
         a = parse("  - uses: x  # was: terraform_version: 1.99.9\n"
@@ -412,6 +424,9 @@ class DogfoodTest(unittest.TestCase):
         self.assertEqual(report.errors, [],
                          "committed examples must lint clean:\n%s"
                          % "\n".join(report.errors))
+        self.assertEqual(report.warnings, [],
+                         "committed examples must produce no warnings:\n%s"
+                         % "\n".join(report.warnings))
 
 
 if __name__ == "__main__":

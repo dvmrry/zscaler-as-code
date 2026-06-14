@@ -186,6 +186,7 @@ _VERSION_PATTERNS = (
     re.compile(r"terraform_version\s*:\s*['\"]?(\d+\.\d+\.\d+)"),   # GHA
     re.compile(r"terraformVersion\s*:\s*['\"]?(\d+\.\d+\.\d+)"),    # ADO task
     re.compile(r"install-tf\s+VERSION=(\d+\.\d+\.\d+)"),            # make target
+    re.compile(r"installTf\s*:\s*['\"]?(\d+\.\d+\.\d+)"),           # job-setup.yml param
     re.compile(r"\bTF_VERSION\s*[:=]\s*['\"]?(\d+\.\d+\.\d+)"),
 )
 
@@ -343,6 +344,11 @@ def backend_profile(lines):
 
 
 def check_backend_strategy(ado_files, report):
+    # Blind spot: a pipeline that delegates materialization to job-setup.yml
+    # (backendConf: true) reads as "committed" here — backend_profile sees the
+    # template reference, not the printf inside the template. A proper fix needs
+    # cross-file template analysis; until then this WARN can miss a split where
+    # one side uses the template and the other expects a committed file.
     inline = []
     committed = []
     for path, lines in ado_files:
