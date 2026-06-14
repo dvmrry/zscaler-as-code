@@ -124,10 +124,11 @@ transform: ## Transform pulled API JSON into tfvars + imports (IN=<dir> TENANT=<
 			done; \
 			[ -n "$$match" ] || continue; \
 		fi; \
-		if [ -f "$(IN)/$$rt.json" ]; then \
-			$(PYTHON) -m tools.transform "$$rt" "$(IN)/$$rt.json" "$(TENANT)" || failed="$$failed $$rt"; \
+		src=$$($(PYTHON) -c "from tools.registry import derive_entry; d=derive_entry('$$rt'); print(d['from'] if d else '$$rt')"); \
+		if [ -f "$(IN)/$$src.json" ]; then \
+			$(PYTHON) -m tools.transform "$$rt" "$(IN)/$$src.json" "$(TENANT)" || failed="$$failed $$rt"; \
 		else \
-			echo "skip $$rt (no $(IN)/$$rt.json)"; \
+			echo "skip $$rt (no $(IN)/$$src.json)"; \
 		fi; \
 	done; \
 	test -z "$$failed" || { echo ""; echo "transform FAILED for:$$failed"; \
@@ -447,7 +448,8 @@ check-envs: ## Regenerate committed tenants' env roots and fail on drift
 
 demo: ## Materialize the demo tenant from the public demo dataset (config/demo + imports/demo)
 	@set -e; materialized=0; for rt in $$($(PYTHON) -c "from tools.registry import generated_types; print('\n'.join(generated_types()))"); do \
-		f="tools/tests/fixtures/demo/$$rt.json"; \
+		src=$$($(PYTHON) -c "from tools.registry import derive_entry; d=derive_entry('$$rt'); print(d['from'] if d else '$$rt')"); \
+		f="tools/tests/fixtures/demo/$$src.json"; \
 		test -f "$$f" || { echo "missing $$f"; exit 1; }; \
 		$(PYTHON) -m tools.transform "$$rt" "$$f" demo; \
 		materialized=$$((materialized+1)); \

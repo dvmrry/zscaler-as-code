@@ -78,6 +78,12 @@ def classify_attributes(block):
     are computed, so the provider still populates them. A deprecated *required*
     attribute is kept (the resource can't be created without it) — add an
     override if one ever appears.
+
+    A top-level computed `id` (the resource identity) is excluded from the
+    generated resource block separately, in gen_module — NOT here, because a
+    computed `id` inside a nested block (e.g. zia_location_management's
+    vpn_credentials reference) is a legitimate input and this classifier runs
+    on nested blocks too.
     """
     out = {"required": [], "optional": [], "computed_only": []}
     for name, attr in sorted((block.get("attributes") or {}).items()):
