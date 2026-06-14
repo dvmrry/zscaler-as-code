@@ -205,12 +205,14 @@ lock: ## Pin provider HASHES per env root (TENANT=<label>; one registry fetch pe
 	test $$locked -gt 0 || { echo "error: no env roots found for TENANT=$(TENANT) — run make gen-env first"; exit 1; }; \
 	echo "locked $$locked root(s); commit envs/$(TENANT)/**/.terraform.lock.hcl"
 
-plan: ## Terraform plan for a tenant's roots (TENANT=<label> [RESOURCE=<type>] [BACKEND_CONFIG=<file>]; real creds via env)
-	@test -n "$(TENANT)" || { echo "usage: make plan TENANT=<label> [RESOURCE=<type>] [BACKEND_CONFIG=<file>]"; exit 2; }
+plan: ## Terraform plan for a tenant's roots (TENANT=<label> [RESOURCE=<type>] [IMPORTS_ONLY=1] [BACKEND_CONFIG=<file>]; real creds via env)
+	@test -n "$(TENANT)" || { echo "usage: make plan TENANT=<label> [RESOURCE=<type>] [IMPORTS_ONLY=1] [BACKEND_CONFIG=<file>]"; exit 2; }
 	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
 	@set -e; planned=0; for d in envs/$(TENANT)/$(SCOPE_GLOB)/; do \
 		test -d "$$d" || continue; \
 		rt=$$(basename $$d); \
+		if [ -n "$(IMPORTS_ONLY)" ] && ! ls "$$d"/*_imports.tf >/dev/null 2>&1; then \
+			echo "skip $$rt (IMPORTS_ONLY: no staged imports — non-importable/derived root, e.g. a *_reorder resource)"; continue; fi; \
 		vf="$(abspath config/$(TENANT))/$$rt.auto.tfvars.json"; \
 		test -f "$$vf" || { echo "skip $$rt (no $$vf)"; continue; }; \
 		if grep -q '^  backend "' "$$d/main.tf" && [ -z "$(BACKEND_CONFIG)" ]; then \

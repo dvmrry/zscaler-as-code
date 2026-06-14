@@ -409,5 +409,54 @@ class ApplyChainTest(unittest.TestCase):
         self.assertNotEqual(rc, 0, "assert-clean reported clean on show output with no resource_changes")
 
 
+@unittest.skipUnless(shutil.which("make"), "make not available")
+class PlanImportsOnlyTest(unittest.TestCase):
+    """IMPORTS_ONLY=1 plans only roots with a staged *_imports.tf — so a
+    non-importable/derived root (a *_reorder, a create) is skipped from the
+    bootstrap imports-only proof without the operator hand-enumerating around
+    it. A broad/product scope is therefore safe for bootstrap."""
+
+    def setUp(self):
+        self.tenant = "tmpimportsonly"
+        self.envs = os.path.join("envs", self.tenant)
+        self.config_dir = os.path.join("config", self.tenant)
+        self.addCleanup(shutil.rmtree, self.envs, True)
+        self.addCleanup(shutil.rmtree, self.config_dir, True)
+        os.makedirs(self.config_dir, exist_ok=True)
+        # importable root: config + a staged *_imports.tf
+        self.imp = os.path.join(self.envs, "fake_rt")
+        os.makedirs(self.imp, exist_ok=True)
+        self._write(os.path.join(self.imp, "main.tf"), "# importable root\n")
+        self._write(os.path.join(self.imp, "fake_rt_imports.tf"), "# staged\n")
+        self._write(os.path.join(self.config_dir, "fake_rt.auto.tfvars.json"),
+                    '{"items": {}}\n')
+        # derived root: config but NO *_imports.tf (a *_reorder-shaped resource)
+        self.der = os.path.join(self.envs, "fake_rt_reorder")
+        os.makedirs(self.der, exist_ok=True)
+        self._write(os.path.join(self.der, "main.tf"), "# derived root\n")
+        self._write(
+            os.path.join(self.config_dir, "fake_rt_reorder.auto.tfvars.json"),
+            '{"items": {}}\n')
+
+    def _write(self, path, text):
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(text)
+
+    def test_imports_only_skips_root_without_staged_imports(self):
+        rc, out = _run(["make", "plan", "TENANT=" + self.tenant,
+                        "IMPORTS_ONLY=1", "SAVE=1", "TF=" + FAKE_TF])
+        self.assertEqual(rc, 0, out)
+        self.assertIn("skip fake_rt_reorder (IMPORTS_ONLY", out)
+        self.assertTrue(os.path.isfile(os.path.join(self.imp, "tfplan")), out)
+        self.assertFalse(os.path.isfile(os.path.join(self.der, "tfplan")), out)
+
+    def test_without_imports_only_plans_both(self):
+        rc, out = _run(["make", "plan", "TENANT=" + self.tenant,
+                        "SAVE=1", "TF=" + FAKE_TF])
+        self.assertEqual(rc, 0, out)
+        self.assertTrue(os.path.isfile(os.path.join(self.imp, "tfplan")), out)
+        self.assertTrue(os.path.isfile(os.path.join(self.der, "tfplan")), out)
+
+
 if __name__ == "__main__":
     unittest.main()

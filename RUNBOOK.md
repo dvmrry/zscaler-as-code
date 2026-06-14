@@ -175,6 +175,23 @@ don't pass a list. (Multi-token `RESOURCE` is fetch/drift-only, where the
 Python side expands it.) The committed `config/`/`imports/` hold the FULL
 tenant, so scoping is selection here, not artifact pruning.
 
+**Planning a whole scope at once?** Pass `IMPORTS_ONLY=1` — `plan` then
+covers only the roots that received a staged `*_imports.tf`, so a
+non-importable/derived root (a `*_reorder`, which is a CREATE, not an
+import) is skipped automatically and a broad or product-token scope stays
+safe for the imports-only proof:
+
+```
+make stage-imports TENANT=<label> RESOURCE=zpa STATE_AWARE=1
+make plan TENANT=<label> RESOURCE=zpa IMPORTS_ONLY=1 SAVE=1
+make assert-clean
+```
+
+`assert-clean` checks only saved plans, so the skipped reorder root never
+trips it. The reorder resource is created later by normal delivery
+(`make plan TENANT=<label> RESOURCE=zpa_policy_access_rule_reorder` — see
+the reorder note below), not during bootstrap.
+
 Expected result: **N imports, 0 changes.** Terraform will import the
 existing objects and apply no modifications.
 
