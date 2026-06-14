@@ -69,6 +69,22 @@ def classify_attributes(block):
     input. All lists sorted for deterministic rendering. Fails loudly on
     plugin-framework nested_type attributes — none exist in the pinned
     schemas, and silent mishandling would corrupt generated modules.
+
+    Provider-DEPRECATED non-required attributes are treated as computed_only:
+    excluded from input everywhere (modules, config JSON Schema, typecheck,
+    transform) so we never write a dying field. Setting one emits a provider
+    deprecation warning on every plan (e.g. zpa_policy_access_rule.rule_order,
+    deprecated in favor of the zpa_policy_access_rule_reorder resource); these
+    are computed, so the provider still populates them. A deprecated *required*
+    attribute is kept (the resource can't be created without it) — add an
+    override if one ever appears.
+
+    A top-level computed `id` (the resource identity) is NOT excluded here —
+    this classifier runs on nested blocks too, where a computed `id` is a
+    legitimate reference input (e.g. zia_location_management's vpn_credentials).
+    For a RESOURCE's top-level block call resource_input_attrs() instead, which
+    drops that identity id so the module, the config JSON Schema, and typecheck
+    all agree on the inputs.
     """
     out = {"required": [], "optional": [], "computed_only": []}
     for name, attr in sorted((block.get("attributes") or {}).items()):
@@ -77,13 +93,33 @@ def classify_attributes(block):
                 "attribute %r uses nested_type (plugin framework); "
                 "the generator does not support it — add an override" % name
             )
-        if attr.get("required"):
+        if attr.get("deprecated") and not attr.get("required"):
+            out["computed_only"].append(name)
+        elif attr.get("required"):
             out["required"].append(name)
         elif attr.get("optional"):
             out["optional"].append(name)
         else:
             out["computed_only"].append(name)
     return out
+
+
+def resource_input_attrs(block):
+    """classify_attributes for a RESOURCE's TOP-LEVEL block, minus the resource
+    identity: a computed top-level `id` is provider-populated and rejected as
+    an input (zpa_policy_access_rule_reorder errors "Invalid or unknown key").
+    Use classify_attributes directly for NESTED blocks, where a computed `id`
+    is a real reference input. Shared by the module generator, the config JSON
+    Schema, and typecheck so the gates and the module agree on the inputs."""
+    cls = classify_attributes(block)
+    attrs = block.get("attributes") or {}
+    if "id" in cls["optional"] and attrs.get("id", {}).get("computed"):
+        return {
+            "required": cls["required"],
+            "optional": [n for n in cls["optional"] if n != "id"],
+            "computed_only": cls["computed_only"] + ["id"],
+        }
+    return cls
 
 
 _PRIMITIVES_HCL = {"string": "string", "bool": "bool", "number": "number"}

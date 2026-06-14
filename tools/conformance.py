@@ -22,7 +22,7 @@ AGENTS.md rule 5.
 import json
 import sys
 
-from tools.registry import generated_types
+from tools.registry import derive_entry, generated_types
 from tools.tfschema import block_is_single, classify_attributes, load_resource
 from tools.transform import snake
 
@@ -418,7 +418,18 @@ def main(argv=None):
         sys.stdout.write("error: registry has no generated types — check "
                          "tools/registry.json\n")
         return 1
+    checked = 0
+    skipped = 0
     for rt in types:
+        if derive_entry(rt):
+            # Derived resources (no fetch, config built from another type's
+            # pull) have no synthesize->transform->typecheck round-trip to
+            # check here; their derive + module are covered by the transform
+            # and module tests.
+            sys.stdout.write("SKIP %s (derived resource)\n" % rt)
+            skipped += 1
+            continue
+        checked += 1
         ok, detail = conformance_check(rt)
         if ok:
             sys.stdout.write("PASS %s\n" % rt)
@@ -426,8 +437,8 @@ def main(argv=None):
             failures += 1
             sys.stdout.write("FAIL %s\n%s\n" % (rt, detail))
     sys.stdout.write(
-        "\n%d resource(s) conformance-checked, %d failure(s)\n"
-        % (len(types), failures)
+        "\n%d resource(s) conformance-checked, %d failure(s), %d skipped\n"
+        % (checked, failures, skipped)
     )
     return 1 if failures else 0
 
