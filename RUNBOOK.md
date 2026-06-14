@@ -164,6 +164,17 @@ cp imports/<label>/<type>_imports.tf envs/<label>/<type>/
 make plan TENANT=<label> RESOURCE=<type> SAVE=1
 ```
 
+**One selector per call.** The per-root targets (`plan`/`apply`/
+`stage-imports`/`assert-clean`/…) take a SINGLE `RESOURCE`: one type, one
+glob (`zia_*`), or one product token (`zia`|`zpa`|`zcc`). A **multi-token**
+`RESOURCE` (e.g. `"zia zpa_app_connector_group …"`) is rejected with a loud
+error — it would shell-split inside the per-root globs and adopt the wrong
+set. To scope a multi-type bootstrap (e.g. ZIA + several ZPA types, ZCC and
+`zpa_policy_access_rule_reorder` excluded), **loop this step per type** —
+don't pass a list. (Multi-token `RESOURCE` is fetch/drift-only, where the
+Python side expands it.) The committed `config/`/`imports/` hold the FULL
+tenant, so scoping is selection here, not artifact pruning.
+
 Expected result: **N imports, 0 changes.** Terraform will import the
 existing objects and apply no modifications.
 

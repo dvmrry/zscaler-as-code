@@ -5,8 +5,14 @@ TF     ?= terraform
 # clean-plans/stage-imports/unstage-imports): a resource type, a glob
 # (zia_*), or a SINGLE product token (zia|zpa|zcc) which expands to
 # <product>_*. Multi-selector scoping ("zia zpa") is fetch/drift-only —
-# the python side expands those.
-SCOPE_GLOB = $(if $(RESOURCE),$(if $(word 2,$(RESOURCE)),$(RESOURCE),$(if $(filter zia zpa zcc,$(RESOURCE)),$(RESOURCE)_*,$(RESOURCE))),*)
+# the python side expands those. A multi-token RESOURCE here is a loud
+# error, NOT a silent mis-scope: the literal multi-word string would
+# shell-split inside the per-root globs (only the last token matches, the
+# rest become no-ops), so a multi-type bootstrap scope passed to plan/
+# stage-imports adopts the wrong set without saying so. Loop the per-root
+# target once per type instead (RESOURCE=<type>). Only SCOPE_GLOB is
+# guarded, so fetch/transform (which DO take multi-token) are unaffected.
+SCOPE_GLOB = $(if $(word 2,$(RESOURCE)),$(error RESOURCE takes a SINGLE selector for per-root targets (plan/apply/stage-imports/assert-clean/...) — got "$(RESOURCE)". Use one resource type, one glob (zia_*), or one product token (zia|zpa|zcc); for a multi-type scope, loop the target once per type. Multi-token RESOURCE is fetch/drift-only.),$(if $(RESOURCE),$(if $(filter zia zpa zcc,$(RESOURCE)),$(RESOURCE)_*,$(RESOURCE)),*))
 
 .PHONY: help env install-tf bump-check mine issue-watch triage surface plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports import-one statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint fmt-config typecheck refresh-gates conformance
 
