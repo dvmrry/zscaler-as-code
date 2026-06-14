@@ -192,14 +192,34 @@ _SAMPLE_VALUES = {"string": "example", "bool": True, "number": 1}
 
 
 def render_outputs(resource_type, resource_schema):
-    attrs = resource_schema["block"].get("attributes") or {}
-    out = (
-        _header(resource_type, _provider_of(resource_type))
-        + 'output "items" {\n'
-        + '  description = "All managed %s resources, keyed as in var.items."\n'
-        % resource_type
-        + "  value = %s.this\n}\n" % resource_type
-    )
+    block = resource_schema["block"]
+    attrs = block.get("attributes") or {}
+    deprecated = sorted(n for n, a in attrs.items() if a.get("deprecated"))
+    header = _header(resource_type, _provider_of(resource_type))
+    if deprecated:
+        # Exposing the whole resource object would READ the deprecated
+        # attribute(s) and emit a "Deprecated value used" warning on every
+        # plan. Project them out: list only the kept members, so the dying
+        # field is never referenced. (e.g. zpa_policy_access_rule.rule_order.)
+        kept = [n for n in sorted(attrs) if not attrs[n].get("deprecated")]
+        members = kept + sorted((block.get("block_types") or {}).keys())
+        projection = "\n".join("      %s = v.%s" % (m, m) for m in members)
+        out = (
+            header
+            + 'output "items" {\n'
+            + '  description = "All managed %s resources (excludes deprecated: '
+            '%s), keyed as in var.items."\n' % (resource_type, ", ".join(deprecated))
+            + "  value = {\n    for k, v in %s.this : k => {\n%s\n    }\n  }\n}\n"
+            % (resource_type, projection)
+        )
+    else:
+        out = (
+            header
+            + 'output "items" {\n'
+            + '  description = "All managed %s resources, keyed as in var.items."\n'
+            % resource_type
+            + "  value = %s.this\n}\n" % resource_type
+        )
     if attrs.get("name", {}).get("required") and "id" in attrs:
         out += (
             '\noutput "name_to_id" {\n'
