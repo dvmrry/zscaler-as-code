@@ -15,7 +15,11 @@
 # NOT a secret; it belongs in the variable group, not a hand-typed env block.
 #
 # Only the actual secrets (passwords, API keys, client secrets) are mapped
-# here, via the `secrets` parameter.
+# here, via the `secrets` parameter — as BASE names (e.g. ZIA_PASSWORD). The
+# template applies the tenant prefix in your variable group's spelling:
+# `naming: tenant-first` (default, ZS2_ZIA_PASSWORD — cred_env's preferred) or
+# `naming: product-first` (ZIA_ZS2_PASSWORD). cred_env resolves either, so no
+# variable-group rename is needed — just set `naming` to match what you have.
 #
 # NOTE: `tenant` must be a COMPILE-TIME value — a pipeline `parameter` or a
 # statically-defined `variable` (pass `${{ variables.TENANT }}`). The secret
@@ -29,7 +33,8 @@
 #       command: make fetch TENANT=zs2 RESOURCE="zia zpa"
 #       secrets: [ ZIA_PASSWORD, ZIA_API_KEY, ZPA_CLIENT_SECRET ]   # legacy set
 #       # secrets: [ ZSCALER_CLIENT_SECRET ]                        # OneAPI set
-#       stateToken: true   # add for steps that touch azurerm remote state
+#       naming: product-first   # if your group is ZIA_ZS2_* (default: tenant-first)
+#       stateToken: true        # add for steps that touch azurerm remote state
 #
 parameters:
   - name: tenant
@@ -41,10 +46,18 @@ parameters:
     default: ''
   - name: secrets
     type: object
-    # The SECRET credential base-names for YOUR auth mode (mapped per step).
+    # The SECRET credential BASE-names for YOUR auth mode (mapped per step).
     # Set this to the secrets your variable group actually holds — mapping a
     # name the group does not define passes a literal "$(...)" through.
     default: [ ZSCALER_CLIENT_SECRET ]
+  - name: naming
+    type: string
+    # How your variable group spells the tenant-scoped names. cred_env accepts
+    # BOTH; this only controls which one the template maps:
+    #   tenant-first  -> ZS2_ZIA_PASSWORD        (cred_env's preferred spelling)
+    #   product-first -> ZIA_ZS2_PASSWORD
+    default: tenant-first
+    values: [ tenant-first, product-first ]
   - name: stateToken
     type: boolean
     default: false        # true for plan / apply / import / unlock (azurerm state)
@@ -63,10 +76,16 @@ steps:
     displayName: ${{ coalesce(parameters.displayName, parameters.command) }}
     env:
       # SECRETS only — one place, no per-step copy/paste. The tenant prefix is
-      # applied here so the variable-group names (e.g. ZS2_ZIA_PASSWORD) reach
-      # the shell for cred_env to resolve.
-      ${{ each s in parameters.secrets }}:
-        ${{ format('{0}_{1}', upper(parameters.tenant), s) }}: $(${{ format('{0}_{1}', upper(parameters.tenant), s) }})
+      # applied here so the variable-group names reach the shell for cred_env
+      # to resolve, in whichever spelling your group uses.
+      ${{ if eq(parameters.naming, 'product-first') }}:
+        # ZIA_PASSWORD -> ZIA_ZS2_PASSWORD (tenant inserted after the product token)
+        ${{ each s in parameters.secrets }}:
+          ${{ format('{0}_{1}_{2}', split(s, '_')[0], upper(parameters.tenant), replace(s, format('{0}_', split(s, '_')[0]), '')) }}: $(${{ format('{0}_{1}_{2}', split(s, '_')[0], upper(parameters.tenant), replace(s, format('{0}_', split(s, '_')[0]), '')) }})
+      ${{ else }}:
+        # ZIA_PASSWORD -> ZS2_ZIA_PASSWORD (tenant-first; cred_env's preferred)
+        ${{ each s in parameters.secrets }}:
+          ${{ format('{0}_{1}', upper(parameters.tenant), s) }}: $(${{ format('{0}_{1}', upper(parameters.tenant), s) }})
       ${{ if parameters.stateToken }}:
         ARM_SAS_TOKEN: $(ARM_SAS_TOKEN)
       # If your proxy variable is marked SECRET, map it too (otherwise a

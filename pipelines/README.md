@@ -98,9 +98,12 @@ Notes that apply to every platform:
   every step's environment. So `*_CLOUD`, `*_ZPA_CUSTOMER_ID`, `HTTPS_PROXY`,
   and **`*_ZSCALER_USE_LEGACY_CLIENT`** need no mapping; keep the legacy flag
   as an ordinary (non-secret) variable in the group, never a hand-typed env
-  line. `tenant` must be compile-time (a `parameter` or `${{ variables.X }}`),
-  since ADO doesn't substitute macros in env-var keys. (See the bootstrap and
-  drift examples.)
+  line. The template maps secrets in either spelling — `naming: tenant-first`
+  (default, `ZS2_ZIA_PASSWORD`) or `naming: product-first` (`ZIA_ZS2_PASSWORD`)
+  — so no variable-group rename is needed (cred_env resolves both). `tenant`
+  must be compile-time (a `parameter` or `${{ variables.X }}`), since ADO
+  doesn't substitute macros in env-var keys. (See the bootstrap and drift
+  examples.)
 - **Agents without terraform**: `make install-tf VERSION=1.15.4`
   downloads and checksum-verifies the binary into `bin/`; either PATH
   it or pass `TF=bin/terraform` to subsequent make calls.
