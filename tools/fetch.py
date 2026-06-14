@@ -777,6 +777,9 @@ def run_diag(env):
     return 0
 
 
+_VALID_TENANT = re.compile(r"^[A-Za-z0-9_.-]+$")
+
+
 def main(argv=None):
     argv = argv if argv is not None else sys.argv[1:]
     if argv == ["--diag"]:
@@ -788,6 +791,15 @@ def main(argv=None):
         )
         return 2
     tenant = argv[0]
+    # The tenant is a directory key: pulls are written to pulls/<tenant>.
+    # Validate it the same way the make targets do (and reject '.'/'..',
+    # which the bare charset allows) so a bad label can't write outside the
+    # pulls/ convention — direct `python3 -m tools.fetch` is safe too.
+    if not _VALID_TENANT.match(tenant) or tenant in (".", ".."):
+        sys.stderr.write(
+            "error: tenant %r must match [A-Za-z0-9_.-]+ and not be '.'/'..' "
+            "— it is a directory key under pulls/\n" % tenant)
+        return 2
     only = expand_selectors(argv[1:])
     if only:
         unknown = only - set(load_manifest())

@@ -1080,5 +1080,14 @@ class RequestWithRetryTest(unittest.TestCase):
         self.assertEqual(slept, [])
 
 
+class TenantValidationTest(unittest.TestCase):
+    def test_rejects_path_separators_and_traversal(self):
+        # the tenant is a directory key (pulls/<tenant>); a bad label must be
+        # refused before any fetch, so it can't write outside pulls/.
+        from tools.fetch import main
+        for bad in ("../evil", "a/b", "..", ".", "a b", "a;b", "/abs"):
+            self.assertEqual(main([bad]), 2, bad)
+
+
 if __name__ == "__main__":
     unittest.main()

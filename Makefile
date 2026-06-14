@@ -142,6 +142,7 @@ transform: ## Transform pulled API JSON into tfvars + imports (IN=<dir> TENANT=<
 
 fetch: ## Pull API JSON into pulls/<tenant> (TENANT=<name> [RESOURCE="<type|product> ..."]; products zia/zpa/zcc expand; real creds via env — trusted env only)
 	@test -n "$(TENANT)" || { echo "usage: make fetch TENANT=<tenant> [RESOURCE=<type>] (with ZSCALER_*/ZIA_*/ZPA_* env set)"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
 	$(PYTHON) -m tools.fetch "$(TENANT)" $(RESOURCE)
 
 fetch-diag: ## Probe TLS to the fetcher's hosts under system trust and +bundle
