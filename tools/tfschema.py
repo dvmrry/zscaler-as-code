@@ -79,11 +79,12 @@ def classify_attributes(block):
     attribute is kept (the resource can't be created without it) — add an
     override if one ever appears.
 
-    A top-level computed `id` (the resource identity) is excluded from the
-    generated resource block separately, in gen_module — NOT here, because a
-    computed `id` inside a nested block (e.g. zia_location_management's
-    vpn_credentials reference) is a legitimate input and this classifier runs
-    on nested blocks too.
+    A top-level computed `id` (the resource identity) is NOT excluded here —
+    this classifier runs on nested blocks too, where a computed `id` is a
+    legitimate reference input (e.g. zia_location_management's vpn_credentials).
+    For a RESOURCE's top-level block call resource_input_attrs() instead, which
+    drops that identity id so the module, the config JSON Schema, and typecheck
+    all agree on the inputs.
     """
     out = {"required": [], "optional": [], "computed_only": []}
     for name, attr in sorted((block.get("attributes") or {}).items()):
@@ -101,6 +102,24 @@ def classify_attributes(block):
         else:
             out["computed_only"].append(name)
     return out
+
+
+def resource_input_attrs(block):
+    """classify_attributes for a RESOURCE's TOP-LEVEL block, minus the resource
+    identity: a computed top-level `id` is provider-populated and rejected as
+    an input (zpa_policy_access_rule_reorder errors "Invalid or unknown key").
+    Use classify_attributes directly for NESTED blocks, where a computed `id`
+    is a real reference input. Shared by the module generator, the config JSON
+    Schema, and typecheck so the gates and the module agree on the inputs."""
+    cls = classify_attributes(block)
+    attrs = block.get("attributes") or {}
+    if "id" in cls["optional"] and attrs.get("id", {}).get("computed"):
+        return {
+            "required": cls["required"],
+            "optional": [n for n in cls["optional"] if n != "id"],
+            "computed_only": cls["computed_only"] + ["id"],
+        }
+    return cls
 
 
 _PRIMITIVES_HCL = {"string": "string", "bool": "bool", "number": "number"}

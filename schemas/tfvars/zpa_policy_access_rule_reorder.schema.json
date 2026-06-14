@@ -6,9 +6,6 @@
       "additionalProperties": {
         "additionalProperties": false,
         "properties": {
-          "id": {
-            "type": "string"
-          },
           "policy_type": {
             "type": "string"
           },
@@ -29,12 +26,14 @@
               ],
               "type": "object"
             },
+            "minItems": 1,
             "type": "array",
             "uniqueItems": true
           }
         },
         "required": [
-          "policy_type"
+          "policy_type",
+          "rules"
         ],
         "type": "object"
       },

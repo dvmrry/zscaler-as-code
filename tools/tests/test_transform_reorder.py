@@ -32,10 +32,13 @@ class DeriveReorderTest(unittest.TestCase):
         self.assertEqual([r["order"] for r in out["ACCESS_POLICY"]["rules"]],
                          ["9", "10"])
 
-    def test_skips_rules_missing_id_or_order(self):
-        src = [{"id": "1", "ruleOrder": "1"}, {"id": "2"}, {"ruleOrder": "3"}]
-        out = derive_reorder(src, DERIVE)
-        self.assertEqual(out["ACCESS_POLICY"]["rules"], [{"id": "1", "order": "1"}])
+    def test_raises_on_rule_missing_id_or_order(self):
+        # the create is only safe if the list is COMPLETE; a partial reorder
+        # would silently re-rank the omitted rules, so refuse it loudly.
+        with self.assertRaises(ValueError):
+            derive_reorder([{"id": "1", "ruleOrder": "1"}, {"id": "2"}], DERIVE)
+        with self.assertRaises(ValueError):
+            derive_reorder([{"ruleOrder": "3"}], DERIVE)
 
     def test_empty_source_yields_empty(self):
         self.assertEqual(derive_reorder([], DERIVE), {})

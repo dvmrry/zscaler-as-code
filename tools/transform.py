@@ -656,7 +656,14 @@ def derive_reorder(source_items, derive):
     rules' order. The reorder resource has no fetch or import of its own —
     its ordering is each rule's still-returned (deprecated) order value,
     re-expressed as the replacement resource. Emits one item per policy_type
-    (keyed by it), with the rules sorted by order for a stable map."""
+    (keyed by it), with the rules sorted by order for a stable map.
+
+    Every source rule MUST carry id + rule_order: the create's safety (it
+    re-asserts the CURRENT order, so nothing moves) depends on the list being
+    COMPLETE. A rule missing either field would yield a partial reorder that
+    silently re-ranks the omitted rules, so it is a loud failure — never a
+    quietly partial config. An empty source list yields no reorder item.
+    """
     policy_type = derive["policy_type"]
     rules = []
     for raw in source_items:
@@ -664,7 +671,14 @@ def derive_reorder(source_items, derive):
         rid = item.get("id")
         order = item.get("rule_order")
         if rid is None or order is None:
-            continue
+            missing = "id" if rid is None else "rule_order"
+            raise ValueError(
+                "cannot derive the reorder resource from %s: a source rule is "
+                "missing %s (id=%r rule_order=%r). The reorder must list EVERY "
+                "rule with its current order, or applying it would silently "
+                "re-rank the omitted rules — refusing to emit a partial "
+                "reorder. (A slim API response can cause this; re-fetch.)"
+                % (derive["from"], missing, rid, order))
         rules.append({"id": str(rid), "order": str(order)})
     rules.sort(key=lambda r: (_order_key(r["order"]), r["id"]))
     if not rules:

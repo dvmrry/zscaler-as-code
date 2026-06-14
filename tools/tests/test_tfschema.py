@@ -1,7 +1,11 @@
 """Tests for tools/tfschema.py against the committed provider dumps."""
 import unittest
 
-from tools.tfschema import classify_attributes, load_resource
+from tools.tfschema import (
+    classify_attributes,
+    load_resource,
+    resource_input_attrs,
+)
 from tools.tfschema import hcl_type, json_schema_type
 
 
@@ -36,6 +40,31 @@ class ClassifyTest(unittest.TestCase):
             self.assertIn(attr, cls["computed_only"])
             self.assertNotIn(attr, cls["optional"])
         self.assertIn("configured_name", cls["optional"])
+
+
+class ResourceInputAttrsTest(unittest.TestCase):
+    def test_drops_top_level_optional_computed_id(self):
+        # reorder's top-level id is optional+computed: classify keeps it as an
+        # input, resource_input_attrs drops it (provider rejects setting it).
+        block = load_resource("zpa_policy_access_rule_reorder")["block"]
+        self.assertIn("id", classify_attributes(block)["optional"])
+        ria = resource_input_attrs(block)
+        self.assertNotIn("id", ria["optional"])
+        self.assertIn("id", ria["computed_only"])
+
+    def test_keeps_nested_block_reference_id(self):
+        # a computed id inside a NESTED block (vpn_credentials reference) is a
+        # real input — resource_input_attrs only touches the top-level block.
+        block = load_resource("zia_location_management")["block"]
+        vc = block["block_types"]["vpn_credentials"]["block"]
+        cls = classify_attributes(vc)
+        self.assertIn("id", cls["optional"] + cls["required"])
+
+    def test_no_op_when_id_is_computed_only(self):
+        # normal resources have computed-only id (already excluded); the helper
+        # changes nothing for them.
+        block = load_resource("zpa_segment_group")["block"]
+        self.assertEqual(resource_input_attrs(block), classify_attributes(block))
 
 
 class HclTypeTest(unittest.TestCase):
