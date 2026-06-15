@@ -26,6 +26,11 @@ the provider schema and `tools/`.
   fields exist; `make mine` is the truth for how they behave. Never infer a
   field's type, the fetch path, or pagination from memory.
 
+Order matters in one place: the **demo data must exist before `gen-env`**, because
+`gen_env` bakes the env root's config-backed smoke test from whether
+`config/demo/<type>.auto.tfvars.json` exists *at generation time*. The phases
+below are sequenced for that.
+
 ---
 
 ## Phase 0 — Select and scope
@@ -68,28 +73,26 @@ single-dict-for-list blocks, `max_items=1` oddities, DiffSuppress) and reports
 any your overrides don't yet cover. Verify findings against `tools/MINING.md`
 (it documents the false-positive lanes). `make surface` is the broader
 SDK↔Terraform sweep. **What this surfaces is your override worklist** for
-Phases 3 and 5 — knowing it up front beats discovering it as a conformance
-failure later.
+Phases 3 and 4.
 
 ## Phase 2 — Register
 
-Add one entry to `tools/registry.json`:
+Add one entry to `tools/registry.json`. It is strict JSON — no comments:
 
-```jsonc
+```json
 "zia_<name>": {
   "generate": true,
-  "product": "zia",                                   // zia | zpa | zcc
+  "product": "zia",
   "fetch": { "path": "<apiEndpoint>", "pagination": "zia", "query": {} }
 }
 ```
 
-`path`, `pagination`, and any `query` filter come from the SDK / public API docs
-— `tools/FETCH.md` documents the pagination shapes. A resource whose config is
-**derived** from another's pull (no fetch of its own) takes
-`"derive": { "from": "<source_type>", ... }` instead of `fetch` — see
-`zpa_policy_access_rule_reorder`, and `docs/workflows/` notes on the
-fetch-driven (API→TF) model for why derived resources are planned with their
-source, never authored.
+`product` is `zia`, `zpa`, or `zcc`. `path`, `pagination`, and any `query` filter
+come from the SDK / public API docs — `tools/FETCH.md` documents the pagination
+shapes. A resource whose config is **derived** from another's pull (no fetch of
+its own) takes `"derive": { "from": "<source_type>", ... }` instead of `fetch` —
+see `zpa_policy_access_rule_reorder`. A derived resource is planned alongside its
+source and is never hand-authored, so it has no demo fixture of its own (Phase 5).
 
 ## Phase 3 — Generate the module  ·  gate: `make generate`
 
@@ -108,55 +111,74 @@ from Phase 1 can't be expressed by the renderer, reach for an override
 
 Re-run until generation is clean and byte-deterministic.
 
-## Phase 4 — Env root  ·  gate: `make gen-env` + `make check-envs`
-
-```bash
-make gen-env TENANT=demo
-make check-envs          # fails on any uncommitted env-root drift
-```
-
-## Phase 5 — Conform  ·  gate: `make conformance`
+## Phase 4 — Conform  ·  gate: `make conformance`
 
 ```bash
 make conformance         # synth -> transform -> typecheck, every registry type
 ```
 
-The harness auto-covers your new type — there is no fixture to write here.
-**Zero mismatches is the contract.** A mismatch prints a remediation line (the
-authoritative decision table); the fix is almost always a rule in the override
-map. Loop until clean.
+The harness auto-covers your new type — there is no fixture to write here, and it
+needs no demo data. **Zero mismatches is the contract.** A mismatch prints a
+remediation line (the authoritative decision table); the fix is almost always a
+rule in the override map. Loop with Phase 3 until clean.
 
-## Phase 6 — Demo realism + drop-ack  ·  gate: `make typecheck` + `make lint`
+## Phase 5 — Demo data + drop-ack  ·  gate: `make typecheck` + `make lint` + `make check-demo`
 
-The template ships a fictional `demo` tenant so every gate and golden has data
-to run against. Add sample data for the new resource to the demo dataset
-(rules 2–4 — fictional, from **public sources only**: SDK structs, provider test
-fixtures, API docs; never real responses), exercising the schema's branches.
-Copy the shape from an existing `config/demo/<type>.auto.tfvars.json`.
+The fictional `demo` tenant gives every gate and golden real data to run against.
+**The source is a synthetic API-shaped pull**, not the committed config:
 
-Fields the provider returns but the template won't manage go in the override
-map's `acknowledged_drops` — the scope-discipline contract: an *acknowledged*
-drop, never a silent omission and never a workaround. The transform flags
-unacknowledged drops loudly under `DROPS_CHECK=1` (the bootstrap/refresh path
-uses this against real tenants); add anything new it surfaces to
-`acknowledged_drops`.
+1. Add `tools/tests/fixtures/demo/<type>.json` — a fictional pull exercising the
+   schema's branches (rules 2–4: public sources only — SDK structs, provider test
+   fixtures, API docs; never real responses). *(A derived type has no fixture of
+   its own; `make demo` reads its source type's pull.)*
+2. Surface fields the provider returns but the template won't manage, and
+   acknowledge them — the scope-discipline contract (an explicit drop, never a
+   silent omission or a workaround):
+
+   ```bash
+   DROPS_CHECK=1 make transform IN=tools/tests/fixtures/demo TENANT=demo RESOURCE=<type>
+   ```
+   Add anything it flags to the override map's `acknowledged_drops`, then re-run
+   until clean.
+3. Materialize and check:
+
+   ```bash
+   make demo                       # transforms the fixtures -> config/demo + imports/demo
+   make typecheck TENANT=demo      # each error line carries its own remediation
+   make lint TENANT=demo
+   make update-demo-goldens        # re-bless tools/tests/fixtures/demo-expected/
+   make check-demo                 # committed demo == pipeline output
+   ```
+
+`config/demo/<type>.auto.tfvars.json` is *generated output* of `make demo` — never
+hand-edit it; edit the fixture and re-materialize.
+
+## Phase 6 — Env root  ·  gate: `make gen-env` + `make check-envs` + `make test-envs`
+
+Run this **after** Phase 5 — the demo config must exist so the env root's smoke
+test is config-backed:
 
 ```bash
-make typecheck TENANT=demo     # each error line carries its own remediation
-make lint TENANT=demo
-make demo && make check-demo   # demo dataset stays green
+make gen-env TENANT=demo
+make check-envs              # fails on any uncommitted env-root drift
+make test-envs TENANT=demo   # mock-provider smoke test across the new root
 ```
 
-## Phase 7 — Pin behavior + verify  ·  gate: `make test` + `make validate`
+## Phase 7 — Pin behavior + verify  ·  gate: `make test`
 
 Rule 8: every behavior change ships a golden fixture.
 
 ```bash
-make update-goldens      # re-bless generator goldens from current output
-# add/extend a transform fixture under tools/tests/ for any NEW transform behavior
-make test                # full Python suite
-make validate            # terraform fmt / validate (-backend=false)
+make update-goldens                 # re-bless generator goldens from current output
+# add/extend a transform fixture under tools/tests/fixtures/transform/<type>/ for NEW transform behavior
+make test                           # full Python suite (includes the demo-pipeline test)
+make test-modules                   # mock-provider terraform tests across modules
+make validate-imports TENANT=demo   # fixture import addresses resolve against the roots
+make validate                       # terraform fmt -check only (NOT terraform validate)
 ```
+
+`make validate` is formatting only; the real terraform-level validation is
+`make test-modules` / `make test-envs` / `make validate-imports`.
 
 ## Phase 8 — PR
 
@@ -189,11 +211,14 @@ invent it.
 ## The happy-path gate sequence
 
 ```bash
-make mine && make generate && make gen-env TENANT=demo && make check-envs \
-  && make conformance && make typecheck TENANT=demo && make lint TENANT=demo \
-  && make demo && make check-demo && make test && make validate
+make mine && make generate && make conformance \
+  && DROPS_CHECK=1 make transform IN=tools/tests/fixtures/demo TENANT=demo RESOURCE=<type> \
+  && make demo && make typecheck TENANT=demo && make lint TENANT=demo \
+  && make update-demo-goldens && make check-demo \
+  && make gen-env TENANT=demo && make check-envs && make test-envs TENANT=demo \
+  && make update-goldens && make test && make test-modules \
+  && make validate-imports TENANT=demo && make validate
 ```
 
-When that runs clean and the demo config exercises the resource's schema
-branches, the resource is managed. The marginal cost is the quirks (Phase 1/5)
-and the realism (Phase 6); everything else is a gate doing the work for you.
+The marginal cost is the quirks (Phase 1/4) and the realism (Phase 5);
+everything else is a gate doing the work for you.
