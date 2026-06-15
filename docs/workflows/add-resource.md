@@ -116,7 +116,7 @@ Re-run until generation is clean and byte-deterministic.
 ## Phase 4 — Conform  ·  gate: `make conformance`
 
 ```bash
-make conformance         # synth -> transform -> typecheck, every registry type
+make conformance         # synth -> transform -> typecheck, every non-derived type
 ```
 
 The harness auto-covers a **non-derived** type — there is no fixture to write
@@ -126,8 +126,8 @@ always a rule in the override map. Loop with Phase 3 until clean.
 
 `make conformance` **skips derived types** — they have no fetch, so there is no
 synthesize → transform → typecheck round-trip to run. A derived resource is
-verified instead by: its derive-transform unit test in
-`tools/tests/test_transform.py`; its **source** type's demo fixture, which
+verified instead by: its derive-transform unit test (e.g.
+`tools/tests/test_transform_reorder.py`); its **source** type's demo fixture, which
 `make demo` derives the config from (so a derived type adds no fixture of its own
 in Phase 5); and the env smoke test in Phase 6.
 
