@@ -30,7 +30,14 @@ the provider schema and `tools/`.
 Order matters in one place: the **demo data must exist before `gen-env`**, because
 `gen_env` bakes the env root's config-backed smoke test from whether
 `config/demo/<type>.auto.tfvars.json` exists *at generation time*. The phases
-below are sequenced for that.
+below are sequenced for that. This one is a **silent** failure mode, not a loud
+one: run `gen-env` before `make demo` (e.g. eagerly in Phase 3 to peek at the
+root) and the smoke test bakes *without* the config-plan block — `test-envs`
+still exits 0, but it no longer exercises your config, and nothing flags the
+downgrade until `check-envs` in Phase 8. So **don't parallelize across phases**
+and don't run `gen-env` until Phase 6 — later gates consume earlier phases'
+committed outputs, and a few of them degrade quietly rather than erroring when
+the input isn't there yet.
 
 One gate class is **post-commit, not authoring**: `make check-demo` and
 `make check-envs` regenerate and then fail on any `git status` difference — so
@@ -39,6 +46,16 @@ for a brand-new resource they correctly report your new, uncommitted files as
 committed == regenerated, not a mid-authoring gate. Run them after the PR commit
 (Phase 8) / let CI run them; the authoring signal is `demo` / `typecheck` /
 `lint` / `test` passing.
+
+Several gates are **whole-tenant**, not scoped to your new type: `make demo`,
+`make typecheck`, and `make lint` run over *every* type in the tenant
+(`validate-imports`, `test-envs`, and `test-modules` take `RESOURCE=<type>` to
+scope; these three don't). So a pre-existing issue on a type you didn't touch —
+a nonfatal `dropped …` / `skipped …` line, or even a hard `typecheck`/`lint`
+failure left by an earlier provider bump — surfaces here looking like it's
+*yours*. Before chasing it, confirm ownership: `git diff main -- <the type's
+files>`. If the offending type isn't in your diff, the breakage predates your
+change — fix it as a separate concern or flag it; don't fold it into this one.
 
 ---
 

@@ -2,7 +2,8 @@ PYTHON ?= python3
 TF     ?= terraform
 
 # Scope glob for the per-root targets (plan/apply/assert-clean/plan-report/
-# clean-plans/stage-imports/unstage-imports): a resource type, a glob
+# clean-plans/stage-imports/unstage-imports/test-modules/test-envs/
+# validate-imports): a resource type, a glob
 # (zia_*), or a SINGLE product token (zia|zpa|zcc) which expands to
 # <product>_*. Multi-selector scoping ("zia zpa") is fetch/drift-only —
 # the python side expands those. A multi-token RESOURCE here is a loud
@@ -167,10 +168,10 @@ test-envs: ## Run mock-provider smoke tests across a tenant's env roots (TENANT=
 		$(TF) -chdir=$$d test; \
 	done
 
-validate-imports: ## Validate fixture import addresses against a tenant's roots (TENANT=<label>)
+validate-imports: ## Validate fixture import addresses against a tenant's roots (TENANT=<label> [RESOURCE=<type>] scopes to one)
 	@test -n "$(TENANT)" || { echo "usage: make validate-imports TENANT=<label>"; exit 2; }
 	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
-	@set -e; for d in envs/$(TENANT)/*/; do \
+	@set -e; for d in envs/$(TENANT)/$(SCOPE_GLOB)/; do \
 		rt=$$(basename $$d); \
 		fix="tools/tests/fixtures/transform/$$rt/expected_imports.tf"; \
 		if [ ! -f "$$fix" ]; then \
