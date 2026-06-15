@@ -87,20 +87,29 @@ memory.
 
 ## Phase 1 — Mine the quirks  ·  gate: `make mine`
 
-Before registering anything, find out what the provider will throw at the
-transform:
+Start from a clean baseline. `make mine` scans the pinned provider Go source for
+quirks and exits 4 if a recent provider bump introduced one your overrides don't
+yet cover:
 
 ```bash
 make mine        # exits 4 if a NEW quirk has no override coverage (needs network)
 ```
 
-`make mine` scans the pinned provider Go source for quirks (camelCase keys,
-bool-as-int/string, CSV-joined lists, `{id,name}` reference objects,
-single-dict-for-list blocks, `max_items=1` oddities, DiffSuppress) and reports
-any your overrides don't yet cover. Verify findings against `tools/MINING.md`
-(it documents the false-positive lanes). `make surface` is the broader
-SDK↔Terraform sweep. **What this surfaces is your override worklist** for
-Phases 3 and 4.
+It iterates `generated_types()`, so on this first pass it audits the
+**already-registered estate**, *not* your candidate — your new type isn't
+registered until Phase 2, so mine can't see it yet. Run it now anyway: a green
+baseline means a quirk you hit later is genuinely yours to cover, and a red one
+is provider-bump hygiene to clear before you build on top.
+
+The quirk classes it knows are camelCase keys, bool-as-int/string, CSV-joined
+lists, `{id,name}` reference objects, single-dict-for-list blocks, `max_items=1`
+oddities, and DiffSuppress. Verify findings against `tools/MINING.md` (the
+false-positive lanes); `make surface` is the broader SDK↔Terraform sweep. **Those
+same classes are your candidate's override worklist** — read your candidate's
+provider source for them now, and once you register it (Phase 2) re-run
+`make mine` to fold it into the scan. `make conformance` (Phase 4) is the
+backstop: it synthesizes adversarial items for your *registered* type and won't
+let an uncovered quirk through.
 
 `make mine` also reports an **unfetchable** count — heed it, but know what it
 means: it's the number of types whose provider Go *source file* mine couldn't
@@ -147,8 +156,8 @@ make generate        # CHECK=1 is the CI drift gate (rules 6–7)
 ```
 
 Renders `modules/<type>/` + the tfvars schema from the provider dump. If a quirk
-from Phase 1 can't be expressed by the renderer, reach for an override
-(`tools/overrides/README.md`):
+you mined (Phase 1, or your candidate's provider source) can't be expressed by
+the renderer, reach for an override (`tools/overrides/README.md`):
 
 - a **transform override map** `tools/overrides/<type>.json` — rule maps,
   `import_id`, `acknowledged_drops`; or

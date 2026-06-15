@@ -152,26 +152,34 @@ fetch-diag: ## Probe TLS to the fetcher's hosts under system trust and +bundle
 ##@ Tenant gates
 
 test-modules: ## Run mock-provider terraform tests across generated modules ([RESOURCE=<type>] scopes to one)
-	@set -e; for d in modules/$(SCOPE_GLOB)/; do \
+	@set -e; matched=0; for d in modules/$(SCOPE_GLOB)/; do \
+		[ -d "$$d" ] || continue; \
+		matched=$$((matched+1)); \
 		echo "== $$d"; \
 		$(TF) -chdir=$$d init -backend=false -input=false > /dev/null; \
 		$(TF) -chdir=$$d test; \
 		rm -rf $$d/.terraform $$d/.terraform.lock.hcl; \
-	done
+	done; \
+	test $$matched -gt 0 || { echo "error: no module matched RESOURCE='$(RESOURCE)' under modules/ — typo, wrong product token, or run make generate first"; exit 1; }
 
 test-envs: ## Run mock-provider smoke tests across a tenant's env roots (TENANT=<label> [RESOURCE=<type>] scopes to one)
 	@test -n "$(TENANT)" || { echo "usage: make test-envs TENANT=<label> [RESOURCE=<type>]"; exit 2; }
 	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
-	@set -e; for d in envs/$(TENANT)/$(SCOPE_GLOB)/; do \
+	@set -e; matched=0; for d in envs/$(TENANT)/$(SCOPE_GLOB)/; do \
+		[ -d "$$d" ] || continue; \
+		matched=$$((matched+1)); \
 		echo "== $$d"; \
 		$(TF) -chdir=$$d init -backend=false -input=false > /dev/null; \
 		$(TF) -chdir=$$d test; \
-	done
+	done; \
+	test $$matched -gt 0 || { echo "error: no env root matched RESOURCE='$(RESOURCE)' under envs/$(TENANT)/ — typo, wrong product token, or run make gen-env TENANT=$(TENANT) first"; exit 1; }
 
 validate-imports: ## Validate fixture import addresses against a tenant's roots (TENANT=<label> [RESOURCE=<type>] scopes to one)
 	@test -n "$(TENANT)" || { echo "usage: make validate-imports TENANT=<label>"; exit 2; }
 	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
-	@set -e; for d in envs/$(TENANT)/$(SCOPE_GLOB)/; do \
+	@set -e; matched=0; for d in envs/$(TENANT)/$(SCOPE_GLOB)/; do \
+		[ -d "$$d" ] || continue; \
+		matched=$$((matched+1)); \
 		rt=$$(basename $$d); \
 		fix="tools/tests/fixtures/transform/$$rt/expected_imports.tf"; \
 		if [ ! -f "$$fix" ]; then \
@@ -185,7 +193,8 @@ validate-imports: ## Validate fixture import addresses against a tenant's roots 
 		else \
 			echo "skip $$rt (no fixture imports)"; \
 		fi; \
-	done
+	done; \
+	test $$matched -gt 0 || { echo "error: no env root matched RESOURCE='$(RESOURCE)' under envs/$(TENANT)/ — typo, wrong product token, or run make gen-env TENANT=$(TENANT) first"; exit 1; }
 
 ##@ Plan / apply / state ops
 
