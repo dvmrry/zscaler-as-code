@@ -20,10 +20,14 @@ mirrors the fetched tenant, so it's deterministic and works without credentials.
 
 Only allowlisted **additive list-of-strings** edits:
 
-| Resource | Field(s) | Target |
+| Resource | Field | Target |
 |---|---|---|
-| `zia_url_categories` | `urls`, `db_categorized_urls`, `keywords` | `make url-add` / `url-rm` |
+| `zia_url_categories` | `urls` | `make url-add` / `url-rm` |
 | `zpa_application_segment` | `domain_names` | `make domain-add` / `domain-rm` |
+
+Other list fields (URL-category `keywords` / `db_categorized_urls`, etc.) are a
+deliberate add when the need shows up — one `EDITABLE` entry in `tools/operate.py`
++ a thin target + a test — not a loosening into arbitrary edits.
 
 Anything else is **out of this path** — escalate, don't improvise:
 - A *new* category or segment, or a resource type not yet managed → the

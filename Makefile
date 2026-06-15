@@ -538,6 +538,7 @@ validate-config: ## Validate config/ against generated JSON Schemas (dev-only; j
 
 find-key: ## Resolve a display name to its config key(s) (TENANT=<label> TYPE=<resource_type> NAME="<display name>")
 	@test -n "$(TENANT)" -a -n "$(TYPE)" -a -n "$(NAME)" || { echo "usage: make find-key TENANT=<label> TYPE=<resource_type> NAME=\"<display name>\""; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+"; exit 2; }
 	$(PYTHON) -m tools.operate resolve "$(TENANT)" "$(TYPE)" "$(NAME)"
 
 url-add: ## Add a URL to a custom URL category (TENANT=<label> CATEGORY=<config-key> URL=<url>)

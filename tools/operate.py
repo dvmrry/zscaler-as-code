@@ -17,6 +17,7 @@ Stdlib-only, Python 3.6-floor — see AGENTS.md rule 5.
 """
 import json
 import os
+import re
 import sys
 
 from tools.transform import render_tfvars
@@ -24,14 +25,27 @@ from tools.transform import render_tfvars
 CONFIG_SUFFIX = ".auto.tfvars.json"
 
 # (resource_type, field) pairs safe to add/remove a string element on: each is
-# a set/list of plain strings, order-insensitive, canonically sorted on write.
-# Structured fields are deliberately absent — operate refuses anything not here.
+# a list of plain strings, order-insensitive, canonically sorted on write. The
+# set is intentionally minimal — exactly the high-churn fields that have BOTH a
+# make target and a test, so the workflow never claims a path it can't run.
+# Widening it (e.g. url-category keywords / db_categorized_urls) is a deliberate
+# add: one entry here + a thin target + a test. Structured fields (paired
+# tcp_port_ranges, {id} refs, nested blocks) are refused.
 EDITABLE = {
     ("zia_url_categories", "urls"),
-    ("zia_url_categories", "db_categorized_urls"),
-    ("zia_url_categories", "keywords"),
     ("zpa_application_segment", "domain_names"),
 }
+
+# Tenant becomes a path component (config/<tenant>/...); validate it the same way
+# fetch.py does so neither the make target nor a direct CLI call can traverse
+# (`..`, `../x`). resource_type is bounded by the EDITABLE/NAME_FIELD allowlists.
+_VALID_TENANT = re.compile(r"^[A-Za-z0-9_.-]+$")
+
+
+def _check_tenant(tenant):
+    if not _VALID_TENANT.match(tenant or "") or tenant in (".", ".."):
+        raise ValueError("tenant must match [A-Za-z0-9_.-]+ and not be . or .. "
+                         "(got %r)" % tenant)
 
 # The human-facing name field per resource type, for resolve().
 NAME_FIELD = {
@@ -66,6 +80,7 @@ def resolve(tenant, resource_type, display_name, config_root="config"):
     """[(config_key, display_name)] whose NAME_FIELD matches display_name
     (case-insensitive substring). Zero or many is a signal to the caller to
     clarify — never to guess."""
+    _check_tenant(tenant)
     field = NAME_FIELD.get(resource_type)
     if field is None:
         raise ValueError("no name field known for %s" % resource_type)
@@ -85,6 +100,7 @@ def operate(op, tenant, resource_type, key, field, value, config_root="config"):
     written on a refusal or a no-op."""
     if op not in ("add", "remove"):
         raise ValueError("op must be add or remove, got %r" % op)
+    _check_tenant(tenant)
     if (resource_type, field) not in EDITABLE:
         raise ValueError(
             "refusing to edit %s.%s — not an allowlisted list-of-strings "

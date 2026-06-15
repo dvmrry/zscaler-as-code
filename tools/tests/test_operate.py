@@ -84,6 +84,19 @@ class OperateTest(unittest.TestCase):
             operate.operate("add", "t", "zpa_application_segment", "redhat_seg",
                             "tcp_port_ranges", "443", config_root=self.root)
 
+    def test_keyword_field_out_of_scope(self):
+        # keywords is a real url-category field but intentionally not allowlisted
+        # (no target/test yet) — operate refuses it rather than edit it.
+        with self.assertRaises(ValueError):
+            operate.operate("add", "t", "zia_url_categories", "blocked_social",
+                            "keywords", "phish", config_root=self.root)
+
+    def test_invalid_tenant_refused(self):
+        for bad in ("../etc", "..", ".", "a/b"):
+            with self.assertRaises(ValueError):
+                operate.operate("add", bad, "zia_url_categories", "blocked_social",
+                                "urls", "x.com", config_root=self.root)
+
     def test_unknown_key_refused_with_candidates(self):
         with self.assertRaises(ValueError) as cm:
             operate.operate("add", "t", "zia_url_categories", "Blocked Social",
@@ -126,6 +139,10 @@ class ResolveTest(unittest.TestCase):
         self.assertEqual(
             operate.resolve("t", "zia_url_categories", "nope", config_root=self.root),
             [])
+
+    def test_resolve_invalid_tenant_refused(self):
+        with self.assertRaises(ValueError):
+            operate.resolve("../etc", "zia_url_categories", "x", config_root=self.root)
 
 
 if __name__ == "__main__":
