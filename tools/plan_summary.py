@@ -12,14 +12,15 @@ import json
 import sys
 
 
-def summarize(plan, label):
-    """(plan JSON dict, label) -> (markdown_row, destroy_count).
+def counts(plan):
+    """(plan JSON dict) -> (imports, adds, changes, destroys).
 
     Raises ValueError when the document is not plan JSON — a version-
     skewed `terraform show` emits a different shape, and without this
     guard the reviewer's approval table silently shows all zeros. The
     apply/assert-clean recipes carry the same guard; the summary the
-    human approves on must not be the one layer that can lie.
+    human approves on must not be the one layer that can lie. A replace
+    counts as BOTH add and destroy — that is what it does.
     """
     if not isinstance(plan, dict) or "format_version" not in plan:
         raise ValueError(
@@ -37,6 +38,12 @@ def summarize(plan, label):
             changes += 1
         if "delete" in actions:
             destroys += 1
+    return imports, adds, changes, destroys
+
+
+def summarize(plan, label):
+    """(plan JSON dict, label) -> (markdown_row, destroy_count)."""
+    imports, adds, changes, destroys = counts(plan)
     row = "| %s | %d | %d | %d | %d |" % (label, imports, adds, changes, destroys)
     return row, destroys
 
@@ -45,10 +52,18 @@ def main(argv=None):
     argv = argv if argv is not None else sys.argv[1:]
     if len(argv) != 1:
         sys.stderr.write("usage: terraform show -json tfplan | "
-                         "python -m tools.plan_summary <label>\n")
+                         "python -m tools.plan_summary <label> | --counts\n")
         return 2
     try:
         plan = json.load(sys.stdin)
+        if argv[0] == "--counts":
+            # Four space-separated integers (imports adds changes destroys) for
+            # a caller that aggregates across roots — e.g. make plan-summary-line.
+            # Integers only: a value safe to carry through an ADO setvariable
+            # into an approval prompt (no newline / shell-special characters
+            # that a free-form summary string would risk).
+            sys.stdout.write("%d %d %d %d\n" % counts(plan))
+            return 0
         row, destroys = summarize(plan, argv[0])
     except ValueError as exc:
         sys.stderr.write("error: %s\n" % exc)

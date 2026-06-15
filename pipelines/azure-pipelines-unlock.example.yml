@@ -9,6 +9,12 @@
 # active on this root, cancel that run instead. (Storage-admin
 # alternative, no pipeline needed: break the lease on the state blob in
 # the portal / az storage blob lease break.)
+#
+# This is the minimal single-op version: a lock break leaves state itself
+# untouched, so it needs no approval gate. For the state-MUTATING ops —
+# `forget` (state rm) and `delete-state` — use the gated
+# azure-pipelines-state-operations.example.yml, which runs them in a
+# deployment job behind an environment approval.
 # Keep pipelines thin shells over make (AGENTS.md rule 9).
 
 parameters:

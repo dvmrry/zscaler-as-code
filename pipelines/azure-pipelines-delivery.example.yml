@@ -158,6 +158,11 @@ stages:
         # the plan table is at the top. A DESTROY banner there means a resource
         # is being removed; confirm that is intended before approving."
         #
+        # The environment Approval's instructions are STATIC config — they
+        # can't show this run's plan, only point at the Summary tab. If you
+        # want the plan counts in the approval prompt ITSELF, see the
+        # ManualValidation alternative at the bottom of this file.
+        #
         # WHY A STALE APPROVED PLAN DOES NOT SILENTLY WIPE ANYTHING — the
         # scenario where plan A sits, plan B merges and applies, then someone
         # finally approves A:
@@ -216,3 +221,70 @@ stages:
 # After a successful apply the saved plans have served their purpose; the
 # next merge starts the cycle again, and the scheduled drift run confirms the
 # tenant now matches committed config (green by construction).
+
+# ===========================================================================
+# ALTERNATIVE HUMAN GATE — ManualValidation with the plan counts IN the prompt
+# ===========================================================================
+# The environment Approval above is clean, but its instructions are static, so
+# the approver sees the plan only by opening the Summary tab. ManualValidation
+# is a YAML task whose `instructions` are evaluated AT RUN TIME, so you can put
+# this run's plan counts and a one-click deep link straight into the prompt.
+# Trade-offs: it's an agentless job (not the environment Approval check), shown
+# via a "message bar -> dialog"; you keep the environment for the Exclusive
+# Lock + apply, but the human gate moves to ManualValidation.
+#
+# ROBUSTNESS — why this is safe and not the fragile "inject the whole plan"
+# pattern: the payload is INTEGERS ONLY (make plan-summary-line -> "3 root(s):
+# +6 ~3 -1 | 1 DESTROY"). Integers can't carry a newline or a shell-special
+# character, so they marshal through ##vso[task.setvariable] cleanly. And the
+# deep link is STATIC yaml (built from $(Build.BuildId)), so even if the count
+# variable came back empty, the prompt still shows a working "open the full
+# plan" link — the worst case degrades to the Summary-tab path, never worse.
+#
+# To switch to this gate, make three changes:
+#
+# 1) In the plan job's `detect` step (the hasPlans branch), also emit the line:
+#
+#      if ls envs/*/*/tfplan >/dev/null 2>&1; then
+#        make plan-report
+#        line=$(make plan-summary-line)        # integers only — safe to marshal
+#        echo "##vso[task.setvariable variable=planLine;isOutput=true]$line"
+#        echo "##vso[task.setvariable variable=hasPlans;isOutput=true]true"
+#      else
+#        ...
+#
+# 2) Replace the apply stage's environment Approval with a `review` job that
+#    runs BEFORE the deployment job (keep the Exclusive Lock on the env):
+#
+#      - stage: apply
+#        dependsOn: plan
+#        condition: and(succeeded(), eq(stageDependencies.plan.plan.outputs['detect.hasPlans'], 'true'))
+#        jobs:
+#          - job: review
+#            pool: server                       # agentless — ManualValidation requires it
+#            timeoutInMinutes: 60               # must exceed the task timeout below
+#            variables:
+#              planLine: $[ stageDependencies.plan.plan.outputs['detect.planLine'] ]
+#            steps:
+#              - task: ManualValidation@1
+#                timeoutInMinutes: 15           # the same 15-min plan lifetime
+#                inputs:
+#                  notifyUsers: ''              # or a comma-separated list / [org]\group
+#                  onTimeout: 'reject'          # expire -> reject (never auto-apply)
+#                  instructions: |
+#                    $(planLine)
+#
+#                    Full plan -> $(System.CollectionUri)$(System.TeamProject)/_build/results?buildId=$(Build.BuildId)&view=ms.vss-build-web.run-extensions-tab
+#
+#    NOTE: `view=ms.vss-build-web.run-extensions-tab` is the Extensions-tab id
+#    and can differ by ADO version. Confirm it against your own run: open that
+#    tab in the browser and copy the `view=` value from the URL. The link still
+#    resolves to the run without the param — it just preselects the tab.
+#
+# 3) Make the deployment job depend on the gate, and drop the env Approval
+#    check (keep Exclusive Lock) since ManualValidation is now the human gate:
+#
+#          - deployment: apply
+#            dependsOn: review
+#            environment: FILL-protected-environment-name   # Exclusive Lock only now
+#            ...                                            # (rest of the apply job unchanged)

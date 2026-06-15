@@ -1,0 +1,113 @@
+# Example STATE-OPERATIONS pipeline — reference material, not a working config.
+# The escape hatches for when state and reality disagree, gathered behind ONE
+# approval gate because two of the three MUTATE or DESTROY state:
+#
+#   unlock        — break a stale azurerm blob lease from a killed run (state
+#                   itself is untouched; the lowest-risk op). See also the
+#                   minimal azure-pipelines-unlock.example.yml.
+#   forget        — `terraform state rm`: de-scope an imported item WITHOUT
+#                   destroying the live object. Mutates state.
+#   delete-state  — delete the whole state blob for one root. IRREVERSIBLE.
+#                   Last resort (e.g. a corrupted/duplicated state to re-adopt
+#                   from scratch). There is deliberately no `make` target for
+#                   this — it is a storage operation, not a terraform one.
+#
+# WHY THIS IS A deployment: JOB, NOT A plain job: — this is the whole point of
+# the file. Azure DevOps environment **Approvals fire only on `deployment:`
+# jobs**, never on a plain `job:`. Put these operations in a plain job and the
+# named environment's approval never triggers — delete-state would run straight
+# off the Run-Pipeline button. The deployment job below is what makes the gate
+# real. Manual trigger only. Keep pipelines thin shells over make (AGENTS.md
+# rule 9) — only delete-state, which has no make target, calls a tool directly.
+
+parameters:
+  - name: operation
+    displayName: State operation
+    type: string
+    values: [ unlock, forget, delete-state ]   # closed enum — no free-form ops
+  - name: tenant
+    displayName: Tenant label
+    type: string
+  - name: resource
+    displayName: Resource type (ONE concrete root — state is per root)
+    type: string
+  - name: lock_id
+    displayName: Lock ID (unlock only — uuid from the lock error message)
+    type: string
+    default: ''
+  - name: key
+    displayName: Config key (forget only — the item to drop from state)
+    type: string
+    default: ''
+
+trigger: none
+pr: none
+
+variables:
+  # ARM_SAS_TOKEN for the state container; STATE_STORAGE_ACCOUNT / STATE_CONTAINER
+  # for the delete-state blob path (and to materialize backend.conf if you don't
+  # commit it). None of these operations need provider (ZSCALER_*) credentials —
+  # they touch state/storage only — so there is no zscaler-auth.yml step here.
+  - group: zscaler-credentials
+
+stages:
+  - stage: execute
+    jobs:
+      - deployment: execute
+        pool:
+          vmImage: ubuntu-latest
+        workspace:
+          clean: all
+        # THE GATE LIVES HERE — and it is PORTAL config, not yaml. Naming an
+        # environment does nothing by itself. In ADO: Pipelines > Environments
+        # > <this environment> > Approvals and checks > add Approvals (a SECOND
+        # person; short timeout). forget and delete-state must not run
+        # unreviewed; the run's parameters (operation / tenant / resource) are
+        # visible to the approver, so they see exactly what is about to happen.
+        environment: FILL-protected-environment-name
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                # Only the SELECTED operation's step is emitted — parameters
+                # resolve at compile time, so the other operations' commands do
+                # not even exist in the run.
+                - ${{ if eq(parameters.operation, 'unlock') }}:
+                  - script: make unlock TENANT=${{ parameters.tenant }} RESOURCE=${{ parameters.resource }} LOCK_ID=${{ parameters.lock_id }} BACKEND_CONFIG=backend.conf
+                    displayName: Break the stale state lock
+                    env:
+                      ARM_SAS_TOKEN: $(ARM_SAS_TOKEN)
+                - ${{ if eq(parameters.operation, 'forget') }}:
+                  - script: make forget TENANT=${{ parameters.tenant }} RESOURCE=${{ parameters.resource }} KEY=${{ parameters.key }} BACKEND_CONFIG=backend.conf
+                    displayName: Forget (state rm — de-scope without destroying)
+                    env:
+                      ARM_SAS_TOKEN: $(ARM_SAS_TOKEN)
+                - ${{ if eq(parameters.operation, 'delete-state') }}:
+                  # Surface the exact blob FIRST so it is in the log (and, if
+                  # you add a ManualValidation task before this job, in the
+                  # approval prompt). The state key is <tenant>/<resource>.tfstate.
+                  - script: |
+                      echo "IRREVERSIBLE: deleting state blob"
+                      echo "  account:   $(STATE_STORAGE_ACCOUNT)"
+                      echo "  container: $(STATE_CONTAINER)"
+                      echo "  blob:      ${{ parameters.tenant }}/${{ parameters.resource }}.tfstate"
+                    displayName: Show the blob about to be deleted
+                  - script: |
+                      set -euo pipefail
+                      az storage blob delete \
+                        --account-name "$(STATE_STORAGE_ACCOUNT)" \
+                        --container-name "$(STATE_CONTAINER)" \
+                        --name "${{ parameters.tenant }}/${{ parameters.resource }}.tfstate" \
+                        --sas-token "$(ARM_SAS_TOKEN)"
+                    displayName: Delete the state blob (IRREVERSIBLE)
+                    env:
+                      # az phones home on EXIT; without these it can hang
+                      # post-success on egress-restricted agents.
+                      AZURE_CORE_COLLECT_TELEMETRY: "false"
+                      AZURE_CORE_DISABLE_PROGRESS_BAR: "true"
+                      # Storage data-plane auth: the SAS token above, OR drop
+                      # --sas-token and use `--auth-mode login` with a service
+                      # connection granted "Storage Blob Data Contributor".
+# After delete-state, re-adopt the root from scratch via the bootstrap
+# pipeline (stage-imports -> plan IMPORTS_ONLY -> assert-clean -> apply).

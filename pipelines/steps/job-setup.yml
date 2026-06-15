@@ -8,8 +8,14 @@
 # template instead, and `make lint-pipelines` keeps the version consistent.
 #
 # SCOPE — what this does and deliberately does NOT do:
-#   * DOES: checkout (+ optional persistCredentials), optional terraform
-#     install (PATHed for later steps), optional backend.conf materialize.
+#   * DOES: checkout (full history by default — make plan-changed needs it;
+#     + optional persistCredentials), optional terraform install (PATHed for
+#     later steps), optional backend.conf materialize.
+#   * DO NOT add your own `checkout: self` around this template — it already
+#     checks out. A SECOND checkout step makes Azure DevOps nest the repo in a
+#     subfolder (…/s/<repo> instead of …/s); `make` then runs in …/s where
+#     there is no Makefile and fails "No rule to make target". One checkout per
+#     job — let this template own it.
 #   * NOT auth: provider credentials are per-COMMAND, not per-job — a job
 #     checks out once but may authenticate several times (e.g. the bootstrap
 #     apply job re-stages AND applies). Keep using steps/zscaler-auth.yml for
@@ -27,6 +33,7 @@
 #       installTf: 1.15.4          # omit if terraform is on the image
 #       backendConf: true          # materialize from STATE_* variables
 #       persistCredentials: true   # for commit-back jobs that push a branch
+#       fetchDepth: 0              # default; full history for make plan-changed
 #   # ...then the auth step(s):
 #   - template: steps/zscaler-auth.yml
 #     parameters: { tenant: ..., command: ... }
@@ -35,6 +42,9 @@ parameters:
   - name: installTf
     type: string
     default: ''          # a version (e.g. 1.15.4) installs+PATHs terraform; '' skips
+  - name: fetchDepth
+    type: number
+    default: 0           # 0 = full history. make plan-changed diffs the merge-base; a shallow clone breaks it. Raise to a depth (e.g. 1) ONLY for a job with no diff-based step.
   - name: backendConf
     type: boolean
     default: false       # materialize backend.conf from STATE_STORAGE_ACCOUNT/STATE_CONTAINER
@@ -44,6 +54,7 @@ parameters:
 
 steps:
   - checkout: self
+    fetchDepth: ${{ parameters.fetchDepth }}
     persistCredentials: ${{ parameters.persistCredentials }}
   # Pinned terraform, installed once and PATHed for every later step in the
   # job. Keep the SAME version across all pipelines — that's the invariant

@@ -14,7 +14,7 @@ TF     ?= terraform
 # guarded, so fetch/transform (which DO take multi-token) are unaffected.
 SCOPE_GLOB = $(if $(word 2,$(RESOURCE)),$(error RESOURCE takes a SINGLE selector for per-root targets (plan/apply/stage-imports/assert-clean/...) — got "$(RESOURCE)". Use one resource type, one glob (zia_*), or one product token (zia|zpa|zcc); for a multi-type scope, loop the target once per type. Multi-token RESOURCE is fetch/drift-only.),$(if $(RESOURCE),$(if $(filter zia zpa zcc,$(RESOURCE)),$(RESOURCE)_*,$(RESOURCE)),*))
 
-.PHONY: help env install-tf bump-check mine issue-watch triage surface plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports import-one statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report assert-clean apply drift check-envs validate-config demo check-demo lint lint-pipelines fmt-config typecheck refresh-gates conformance
+.PHONY: help env install-tf bump-check mine issue-watch triage surface plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports import-one statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report plan-summary-line assert-clean apply drift check-envs validate-config demo check-demo lint lint-pipelines fmt-config typecheck refresh-gates conformance
 
 # Company/deployment extensions: a private repo adds its own targets and
 # variable overrides in local.mk — NEVER by editing this file, which is
@@ -329,6 +329,18 @@ plan-report: ## Render saved plans to reports/plan.md — counts-first summary t
 	  cat "$$rows"; printf '\n'; cat "$$body"; } > "$$out"; \
 	rm -f "$$body" "$$rows"; \
 	echo "wrote $$out ($$found plan(s), $$destroys_total destroy(s))"
+
+plan-summary-line: ## Print ONE compact line (roots + add/change/destroy totals) across saved plans — feed it into an approval prompt variable ([TENANT=<label>] [RESOURCE=<type>])
+	@set -e; roots=0; sa=0; sc=0; sd=0; \
+	for d in envs/$(or $(TENANT),*)/$(SCOPE_GLOB)/; do \
+		test -f "$$d/tfplan" || continue; \
+		roots=$$((roots+1)); \
+		c=$$($(TF) -chdir="$$d" show -json tfplan | $(PYTHON) -m tools.plan_summary --counts); \
+		set -- $$c; sa=$$((sa+$$2)); sc=$$((sc+$$3)); sd=$$((sd+$$4)); \
+	done; \
+	test $$roots -gt 0 || { echo "no changed roots"; exit 0; }; \
+	if [ "$$sd" -gt 0 ]; then dsfx=" | $$sd DESTROY"; else dsfx=""; fi; \
+	printf '%d root(s): +%d ~%d -%d%s\n' "$$roots" "$$sa" "$$sc" "$$sd" "$$dsfx"
 
 assert-clean: ## Exit 0 only when every saved plan is no-op (imports allowed) — the drift-PR merge-readiness check ([TENANT=<label>] [RESOURCE=<type>])
 	@set -e; checked=0; dirty=0; for d in envs/$(or $(TENANT),*)/$(SCOPE_GLOB)/; do \

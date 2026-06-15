@@ -92,11 +92,16 @@ class ScannerSelfTest(unittest.TestCase):
 
 class EncodingDisciplineTest(unittest.TestCase):
     def test_all_text_opens_pin_utf8(self):
+        # Recursive walk of tools/ — a flat listdir of (tools, tools/tests)
+        # silently skips any SUBPACKAGE (e.g. a future tools/<tool>/ dir), so
+        # an unscanned subdir's open() regressions would pass `make test`
+        # invisibly. dirs.sort() keeps the failure list deterministic.
         bad = []
-        for d in ("tools", os.path.join("tools", "tests")):
-            for fn in sorted(os.listdir(d)):
+        for root, dirs, files in os.walk("tools"):
+            dirs.sort()
+            for fn in sorted(files):
                 if fn.endswith(".py"):
-                    bad.extend(_violations(os.path.join(d, fn)))
+                    bad.extend(_violations(os.path.join(root, fn)))
         self.assertEqual(
             bad, [],
             "text-mode open() without encoding='utf-8' (locale-dependent; "
