@@ -14,7 +14,7 @@ TF     ?= terraform
 # guarded, so fetch/transform (which DO take multi-token) are unaffected.
 SCOPE_GLOB = $(if $(word 2,$(RESOURCE)),$(error RESOURCE takes a SINGLE selector for per-root targets (plan/apply/stage-imports/assert-clean/...) — got "$(RESOURCE)". Use one resource type, one glob (zia_*), or one product token (zia|zpa|zcc); for a multi-type scope, loop the target once per type. Multi-token RESOURCE is fetch/drift-only.),$(if $(RESOURCE),$(if $(filter zia zpa zcc,$(RESOURCE)),$(RESOURCE)_*,$(RESOURCE)),*))
 
-.PHONY: help env install-tf bump-check mine issue-watch triage surface plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports import-one statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report plan-summary-line assert-clean apply drift check-envs validate-config demo check-demo lint lint-pipelines fmt-config typecheck refresh-gates conformance
+.PHONY: help env install-tf bump-check mine issue-watch triage surface plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports import-one statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report plan-summary-line assert-clean apply drift check-envs validate-config demo check-demo lint lint-pipelines fmt-config typecheck refresh-gates conformance find-key url-add url-rm domain-add domain-rm
 
 # Company/deployment extensions: a private repo adds its own targets and
 # variable overrides in local.mk — NEVER by editing this file, which is
@@ -529,6 +529,36 @@ validate-config: ## Validate config/ against generated JSON Schemas (dev-only; j
 		echo "WARNING: no python 'jsonschema' and no uv - skipping config validation"; \
 		echo "(dev-only check; never required in restricted environments)"; \
 	fi
+
+##@ BAU config edits
+
+# Deterministic, idempotent, allowlisted single-edits for the high-churn tasks
+# (see docs/workflows/operate-change.md). They edit COMMITTED config only — run
+# the gates (typecheck/lint/plan-changed) and raise a PR; never apply directly.
+
+find-key: ## Resolve a display name to its config key(s) (TENANT=<label> TYPE=<resource_type> NAME="<display name>")
+	@test -n "$(TENANT)" -a -n "$(TYPE)" -a -n "$(NAME)" || { echo "usage: make find-key TENANT=<label> TYPE=<resource_type> NAME=\"<display name>\""; exit 2; }
+	$(PYTHON) -m tools.operate resolve "$(TENANT)" "$(TYPE)" "$(NAME)"
+
+url-add: ## Add a URL to a custom URL category (TENANT=<label> CATEGORY=<config-key> URL=<url>)
+	@test -n "$(TENANT)" -a -n "$(CATEGORY)" -a -n "$(URL)" || { echo "usage: make url-add TENANT=<label> CATEGORY=<config-key> URL=<url>"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+"; exit 2; }
+	$(PYTHON) -m tools.operate add "$(TENANT)" zia_url_categories "$(CATEGORY)" urls "$(URL)"
+
+url-rm: ## Remove a URL from a custom URL category (TENANT=<label> CATEGORY=<config-key> URL=<url>)
+	@test -n "$(TENANT)" -a -n "$(CATEGORY)" -a -n "$(URL)" || { echo "usage: make url-rm TENANT=<label> CATEGORY=<config-key> URL=<url>"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+"; exit 2; }
+	$(PYTHON) -m tools.operate remove "$(TENANT)" zia_url_categories "$(CATEGORY)" urls "$(URL)"
+
+domain-add: ## Add a domain to a ZPA app segment (TENANT=<label> SEGMENT=<config-key> DOMAIN=<domain>)
+	@test -n "$(TENANT)" -a -n "$(SEGMENT)" -a -n "$(DOMAIN)" || { echo "usage: make domain-add TENANT=<label> SEGMENT=<config-key> DOMAIN=<domain>"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+"; exit 2; }
+	$(PYTHON) -m tools.operate add "$(TENANT)" zpa_application_segment "$(SEGMENT)" domain_names "$(DOMAIN)"
+
+domain-rm: ## Remove a domain from a ZPA app segment (TENANT=<label> SEGMENT=<config-key> DOMAIN=<domain>)
+	@test -n "$(TENANT)" -a -n "$(SEGMENT)" -a -n "$(DOMAIN)" || { echo "usage: make domain-rm TENANT=<label> SEGMENT=<config-key> DOMAIN=<domain>"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+"; exit 2; }
+	$(PYTHON) -m tools.operate remove "$(TENANT)" zpa_application_segment "$(SEGMENT)" domain_names "$(DOMAIN)"
 
 ##@ Template authoring (dev)
 
