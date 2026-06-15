@@ -32,6 +32,14 @@ Order matters in one place: the **demo data must exist before `gen-env`**, becau
 `config/demo/<type>.auto.tfvars.json` exists *at generation time*. The phases
 below are sequenced for that.
 
+One gate class is **post-commit, not authoring**: `make check-demo` and
+`make check-envs` regenerate and then fail on any `git status` difference — so
+for a brand-new resource they correctly report your new, uncommitted files as
+"drift" and will **fail until you commit**. They're the clean-tree CI check that
+committed == regenerated, not a mid-authoring gate. Run them after the PR commit
+(Phase 8) / let CI run them; the authoring signal is `demo` / `typecheck` /
+`lint` / `test` passing.
+
 ---
 
 ## Phase 0 — Select and scope
@@ -77,6 +85,12 @@ any your overrides don't yet cover. Verify findings against `tools/MINING.md`
 SDK↔Terraform sweep. **What this surfaces is your override worklist** for
 Phases 3 and 4.
 
+`make mine` also reports an **unfetchable** count — heed it. The fetcher only
+does GET-style paginated endpoints; a resource the SDK lists via a `POST
+…/search` (e.g. `zpa_tag_namespace`) isn't fetchable as-is, so confirm a clean
+GET endpoint in Phase 2 before committing to it — verify the *method*, not just
+the path.
+
 ## Phase 2 — Register
 
 Add one entry to `tools/registry.json`. It is strict JSON — no comments:
@@ -91,10 +105,15 @@ Add one entry to `tools/registry.json`. It is strict JSON — no comments:
 
 `product` is `zia`, `zpa`, or `zcc`. `path`, `pagination`, and any `query` filter
 come from the SDK / public API docs — `tools/FETCH.md` documents the pagination
-shapes. A resource whose config is **derived** from another's pull (no fetch of
-its own) takes `"derive": { "from": "<source_type>", ... }` instead of `fetch` —
-see `zpa_policy_access_rule_reorder`. A derived resource is planned alongside its
+shapes; confirm the endpoint is a GET (not a `POST …/search`, per Phase 1). A
+resource whose config is **derived** from another's pull (no fetch of its own)
+takes `"derive": { "from": "<source_type>", ... }` instead of `fetch` — see
+`zpa_policy_access_rule_reorder`. A derived resource is planned alongside its
 source and is never hand-authored, so it has no demo fixture of its own (Phase 5).
+
+Adding the entry will fail **`tools/tests/test_registry.py`** — it pins the
+sorted `generated_types()` list. Add your type to that list (the failure names
+the expected value); `make test` in Phase 7 is the backstop if you forget.
 
 ## Phase 3 — Generate the module  ·  gate: `make generate`
 
@@ -131,7 +150,7 @@ verified instead by: its derive-transform unit test (e.g.
 `make demo` derives the config from (so a derived type adds no fixture of its own
 in Phase 5); and the env smoke test in Phase 6.
 
-## Phase 5 — Demo data + drop-ack  ·  gate: `make typecheck` + `make lint` + `make check-demo`
+## Phase 5 — Demo data + drop-ack  ·  gate: `make typecheck` + `make lint`
 
 The fictional `demo` tenant gives every gate and golden real data to run against.
 **The source is a synthetic API-shaped pull**, not the committed config:
@@ -148,7 +167,12 @@ The fictional `demo` tenant gives every gate and golden real data to run against
    DROPS_CHECK=1 make transform IN=tools/tests/fixtures/demo TENANT=demo RESOURCE=<type>
    ```
    Add anything it flags to the override map's `acknowledged_drops`, then re-run
-   until clean.
+   until clean. (`make triage IN=… APPLY=1` can bulk-classify drops, but it is
+   **global** — `APPLY=1` writes `acknowledged_drops` for *every* type in `IN`,
+   including unrelated ones. For a single new resource prefer the manual ack
+   above, or review its full diff before committing. A `SYNONYM`/`UNKNOWN`
+   finding — e.g. `file_type_id` vs `file_id` — is `triage` correctly forcing
+   human review: confirm against the provider read/expand before acknowledging.)
 3. Materialize and check:
 
    ```bash
@@ -156,22 +180,27 @@ The fictional `demo` tenant gives every gate and golden real data to run against
    make typecheck TENANT=demo      # each error line carries its own remediation
    make lint TENANT=demo
    make update-demo-goldens        # re-bless tools/tests/fixtures/demo-expected/
-   make check-demo                 # committed demo == pipeline output
+   # make check-demo runs in Phase 8 (post-commit) — it git-checks clean-tree
    ```
 
 `config/demo/<type>.auto.tfvars.json` is *generated output* of `make demo` — never
 hand-edit it; edit the fixture and re-materialize.
 
-## Phase 6 — Env root  ·  gate: `make gen-env` + `make check-envs` + `make test-envs`
+## Phase 6 — Env root  ·  gate: `make gen-env` + `make test-envs`
 
 Run this **after** Phase 5 — the demo config must exist so the env root's smoke
 test is config-backed:
 
 ```bash
 make gen-env TENANT=demo
-make check-envs              # fails on any uncommitted env-root drift
-make test-envs TENANT=demo   # mock-provider smoke test across the new root
+make test-envs TENANT=demo RESOURCE=<type>   # smoke JUST the new root (RESOURCE scopes it)
+# make check-envs runs in Phase 8 (post-commit) — it git-checks clean-tree
 ```
+
+Scope `test-envs`/`test-modules` with `RESOURCE=<type>` so you smoke only the new
+root, not every tenant root — the unscoped loop is slow and, on a constrained box,
+can fail later on unrelated roots (provider install / disk) after yours already
+passed.
 
 ## Phase 7 — Pin behavior + verify  ·  gate: `make test`
 
@@ -181,7 +210,7 @@ Rule 8: every behavior change ships a golden fixture.
 make update-goldens                 # re-bless generator goldens from current output
 # add/extend a transform fixture under tools/tests/fixtures/transform/<type>/ for NEW transform behavior
 make test                           # full Python suite (includes the demo-pipeline test)
-make test-modules                   # mock-provider terraform tests across modules
+make test-modules RESOURCE=<type>   # mock-provider terraform test for the new module
 make validate-imports TENANT=demo   # fixture import addresses resolve against the roots
 make validate                       # terraform fmt -check only (NOT terraform validate)
 ```
@@ -194,6 +223,14 @@ make validate                       # terraform fmt -check only (NOT terraform v
 Dev branch off `main`, PR — no direct-to-main. In the PR note: the resource
 added, any `acknowledged_drops`, and any carried-bug override with its
 delete-when condition.
+
+After committing, run the clean-tree drift gates — they pass now that your new
+files are committed (pre-commit they correctly reported them as drift):
+
+```bash
+make check-demo     # committed config/demo == pipeline output
+make check-envs     # committed envs == generator output
+```
 
 ---
 
@@ -219,15 +256,20 @@ invent it.
 
 ## The happy-path gate sequence
 
+Authoring (clean-tree drift gates `check-demo`/`check-envs` are NOT here — they
+run post-commit in Phase 8, since they'd flag your new uncommitted files):
+
 ```bash
 make mine && make generate && make conformance \
   && DROPS_CHECK=1 make transform IN=tools/tests/fixtures/demo TENANT=demo RESOURCE=<type> \
   && make demo && make typecheck TENANT=demo && make lint TENANT=demo \
-  && make update-demo-goldens && make check-demo \
-  && make gen-env TENANT=demo && make check-envs && make test-envs TENANT=demo \
-  && make update-goldens && make test && make test-modules \
+  && make update-demo-goldens \
+  && make gen-env TENANT=demo && make test-envs TENANT=demo RESOURCE=<type> \
+  && make update-goldens && make test && make test-modules RESOURCE=<type> \
   && make validate-imports TENANT=demo && make validate
 ```
+
+Then `git add` + commit, and run `make check-demo && make check-envs` (Phase 8).
 
 The marginal cost is the quirks (Phase 1/4) and the realism (Phase 5);
 everything else is a gate doing the work for you.
