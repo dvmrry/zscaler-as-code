@@ -9,6 +9,10 @@ would violate one, stop and leave a note instead of being clever.
 > different audience — see `OPERATING.md`. If you are running `make`
 > targets against a real tenant rather than editing `tools/`, read that
 > first.
+>
+> ADDING a resource type the provider exposes but the template doesn't yet
+> manage? Follow `docs/workflows/add-resource.md` — the phased, gate-by-gate
+> workflow that puts these invariants to work.
 
 ## Data hygiene
 
