@@ -19,9 +19,10 @@ the provider schema and `tools/`.
   registry / generator / an override and run `make generate` — never hand-edit
   `modules/`.
 - **Correctness is auto-verified.** `make conformance` synthesizes adversarial
-  API-shaped items for *every* registry type and runs them through the real
-  transform + schema + typecheck. A new entry is covered with no hand-written
-  fixture.
+  API-shaped items for every *non-derived* registry type and runs them through
+  the real transform + schema + typecheck — a new entry is covered with no
+  hand-written fixture. (Derived types are skipped here; they're covered by
+  their derive-transform and module tests instead — see Phase 4.)
 - **Anti-fabrication.** `schemas/provider/<product>.json` is the truth for which
   fields exist; `make mine` is the truth for how they behave. Never infer a
   field's type, the fetch path, or pagination from memory.
@@ -43,7 +44,8 @@ import json
 from tools.registry import generated_types
 managed = set(generated_types())
 for p in ("zia", "zpa", "zcc"):
-    res = set(json.load(open("schemas/provider/%s.json" % p))["resource_schemas"])
+    with open("schemas/provider/%s.json" % p, encoding="utf-8") as fh:
+        res = set(json.load(fh)["resource_schemas"])
     print(p, "headroom:", sorted(res - managed))
 PY
 ```
@@ -117,10 +119,17 @@ Re-run until generation is clean and byte-deterministic.
 make conformance         # synth -> transform -> typecheck, every registry type
 ```
 
-The harness auto-covers your new type — there is no fixture to write here, and it
-needs no demo data. **Zero mismatches is the contract.** A mismatch prints a
-remediation line (the authoritative decision table); the fix is almost always a
-rule in the override map. Loop with Phase 3 until clean.
+The harness auto-covers a **non-derived** type — there is no fixture to write
+here, and it needs no demo data. **Zero mismatches is the contract.** A mismatch
+prints a remediation line (the authoritative decision table); the fix is almost
+always a rule in the override map. Loop with Phase 3 until clean.
+
+`make conformance` **skips derived types** — they have no fetch, so there is no
+synthesize → transform → typecheck round-trip to run. A derived resource is
+verified instead by: its derive-transform unit test in
+`tools/tests/test_transform.py`; its **source** type's demo fixture, which
+`make demo` derives the config from (so a derived type adds no fixture of its own
+in Phase 5); and the env smoke test in Phase 6.
 
 ## Phase 5 — Demo data + drop-ack  ·  gate: `make typecheck` + `make lint` + `make check-demo`
 
