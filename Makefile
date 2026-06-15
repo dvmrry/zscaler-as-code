@@ -588,5 +588,5 @@ ov=load_override(rt); \
 items, originals, _=transform_items(raw, rt, ov); \
 open('tools/tests/fixtures/demo-expected/'+rt+'.tfvars.json','w').write(render_tfvars(items)); \
 open('tools/tests/fixtures/demo-expected/'+rt+'_imports.tf','w').write(render_imports(rt, originals, ov)); \
-print('blessed', rt)" 2>/dev/null; \
+print('blessed', rt)"; \
 	done

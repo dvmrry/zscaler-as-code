@@ -426,7 +426,7 @@ def main(argv=None):
             # pull) have no synthesize->transform->typecheck round-trip to
             # check here; their derive + module are covered by the transform
             # and module tests.
-            sys.stdout.write("SKIP %s (derived resource)\n" % rt)
+            sys.stderr.write("SKIP %s (derived resource)\n" % rt)
             skipped += 1
             continue
         checked += 1
