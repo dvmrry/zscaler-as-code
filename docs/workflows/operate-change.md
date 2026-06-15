@@ -30,10 +30,17 @@ deliberate add when the need shows up — one `EDITABLE` entry in `tools/operate
 + a thin target + a test — not a loosening into arbitrary edits.
 
 Anything else is **out of this path** — escalate, don't improvise:
-- A *new* category or segment, or a resource type not yet managed → the
-  `add-resource` workflow (`docs/workflows/add-resource.md`).
-- Ports, policy precedence/order, SSL bypass, account settings → a
-  hand-authored change with full review; these aren't single-list edits.
+- A **new instance** — a brand-new URL category or app segment of a type the
+  template already manages — is a new keyed config entry with many required
+  fields, not a single-list edit. Author it as a normal config change (or create
+  it at the source and `make fetch` it in), then run the same gates + plan + PR.
+  Not a primitive, but still this repo's ordinary config flow.
+- A **structural change** — ports, policy precedence/order, SSL bypass, account
+  settings — is hand-authored with full review; these aren't single-list edits.
+- An **unmanaged resource type** — the template doesn't manage that resource
+  *type* at all — is the `add-resource` workflow
+  (`docs/workflows/add-resource.md`): registry + generator work, a different job
+  from editing or adding an instance.
 
 ## Phase 1 — Intake
 
