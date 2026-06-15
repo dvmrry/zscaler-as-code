@@ -85,11 +85,19 @@ any your overrides don't yet cover. Verify findings against `tools/MINING.md`
 SDK↔Terraform sweep. **What this surfaces is your override worklist** for
 Phases 3 and 4.
 
-`make mine` also reports an **unfetchable** count — heed it. The fetcher only
-does GET-style paginated endpoints; a resource the SDK lists via a `POST
-…/search` (e.g. `zpa_tag_namespace`) isn't fetchable as-is, so confirm a clean
-GET endpoint in Phase 2 before committing to it — verify the *method*, not just
-the path.
+`make mine` also reports an **unfetchable** count — heed it, but know what it
+means: it's the number of types whose provider Go *source file* mine couldn't
+locate under the expected names (it prints a `MINE <type>: source file not
+found` line for each). That's a **mining-coverage gap** — mine scanned nothing
+for that type, so its quirk coverage is blank, not clean — not a statement about
+the tenant API. Check the provider repo layout manually for those (per the
+printed line) so you don't author against unmined quirks.
+
+Separately — and *not* something mine tells you — the fetcher only does
+GET-style paginated endpoints. A resource the SDK reaches via a `POST …/search`
+(e.g. `zpa_tag_namespace`) isn't fetchable as-is. That's a Phase 2 check against
+the SDK / `tools/FETCH.md`: confirm a clean GET endpoint and verify the
+*method*, not just the path, before committing to the type.
 
 ## Phase 2 — Register
 

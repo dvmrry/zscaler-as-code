@@ -151,7 +151,7 @@ fetch-diag: ## Probe TLS to the fetcher's hosts under system trust and +bundle
 ##@ Tenant gates
 
 test-modules: ## Run mock-provider terraform tests across generated modules ([RESOURCE=<type>] scopes to one)
-	@set -e; for d in modules/$(or $(RESOURCE),*)/; do \
+	@set -e; for d in modules/$(SCOPE_GLOB)/; do \
 		echo "== $$d"; \
 		$(TF) -chdir=$$d init -backend=false -input=false > /dev/null; \
 		$(TF) -chdir=$$d test; \
@@ -161,7 +161,7 @@ test-modules: ## Run mock-provider terraform tests across generated modules ([RE
 test-envs: ## Run mock-provider smoke tests across a tenant's env roots (TENANT=<label> [RESOURCE=<type>] scopes to one)
 	@test -n "$(TENANT)" || { echo "usage: make test-envs TENANT=<label> [RESOURCE=<type>]"; exit 2; }
 	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
-	@set -e; for d in envs/$(TENANT)/$(or $(RESOURCE),*)/; do \
+	@set -e; for d in envs/$(TENANT)/$(SCOPE_GLOB)/; do \
 		echo "== $$d"; \
 		$(TF) -chdir=$$d init -backend=false -input=false > /dev/null; \
 		$(TF) -chdir=$$d test; \
