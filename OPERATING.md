@@ -7,6 +7,11 @@ recipes; `AGENTS.md` has the rules for changing the repo itself. When a
 situation is not covered here or in `RUNBOOK.md`, stop and raise an issue
 (see the last section) rather than improvising.
 
+For the high-churn BAU edits — a URL on a category, a domain on an app
+segment — `docs/workflows/operate-change.md` is the ticket-to-PR workflow
+(resolve the name → tested primitive edit → gates → PR; never a hand edit,
+never a direct apply).
+
 If an automated agent operates this repo, treat this file as a standing
 brief: read it at the start of each session, and let it override anything
 carried over from a previous one — if your memory and this file disagree,
