@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Commit-back: push generated config/imports to STABLE per-(tenant,
 # resource-type) branches and open ONE Azure DevOps PR per changed
-# resource type via REST. Called by the bootstrap/drift pipelines — the
+# resource type via REST. Called by the bootstrap/drift pipelines - the
 # YAML stays a thin caller so this logic updates on repo pull (adapted
 # pipeline YAML does not; field-hit repeatedly).
 #
@@ -15,7 +15,7 @@
 # Required env:
 #   TENANT              tenant label ([A-Za-z0-9_.-]+)
 #   BRANCH_PREFIX       branch namespace: drift | bootstrap ([A-Za-z0-9_.-]+)
-#   PR_TITLE            base PR title; " — <resource_type>" is appended per PR
+#   PR_TITLE            base PR title; " - <resource_type>" is appended per PR
 #   SYSTEM_ACCESSTOKEN  map EXPLICITLY in the YAML step:
 #                         env: { SYSTEM_ACCESSTOKEN: $(System.AccessToken) }
 #                       (ADO auto-exposes the other SYSTEM_*/BUILD_* vars; not
@@ -25,7 +25,7 @@
 #   ARTIFACT_NOTE       extra line appended to every PR body (e.g. a pointer
 #                       to the published full drift report)
 #   HTTPS_PROXY         declare on the step if egress rides a proxy: curl
-#                       reads ONLY the env — agent git config gets the push
+#                       reads ONLY the env - agent git config gets the push
 #                       through and then the REST call hangs (field-hit)
 #
 # ADO setup: the build service identity needs "Contribute" on the repo;
@@ -48,7 +48,7 @@ for v in TENANT BRANCH_PREFIX PR_TITLE SYSTEM_ACCESSTOKEN \
          SYSTEM_COLLECTIONURI SYSTEM_TEAMPROJECT BUILD_REPOSITORY_ID; do
   if [ -z "${!v:-}" ]; then
     if [ "$v" = SYSTEM_ACCESSTOKEN ]; then
-      echo "error: SYSTEM_ACCESSTOKEN is unset — ADO never auto-exposes it;" \
+      echo "error: SYSTEM_ACCESSTOKEN is unset - ADO never auto-exposes it;" \
            'map it on the step: env: { SYSTEM_ACCESSTOKEN: $(System.AccessToken) }'
     else
       echo "error: required env var $v is unset"
@@ -67,7 +67,7 @@ IMPORTS_DIR="imports/$TENANT"
 
 # --- which resource types changed? --------------------------------------
 say 1/5 "change detection in $CONFIG_DIR + $IMPORTS_DIR"
-# NB: the program comes from `-c`, not a heredoc — stdin is the piped
+# NB: the program comes from `-c`, not a heredoc - stdin is the piped
 # `git status` output, and a `<<EOF` heredoc would override that pipe
 # (git would then SIGPIPE into a dead reader).
 types="$(git status --porcelain --untracked-files=all -- "$CONFIG_DIR" "$IMPORTS_DIR" | python3 -c '
@@ -90,7 +90,7 @@ for name in sorted(out):
     print(name)
 ' "$TENANT")"
 if [ -z "$types" ]; then
-  say 1/5 "nothing to commit — clean exit"
+  say 1/5 "nothing to commit - clean exit"
   exit 0
 fi
 say 1/5 "changed types:$(printf ' %s' $types)"
@@ -105,14 +105,14 @@ start_ref="$(git rev-parse HEAD)"
 tmpdir="$(mktemp -d)"
 # Trap armed BEFORE the temp branch is created, so a failure during the
 # snapshot still returns the repo to the start ref and removes the temp
-# branch — otherwise the next run cannot recreate _commitback_snap and the
+# branch - otherwise the next run cannot recreate _commitback_snap and the
 # pipeline wedges until someone intervenes.
 trap 'git checkout -q "$start_ref" 2>/dev/null || true; \
       git branch -qD _commitback_snap 2>/dev/null || true; \
       rm -rf "$tmpdir"' EXIT
 git branch -qD _commitback_snap 2>/dev/null || true   # leftover from a prior failed run
 git checkout -q -b _commitback_snap
-# Add only the dirs that exist — a config-only first bootstrap may have no
+# Add only the dirs that exist - a config-only first bootstrap may have no
 # imports/<tenant> yet, and `git add` errors (exit 128) on a pathspec that
 # matches nothing.
 for d in "$CONFIG_DIR" "$IMPORTS_DIR"; do
@@ -138,7 +138,7 @@ pr_url="${SYSTEM_COLLECTIONURI}${enc_proj}/_apis/git/repositories/${BUILD_REPOSI
 
 open_pr() {   # $1 branch  $2 title
   local br="$1" title="$2" desc code
-  desc="Automated $BRANCH_PREFIX for $TENANT — resource type \`${br##*/}\`."
+  desc="Automated $BRANCH_PREFIX for $TENANT - resource type \`${br##*/}\`."
   if [ -n "${ARTIFACT_NOTE:-}" ]; then desc="$desc
 
 $ARTIFACT_NOTE"; fi
@@ -154,17 +154,17 @@ PYEOF
   code="$(curl -sS --max-time 60 -X POST \
     -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" -H "Content-Type: application/json" \
     -d @"$tmpdir/pr.json" -o "$tmpdir/resp.json" -w '%{http_code}' "$pr_url")" || {
-      echo "  error: curl transport failure for $br (egress/timeout/proxy) — branch IS pushed; if proxied, declare HTTPS_PROXY; open the PR by hand"
+      echo "  error: curl transport failure for $br (egress/timeout/proxy) - branch IS pushed; if proxied, declare HTTPS_PROXY; open the PR by hand"
       return 1; }
   case "$code" in
     2*)  echo "  PR opened for $br (HTTP $code)";;
-    409) echo "  $br: active PR already open — refreshed by the push (HTTP 409)";;
+    409) echo "  $br: active PR already open - refreshed by the push (HTTP 409)";;
     *)   echo "  error: PR create for $br failed (HTTP $code):"; cat "$tmpdir/resp.json"; return 1;;
   esac
 }
 
 # NB: process_type is called as `if process_type ...`, which disables
-# `set -e` inside it — so every load-bearing git step checks its own exit
+# `set -e` inside it - so every load-bearing git step checks its own exit
 # and returns 1 explicitly. A bare failing command here would otherwise
 # fall through (e.g. a failed push followed by a 409 reporting success).
 process_type() {   # $1 resource type
@@ -184,15 +184,15 @@ process_type() {   # $1 resource type
     fi
   done
   if git diff --cached --quiet; then
-    echo "  $t: no net change vs $TARGET_BRANCH — skip"
+    echo "  $t: no net change vs $TARGET_BRANCH - skip"
     return 0
   fi
   git -c user.name="$BRANCH_PREFIX-bot" -c user.email="$BRANCH_PREFIX-bot@invalid" \
-    commit -q -m "$PR_TITLE — $t" || { echo "  $t: commit failed"; return 1; }
+    commit -q -m "$PR_TITLE - $t" || { echo "  $t: commit failed"; return 1; }
   git fetch -q origin "$br" 2>/dev/null || true   # give --force-with-lease a basis if the branch exists
   git push -q --force-with-lease origin "$br" \
-    || { echo "  $t: push FAILED — branch not updated"; return 1; }
-  open_pr "$br" "$PR_TITLE — $t"
+    || { echo "  $t: push FAILED - branch not updated"; return 1; }
+  open_pr "$br" "$PR_TITLE - $t"
 }
 
 say 4/5 "per-type branches + PRs"
@@ -202,7 +202,7 @@ for t in $types; do
 done
 
 if [ "$failed" -ne 0 ]; then
-  say 5/5 "$failed resource type(s) FAILED — see errors above; the rest succeeded"
+  say 5/5 "$failed resource type(s) FAILED - see errors above; the rest succeeded"
   exit 1
 fi
-say 5/5 "done — one rolling PR per changed resource type"
+say 5/5 "done - one rolling PR per changed resource type"
