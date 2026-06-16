@@ -131,7 +131,7 @@ class CommitbackTest(unittest.TestCase):
         by_src = {b["sourceRefName"]: b for b in bodies}
         self.assertEqual(
             by_src["refs/heads/bootstrap/t1/zia_url_categories"]["title"],
-            "bootstrap refresh: t1 — zia_url_categories")
+            "bootstrap refresh: t1 - zia_url_categories")
         for b in bodies:
             self.assertEqual(b["targetRefName"], "refs/heads/main")
         # project space survived as %20 in the REST URL
