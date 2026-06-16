@@ -864,12 +864,14 @@ def main(argv=None):
         # different schema name.
         sys.stderr.write(
             "%d unacknowledged dropped field(s) above — NEW API surface "
-            "for %s. Run: make triage IN=<pulls dir> APPLY=1 — it "
-            "classifies every path, auto-acknowledges the provably-safe "
-            "classes, and leaves only SYNONYM/UNKNOWN for eyes (a "
-            "dropped field can be write-REQUIRED under another schema "
-            "name — the signingCertId class). DROPS_CHECK=1 makes this "
-            "exit 4.\n" % (len(drops), resource_type))
+            "for %s. Confirm each against the provider read/expand, then add "
+            "the safe ones to acknowledged_drops in tools/overrides/%s.json "
+            "(a dropped field can be write-REQUIRED under another schema name "
+            "— the signingCertId class — so verify before acknowledging). "
+            "`make triage IN=<pulls dir> APPLY=1` bulk-classifies, but it is "
+            "GLOBAL: it writes acks for EVERY type in <pulls dir>, so for a "
+            "single resource prefer the per-type ack above. DROPS_CHECK=1 "
+            "makes this exit 4.\n" % (len(drops), resource_type, resource_type))
     sys.stderr.write("wrote %s\nwrote %s\n" % (tfvars_path, imports_path))
     if drops and os.environ.get("DROPS_CHECK"):
         # outputs are already written — the exit only makes the run red

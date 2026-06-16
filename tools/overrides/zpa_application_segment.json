@@ -25,6 +25,8 @@
     "server_groups[].modified_by",
     "server_groups[].modified_time",
     "server_groups[].name",
+    "server_groups[].passive",
+    "server_groups[].weight",
     "shared_microtenant_details",
     "sticky_entity",
     "sticky_group",

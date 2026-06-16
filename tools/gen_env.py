@@ -157,6 +157,12 @@ def generate_env(tenant, out_root=ENVS_ROOT, fmt=True, backend=None):
         with open(os.path.join(tests_dir, "smoke.tftest.hcl"), "w", encoding="utf-8") as f:
             f.write(test_text)
         sys.stderr.write("wrote %s\n" % os.path.join(tests_dir, "smoke.tftest.hcl"))
+        if not has_config:
+            sys.stderr.write(
+                "NOTE %s: no config at config/%s/ — smoke test is STUB-only "
+                "(composes + plans an empty root; does NOT exercise config). "
+                "Materialize the config and re-run gen-env to upgrade it.\n"
+                % (resource_type, tenant))
 
 
 def main(argv=None):
