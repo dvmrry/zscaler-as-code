@@ -18,6 +18,7 @@
     "app_connector_groups[].name",
     "app_connector_groups[].override_version_profile",
     "app_connector_groups[].pra_enabled",
+    "app_connector_groups[].selected_upgrade_priority",
     "app_connector_groups[].server_groups",
     "app_connector_groups[].siem_app_connector_group",
     "app_connector_groups[].tcp_quick_ack_app",

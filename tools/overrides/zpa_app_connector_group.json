@@ -12,6 +12,7 @@
     "np_assistant_group",
     "read_only",
     "restriction_type",
+    "selected_upgrade_priority",
     "server_groups",
     "site_id",
     "site_name",
