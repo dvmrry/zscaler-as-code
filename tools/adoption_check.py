@@ -16,7 +16,7 @@ import os
 import re
 import sys
 
-from tools.adoption_status import known_hold_paths, load_status
+from tools.adoption_status import known_holds_for, load_status
 from tools.fetch import expand_selectors, load_manifest, products_in_manifest
 from tools.registry import derive_entry, fetch_entry, load_registry
 from tools.transform import load_override, main as transform_main, transform_items
@@ -63,6 +63,13 @@ def _load_raw(path):
     return raw
 
 
+def _known_hold_map(resource_type, status):
+    out = {}
+    for hold in known_holds_for(resource_type, status):
+        out[hold["path"]] = hold.get("issue")
+    return out
+
+
 def check_resource(resource_type, tenant, pulls_dir, status, write=True):
     if derive_entry(resource_type):
         raise ValueError(
@@ -82,7 +89,8 @@ def check_resource(resource_type, tenant, pulls_dir, status, write=True):
         }
     raw = _load_raw(path)
     _, _, drops = transform_items(raw, resource_type, load_override(resource_type))
-    known = set(known_hold_paths(resource_type, status))
+    known_holds = _known_hold_map(resource_type, status)
+    known = set(known_holds)
     unexpected = sorted(set(drops) - known)
     state = "clean"
     if unexpected:
@@ -97,6 +105,7 @@ def check_resource(resource_type, tenant, pulls_dir, status, write=True):
                 "state": "transform-failed",
                 "drops": sorted(drops),
                 "unexpected": unexpected,
+                "known_holds": known_holds,
                 "path": path,
                 "code": code,
             }
@@ -105,8 +114,16 @@ def check_resource(resource_type, tenant, pulls_dir, status, write=True):
         "state": state,
         "drops": sorted(drops),
         "unexpected": unexpected,
+        "known_holds": known_holds,
         "path": path,
     }
+
+
+def _format_drop(path, known_holds):
+    issue = known_holds.get(path)
+    if issue:
+        return "%s (%s)" % (path, issue)
+    return path
 
 
 def render_result(result):
@@ -115,7 +132,10 @@ def render_result(result):
     if state == "clean":
         return "CLEAN %s" % rt
     if state == "known-hold":
-        return "KNOWN-HOLD %s: %s" % (rt, ", ".join(result["drops"]))
+        known_holds = result.get("known_holds") or {}
+        return "KNOWN-HOLD %s: %s" % (
+            rt,
+            ", ".join(_format_drop(path, known_holds) for path in result["drops"]))
     if state == "missing-pull":
         return "FAIL %s: missing %s" % (rt, result["path"])
     if state == "transform-failed":

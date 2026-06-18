@@ -3,7 +3,7 @@ import os
 import tempfile
 import unittest
 
-from tools.gen_env import render_env_main, render_env_test
+from tools.gen_env import expand_resources, render_env_main, render_env_test
 
 
 class RenderEnvMainTest(unittest.TestCase):
@@ -50,6 +50,35 @@ class GenerateEnvTest(unittest.TestCase):
             base = os.path.join(td, "zs2", "zpa_segment_group")
             self.assertTrue(os.path.exists(os.path.join(base, "main.tf")))
             self.assertTrue(os.path.exists(os.path.join(base, "README.md")))
+
+    def test_scoped_generation_writes_only_selected_root(self):
+        from tools.gen_env import generate_env
+        with tempfile.TemporaryDirectory() as td:
+            generate_env(
+                "zs2", out_root=td, fmt=False,
+                selectors=["zia_url_categories"])
+            self.assertTrue(os.path.exists(os.path.join(
+                td, "zs2", "zia_url_categories", "main.tf"
+            )))
+            self.assertFalse(os.path.exists(os.path.join(
+                td, "zs2", "zpa_segment_group", "main.tf"
+            )))
+
+
+class ExpandResourcesTest(unittest.TestCase):
+    def test_exact_selector(self):
+        self.assertEqual(
+            expand_resources(["zia_url_categories"]),
+            ["zia_url_categories"])
+
+    def test_product_selector(self):
+        resources = expand_resources(["zpa"])
+        self.assertIn("zpa_segment_group", resources)
+        self.assertTrue(all(rt.startswith("zpa_") for rt in resources))
+
+    def test_unknown_selector_is_loud(self):
+        with self.assertRaises(ValueError):
+            expand_resources(["does_not_exist"])
 
 
 class RenderEnvTestTest(unittest.TestCase):

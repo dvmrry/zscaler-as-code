@@ -58,12 +58,12 @@ contract-facts: ## Summarize an automate divergences/rosetta JSON against our re
 headroom-report: ## Provider schema vs adoption matrix ([RESOURCE=<type|product|glob> ...])
 	$(PYTHON) -m tools.headroom_report $(RESOURCE)
 
-adoption-check: ## Targeted live acceptance: fetch + known-hold DROPS_CHECK + transform + env/import validation (TENANT=<label> RESOURCE="<type|product> ...")
+adoption-check: ## Targeted live acceptance: fetch + known-hold DROPS_CHECK + scoped env/import validation (TENANT=<label> RESOURCE="<type|product> ...")
 	@test -n "$(TENANT)" -a -n "$(RESOURCE)" || { echo "usage: make adoption-check TENANT=<label> RESOURCE=\"<type|product> ...\""; exit 2; }
 	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
 	$(MAKE) fetch TENANT=$(TENANT) RESOURCE="$(RESOURCE)"
 	$(PYTHON) -m tools.adoption_check "$(TENANT)" $(RESOURCE)
-	$(MAKE) gen-env TENANT=$(TENANT) $(if $(BACKEND),BACKEND=$(BACKEND))
+	$(MAKE) gen-env TENANT=$(TENANT) RESOURCE="$(RESOURCE)" $(if $(BACKEND),BACKEND=$(BACKEND))
 	@set -e; for rt in $$($(PYTHON) -m tools.adoption_check --resources $(RESOURCE)); do \
 		$(MAKE) validate-imports TENANT=$(TENANT) RESOURCE=$$rt; \
 	done
@@ -128,10 +128,10 @@ ifeq ($(CHECK),1)
 		exit 1; }
 endif
 
-gen-env: ## Generate env roots for a tenant (TENANT=<label> [BACKEND=azurerm])
-	@test -n "$(TENANT)" || { echo "usage: make gen-env TENANT=<label> [BACKEND=azurerm]"; exit 2; }
+gen-env: ## Generate env roots for a tenant (TENANT=<label> [BACKEND=azurerm] [RESOURCE="<type|product> ..."])
+	@test -n "$(TENANT)" || { echo "usage: make gen-env TENANT=<label> [BACKEND=azurerm] [RESOURCE=\"<type|product> ...\"]"; exit 2; }
 	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
-	$(PYTHON) -m tools.gen_env "$(TENANT)" $(BACKEND)
+	$(PYTHON) -m tools.gen_env "$(TENANT)" $(if $(BACKEND),--backend "$(BACKEND)") $(RESOURCE)
 
 transform: ## Transform pulled API JSON into tfvars + imports (IN=<dir> TENANT=<name> [RESOURCE="<type|product> ..."])
 	@test -n "$(IN)" -a -n "$(TENANT)" || { echo "usage: make transform IN=pulls/<tenant> TENANT=<tenant> [RESOURCE=\"<type|product> ...\"]"; exit 2; }
