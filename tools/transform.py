@@ -644,6 +644,21 @@ def transform_items(raw_items, resource_type, override):
     return items, originals, reported
 
 
+def render_acknowledged_drops_snippet(override, drops):
+    """Copy-paste helper for a DROPS_CHECK report.
+
+    This intentionally renders only the acknowledged_drops field, not a full
+    override file, so operators merge it into the existing override without
+    losing unrelated keys such as sample/defaults/renames.
+    """
+    existing = set(override.get("acknowledged_drops") or [])
+    return json.dumps(
+        {"acknowledged_drops": sorted(existing | set(drops))},
+        indent=2,
+        sort_keys=True,
+    )
+
+
 def render_tfvars(items):
     return json.dumps({"items": items}, indent=2, sort_keys=True) + "\n"
 
@@ -868,6 +883,10 @@ def main(argv=None):
             "GLOBAL: it writes acks for EVERY type in <pulls dir>, so for a "
             "single resource prefer the per-type ack above. DROPS_CHECK=1 "
             "makes this exit 4.\n" % (len(drops), resource_type, resource_type))
+        sys.stderr.write(
+            "Exact paths from this run (merge into tools/overrides/%s.json "
+            "only after verification):\n%s\n"
+            % (resource_type, render_acknowledged_drops_snippet(override, drops)))
     sys.stderr.write("wrote %s\nwrote %s\n" % (tfvars_path, imports_path))
     if drops and os.environ.get("DROPS_CHECK"):
         # outputs are already written — the exit only makes the run red
