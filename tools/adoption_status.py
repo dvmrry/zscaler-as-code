@@ -15,6 +15,7 @@ STATUS_PATH = os.path.join("tools", "adoption_status.json")
 
 VALID_DISPOSITIONS = frozenset((
     "action-not-resource",
+    "entitlement-gated",
     "gateway-parked",
     "identity-skip",
     "manual-only",

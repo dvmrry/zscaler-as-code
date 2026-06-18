@@ -15,6 +15,38 @@
     "zia_admin_users": {
       "reason": "Admin users are an identity surface, not a bulk-managed configuration resource.",
       "status": "identity-skip"
+    },
+    "zia_extranet": {
+      "reason": "Live validation returned HTTP 403 for this fetch path on the tested tenant; treat as entitlement/scope-gated unless a tenant with Extranet entitlement proves otherwise.",
+      "status": "entitlement-gated"
+    },
+    "zpa_emergency_access_user": {
+      "reason": "Live validation returned HTTP 404 for emergency access users on the tested gateway; fetch path is source-backed but the surface may not be mounted without the feature.",
+      "status": "gateway-parked"
+    },
+    "zpa_inspection_custom_controls": {
+      "reason": "Live validation returned HTTP 403 for this fetch path on the tested tenant; treat as inspection entitlement/scope-gated unless an entitled tenant proves otherwise.",
+      "status": "entitlement-gated"
+    },
+    "zpa_inspection_profile": {
+      "reason": "Live validation returned HTTP 401 for this fetch path on the tested tenant; treat as inspection entitlement/scope-gated unless an entitled tenant proves otherwise.",
+      "status": "entitlement-gated"
+    },
+    "zpa_pra_approval_controller": {
+      "reason": "Live validation returned HTTP 400 for this source-backed PRA path on the tested tenant; provider-adjacent tooling treats PRA license errors as feature-gated.",
+      "status": "entitlement-gated"
+    },
+    "zpa_pra_console_controller": {
+      "reason": "Live validation returned HTTP 403 for this fetch path on the tested tenant; treat as PRA entitlement/scope-gated unless an entitled tenant proves otherwise.",
+      "status": "entitlement-gated"
+    },
+    "zpa_pra_credential_controller": {
+      "reason": "Live validation returned HTTP 403 for this fetch path on the tested tenant; treat as PRA entitlement/scope-gated unless an entitled tenant proves otherwise.",
+      "status": "entitlement-gated"
+    },
+    "zpa_pra_portal_controller": {
+      "reason": "Live validation returned HTTP 403 for this fetch path on the tested tenant; treat as PRA entitlement/scope-gated unless an entitled tenant proves otherwise.",
+      "status": "entitlement-gated"
     }
   },
   "known_holds": {

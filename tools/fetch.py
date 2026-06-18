@@ -893,8 +893,10 @@ def fetch_all(auth_mode, env, ctx, opener, out_dir, only=None):
             failed_products[product] = str(e)
     os.makedirs(out_dir, exist_ok=True)
     failures = {}
+    skipped = {}
     for resource_type in wanted:
-        product = manifest_entry(resource_type)["product"]
+        entry = manifest_entry(resource_type)
+        product = entry["product"]
         if product in failed_products:
             failures[resource_type] = "auth failed: %s" % failed_products[product]
             continue
@@ -903,6 +905,11 @@ def fetch_all(auth_mode, env, ctx, opener, out_dir, only=None):
                 resource_type, auth_mode, ctx, tokens[product], opener
             )
         except (RuntimeError, SystemExit, ValueError) as e:
+            status = _http_status_from_error(str(e))
+            optional = set(entry.get("optional_http_statuses") or [])
+            if status in optional:
+                skipped[resource_type] = str(e)
+                continue
             failures[resource_type] = str(e)
             continue
         path = os.path.join(out_dir, resource_type + ".json")
@@ -910,6 +917,10 @@ def fetch_all(auth_mode, env, ctx, opener, out_dir, only=None):
             json.dump(items, f, indent=2, sort_keys=True)
             f.write("\n")
         sys.stderr.write("wrote %s (%d items)\n" % (path, len(items)))
+    if skipped:
+        sys.stderr.write("\n%d resource(s) SKIPPED (known optional HTTP status):\n" % len(skipped))
+        for resource_type in sorted(skipped):
+            sys.stderr.write("  %s: %s\n" % (resource_type, skipped[resource_type]))
     if failures:
         sys.stderr.write("\n%d resource(s) FAILED:\n" % len(failures))
         for resource_type in sorted(failures):
@@ -918,6 +929,16 @@ def fetch_all(auth_mode, env, ctx, opener, out_dir, only=None):
             sys.stderr.write(line + "\n")
         return 1
     return 0
+
+
+def _http_status_from_error(message):
+    match = re.search(r"HTTP (\d+)", message)
+    if not match:
+        return None
+    try:
+        return int(match.group(1))
+    except ValueError:
+        return None
 
 
 def failure_hints(reasons, scoped=False):

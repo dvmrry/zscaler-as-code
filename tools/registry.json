@@ -130,7 +130,7 @@
   },
   "zia_auth_settings_urls": {
     "fetch": {
-      "pagination": "zia",
+      "pagination": "single",
       "path": "authSettings/exemptedUrls"
     },
     "generate": true,
@@ -171,16 +171,16 @@
   },
   "zia_casb_dlp_rules": {
     "fetch": {
-      "pagination": "zia",
-      "path": "casbDlpRules"
+      "pagination": "single",
+      "path": "casbDlpRules/all"
     },
     "generate": true,
     "product": "zia"
   },
   "zia_casb_malware_rules": {
     "fetch": {
-      "pagination": "zia",
-      "path": "casbMalwareRules"
+      "pagination": "single",
+      "path": "casbMalwareRules/all"
     },
     "generate": true,
     "product": "zia"
@@ -283,7 +283,11 @@
   "zia_extranet": {
     "fetch": {
       "pagination": "zia",
-      "path": "extranet"
+      "path": "extranet",
+      "optional_http_statuses": [
+        401,
+        403
+      ]
     },
     "generate": true,
     "product": "zia"
@@ -650,7 +654,12 @@
   "zpa_emergency_access_user": {
     "fetch": {
       "pagination": "zpa",
-      "path": "emergencyAccess/user"
+      "path": "emergencyAccess/users",
+      "optional_http_statuses": [
+        401,
+        403,
+        404
+      ]
     },
     "generate": true,
     "product": "zpa"
@@ -658,7 +667,11 @@
   "zpa_inspection_custom_controls": {
     "fetch": {
       "pagination": "zpa",
-      "path": "inspectionControls/custom"
+      "path": "inspectionControls/custom",
+      "optional_http_statuses": [
+        401,
+        403
+      ]
     },
     "generate": true,
     "product": "zpa"
@@ -666,7 +679,11 @@
   "zpa_inspection_profile": {
     "fetch": {
       "pagination": "zpa",
-      "path": "inspectionProfile"
+      "path": "inspectionProfile",
+      "optional_http_statuses": [
+        401,
+        403
+      ]
     },
     "generate": true,
     "product": "zpa"
@@ -759,7 +776,12 @@
   "zpa_pra_approval_controller": {
     "fetch": {
       "pagination": "zpa",
-      "path": "approval"
+      "path": "approval",
+      "optional_http_statuses": [
+        400,
+        401,
+        403
+      ]
     },
     "generate": true,
     "product": "zpa"
@@ -767,7 +789,11 @@
   "zpa_pra_console_controller": {
     "fetch": {
       "pagination": "zpa",
-      "path": "praConsole"
+      "path": "praConsole",
+      "optional_http_statuses": [
+        401,
+        403
+      ]
     },
     "generate": true,
     "product": "zpa"
@@ -775,7 +801,11 @@
   "zpa_pra_credential_controller": {
     "fetch": {
       "pagination": "zpa",
-      "path": "credential"
+      "path": "credential",
+      "optional_http_statuses": [
+        401,
+        403
+      ]
     },
     "generate": true,
     "product": "zpa"
@@ -787,7 +817,11 @@
   "zpa_pra_portal_controller": {
     "fetch": {
       "pagination": "zpa",
-      "path": "praPortal"
+      "path": "praPortal",
+      "optional_http_statuses": [
+        401,
+        403
+      ]
     },
     "generate": true,
     "product": "zpa"

@@ -1,0 +1,6 @@
+{
+  "defaults": {
+    "id": "bypass_url"
+  },
+  "key_field": "id"
+}

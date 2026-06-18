@@ -650,6 +650,34 @@ class PipelineTest(unittest.TestCase):
                 {},
             )
 
+    def test_singleton_default_id_keys_and_imports_but_not_config(self):
+        raw = [{"maliciousUrls": ["bad.example"]}]
+        override = load_override("zia_atp_malicious_urls")
+        items, originals, drops = transform_items(
+            raw, "zia_atp_malicious_urls", override
+        )
+        self.assertEqual(sorted(items), ["all_urls"])
+        self.assertEqual(items["all_urls"], {"malicious_urls": ["bad.example"]})
+        self.assertEqual(originals["all_urls"]["id"], "all_urls")
+        self.assertEqual(drops, [])
+        self.assertIn(
+            'id = "all_urls"',
+            render_imports("zia_atp_malicious_urls", originals, override),
+        )
+
+    def test_dlp_predefined_engine_name_feeds_required_name(self):
+        raw = [{
+            "id": "7",
+            "predefinedEngineName": "Predefined PCI",
+            "customDlpEngine": False,
+        }]
+        items, _, drops = transform_items(
+            raw, "zia_dlp_engines", load_override("zia_dlp_engines")
+        )
+        self.assertEqual(sorted(items), ["predefined_pci"])
+        self.assertEqual(items["predefined_pci"]["name"], "Predefined PCI")
+        self.assertEqual(drops, [])
+
     def test_two_non_ascii_names_transform_without_empty_key(self):
         # Two distinct CJK-named items both slug to '' on their name alone;
         # the id fallback gives each a distinct non-empty key, so the
@@ -1146,10 +1174,11 @@ class AcknowledgedDropsTest(unittest.TestCase):
         self.assertNotIn("config_space", items["a"])
 
     def test_no_acknowledged_drops_reports_all(self):
-        raw = [{"id": "1", "name": "A", "config_space": "X"}]
+        raw = [{"id": "1", "name": "A", "config_space": "X", "creation_time": "9"}]
         _, _, drops = transform_items(raw, "zpa_segment_group", {})
         self.assertIn("config_space", drops)
-        self.assertIn("id", drops)
+        self.assertIn("creation_time", drops)
+        self.assertNotIn("id", drops)
 
 
 class SlimWarningTest(unittest.TestCase):

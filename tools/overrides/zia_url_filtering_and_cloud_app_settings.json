@@ -1,0 +1,6 @@
+{
+  "defaults": {
+    "id": "app_setting"
+  },
+  "key_field": "id"
+}

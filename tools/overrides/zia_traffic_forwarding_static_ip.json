@@ -1,4 +1,5 @@
 {
+  "key_field": "ip_address",
   "sample": {
     "ip_address": "192.0.2.20"
   }

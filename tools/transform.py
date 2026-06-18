@@ -18,6 +18,7 @@ from tools.tfschema import (
     classify_attributes,
     input_block_types,
     load_resource,
+    resource_input_attrs,
 )
 
 _SNAKE_1 = re.compile(r"(.)([A-Z][a-z]+)")
@@ -58,7 +59,8 @@ def _matches_default(val, default):
 
 
 def filter_item(item, block, path, drops, merge_blocks=frozenset(),
-                override_drops=frozenset(), override_drop_defaults=None):
+                override_drops=frozenset(), override_drop_defaults=None,
+                resource_top=False):
     """Keep only schema-input attrs and blocks, recursively.
 
     Computed-only and unknown keys are dropped and their paths recorded in
@@ -75,7 +77,7 @@ def filter_item(item, block, path, drops, merge_blocks=frozenset(),
     full path with "[]" markers stripped; drops requested by the operator
     are intentional, so they are NOT added to the coverage-gap report.
     """
-    cls = classify_attributes(block)
+    cls = resource_input_attrs(block) if resource_top else classify_attributes(block)
     keep_attrs = set(cls["required"] + cls["optional"])
     block_types = input_block_types(block)
     out = {}
@@ -149,7 +151,7 @@ def filter_item(item, block, path, drops, merge_blocks=frozenset(),
                                 merged, inner_block, inner_path, drops,
                                 override_drops=override_drops,
                                 override_drop_defaults=override_drop_defaults)
-                        ]
+                            ]
                         continue
                     out[key] = [
                         filter_item(
@@ -171,6 +173,12 @@ def filter_item(item, block, path, drops, merge_blocks=frozenset(),
                 else:
                     drops.append(child_path)
         else:
+            top_id = (
+                resource_top and key == "id"
+                and (block.get("attributes") or {}).get("id", {}).get("computed")
+            )
+            if top_id:
+                continue
             drops.append(child_path)
     return out
 
@@ -636,6 +644,7 @@ def transform_items(raw_items, resource_type, override):
                 (k, v)
                 for k, v in (override.get("drop_if_default") or {}).items()
                 if "." in k),
+            resource_top=True,
         )
         items[key] = coerce_item(filtered, block)
         originals[key] = normalized

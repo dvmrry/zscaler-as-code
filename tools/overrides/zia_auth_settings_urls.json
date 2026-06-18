@@ -1,0 +1,6 @@
+{
+  "defaults": {
+    "id": "all_urls"
+  },
+  "key_field": "id"
+}

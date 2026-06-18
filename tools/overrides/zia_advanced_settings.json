@@ -1,0 +1,6 @@
+{
+  "defaults": {
+    "id": "advanced_settings"
+  },
+  "key_field": "id"
+}

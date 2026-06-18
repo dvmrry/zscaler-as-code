@@ -64,6 +64,17 @@ class AdoptionCheckTest(unittest.TestCase):
         self.assertEqual(result["state"], "missing-pull")
         self.assertIn("zpa_segment_group.json", result["path"])
 
+    def test_missing_dispositioned_pull_is_known_skip(self):
+        result = adoption_check.check_resource(
+            "zia_extranet", "tenant", self.tmp, self.status, write=False)
+        self.assertEqual(result["state"], "known-skip")
+        self.assertIn("entitlement", result["disposition"]["status"])
+        self.assertTrue(
+            adoption_check.render_result(result).startswith(
+                "KNOWN-SKIP zia_extranet:"
+            )
+        )
+
     def test_expand_resources_refuses_non_fetch_resource(self):
         with self.assertRaises(ValueError):
             adoption_check.expand_resources(["zpa_policy_access_rule_reorder"])
