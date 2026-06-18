@@ -73,7 +73,7 @@ say 1/5 "change detection in $CONFIG_DIR + $IMPORTS_DIR"
 types="$(git status --porcelain --untracked-files=all -- "$CONFIG_DIR" "$IMPORTS_DIR" | python3 -c '
 import re, sys
 t = re.escape(sys.argv[1])
-cfg = re.compile(r"^config/%s/(.+)\.auto\.tfvars\.json$" % t)
+cfg = re.compile(r"^config/%s/(.+?)(?:\.auto\.tfvars|\.lookup)\.json$" % t)
 imp = re.compile(r"^imports/%s/(.+?)_(?:imports|moves)\.tf$" % t)
 out = set()
 for line in sys.stdin:
@@ -175,6 +175,7 @@ process_type() {   # $1 resource type
   # but present in the base -> stage the removal (a resource dropped
   # upstream), so deletions propagate instead of being silently skipped.
   for f in "$CONFIG_DIR/$t.auto.tfvars.json" \
+           "$CONFIG_DIR/$t.lookup.json" \
            "$IMPORTS_DIR/${t}_imports.tf" "$IMPORTS_DIR/${t}_moves.tf"; do
     if git cat-file -e "$wip:$f" 2>/dev/null; then
       git checkout -q "$wip" -- "$f"

@@ -237,6 +237,43 @@ class CommitbackTest(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertEqual(self._origin_branches(), ["bootstrap/t1/zia_rule_labels"], out)
 
+    def test_lookup_sidecar_is_committed_with_its_resource_type(self):
+        self._stage_types("zia_url_categories")
+        with open(os.path.join(self.work, "config/t1/zia_url_categories.lookup.json"),
+                  "w", encoding="utf-8") as f:
+            f.write('{"CUSTOM_01": "Readable"}\n')
+
+        code, out = self._run()
+        self.assertEqual(code, 0, out)
+
+        tree = subprocess.check_output(
+            ["git", "-C", self.origin, "ls-tree", "-r", "--name-only",
+             "bootstrap/t1/zia_url_categories"]).decode("utf-8")
+        self.assertIn("config/t1/zia_url_categories.lookup.json", tree)
+
+    def test_lookup_only_change_detects_its_resource_type(self):
+        self._stage_types("zia_url_categories")
+        with open(os.path.join(self.work, "config/t1/zia_url_categories.lookup.json"),
+                  "w", encoding="utf-8") as f:
+            f.write('{"CUSTOM_01": "Old"}\n')
+        self._git("-C", self.work, "add", "-A")
+        self._git("-C", self.work, "-c", "user.name=t", "-c", "user.email=t@invalid",
+                  "commit", "-q", "-m", "seed lookup")
+        self._git("-C", self.work, "push", "-q", "origin", "main")
+
+        with open(os.path.join(self.work, "config/t1/zia_url_categories.lookup.json"),
+                  "w", encoding="utf-8") as f:
+            f.write('{"CUSTOM_01": "New"}\n')
+
+        code, out = self._run()
+        self.assertEqual(code, 0, out)
+        self.assertEqual(self._origin_branches(), ["bootstrap/t1/zia_url_categories"], out)
+        blob = subprocess.check_output(
+            ["git", "-C", self.origin, "show",
+             "bootstrap/t1/zia_url_categories:config/t1/zia_url_categories.lookup.json"]
+        ).decode("utf-8")
+        self.assertEqual(blob, '{"CUSTOM_01": "New"}\n')
+
     def test_missing_token_names_the_yaml_mapping(self):
         self._stage_types("zia_url_categories")
         env = dict(self.env)
