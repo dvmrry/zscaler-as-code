@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "admin_acct_access": {
+            "type": "string"
+          },
+          "alerting_access": {
+            "type": "string"
+          },
+          "analysis_access": {
+            "type": "string"
+          },
+          "dashboard_access": {
+            "type": "string"
+          },
+          "device_info_access": {
+            "type": "string"
+          },
+          "ext_feature_permissions": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "feature_permissions": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "is_auditor": {
+            "type": "boolean"
+          },
+          "is_non_editable": {
+            "type": "boolean"
+          },
+          "logs_limit": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "policy_access": {
+            "type": "string"
+          },
+          "rank": {
+            "type": "number"
+          },
+          "report_access": {
+            "type": "string"
+          },
+          "report_time_duration": {
+            "type": "number"
+          },
+          "role_type": {
+            "type": "string"
+          },
+          "username_access": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zia_admin_roles tfvars",
+  "type": "object"
+}

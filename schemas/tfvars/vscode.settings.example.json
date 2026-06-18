@@ -2,6 +2,12 @@
   "json.schemas": [
     {
       "fileMatch": [
+        "config/*/zcc_device_cleanup.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zcc_device_cleanup.schema.json"
+    },
+    {
+      "fileMatch": [
         "config/*/zcc_failopen_policy.auto.tfvars.json"
       ],
       "url": "./schemas/tfvars/zcc_failopen_policy.schema.json"
@@ -11,6 +17,12 @@
         "config/*/zcc_forwarding_profile.auto.tfvars.json"
       ],
       "url": "./schemas/tfvars/zcc_forwarding_profile.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zcc_notification_template.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zcc_notification_template.schema.json"
     },
     {
       "fileMatch": [
@@ -26,9 +38,123 @@
     },
     {
       "fileMatch": [
+        "config/*/zcc_zia_posture.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zcc_zia_posture.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_activation_status.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_activation_status.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_admin_roles.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_admin_roles.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_admin_users.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_admin_users.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_advanced_settings.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_advanced_settings.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_advanced_threat_settings.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_advanced_threat_settings.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_atp_malicious_urls.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_atp_malicious_urls.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_atp_malware_inspection.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_atp_malware_inspection.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_atp_malware_policy.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_atp_malware_policy.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_atp_malware_protocols.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_atp_malware_protocols.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_atp_malware_settings.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_atp_malware_settings.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_atp_security_exceptions.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_atp_security_exceptions.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_auth_settings_urls.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_auth_settings_urls.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_bandwidth_classes.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_bandwidth_classes.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_bandwidth_classes_file_size.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_bandwidth_classes_file_size.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_bandwidth_classes_web_conferencing.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_bandwidth_classes_web_conferencing.schema.json"
+    },
+    {
+      "fileMatch": [
         "config/*/zia_bandwidth_control_rule.auto.tfvars.json"
       ],
       "url": "./schemas/tfvars/zia_bandwidth_control_rule.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_browser_control_policy.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_browser_control_policy.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_casb_dlp_rules.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_casb_dlp_rules.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_casb_malware_rules.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_casb_malware_rules.schema.json"
     },
     {
       "fileMatch": [
@@ -38,9 +164,153 @@
     },
     {
       "fileMatch": [
+        "config/*/zia_cloud_application_instance.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_cloud_application_instance.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_cloud_nss_feed.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_cloud_nss_feed.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_custom_file_types.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_custom_file_types.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_dc_exclusions.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_dc_exclusions.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_dlp_dictionaries.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_dlp_dictionaries.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_dlp_engines.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_dlp_engines.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_dlp_notification_templates.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_dlp_notification_templates.schema.json"
+    },
+    {
+      "fileMatch": [
         "config/*/zia_dlp_web_rules.auto.tfvars.json"
       ],
       "url": "./schemas/tfvars/zia_dlp_web_rules.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_email_profile.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_email_profile.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_end_user_notification.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_end_user_notification.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_extranet.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_extranet.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_file_type_control_rules.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_file_type_control_rules.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_firewall_dns_rule.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_firewall_dns_rule.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_firewall_filtering_destination_groups.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_firewall_filtering_destination_groups.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_firewall_filtering_ip_source_groups.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_firewall_filtering_ip_source_groups.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_firewall_filtering_network_application_groups.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_firewall_filtering_network_application_groups.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_firewall_filtering_network_service.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_firewall_filtering_network_service.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_firewall_filtering_network_service_groups.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_firewall_filtering_network_service_groups.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_firewall_filtering_rule.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_firewall_filtering_rule.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_firewall_ips_rule.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_firewall_ips_rule.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_forwarding_control_proxies.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_forwarding_control_proxies.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_forwarding_control_rule.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_forwarding_control_rule.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_forwarding_control_zpa_gateway.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_forwarding_control_zpa_gateway.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_ftp_control_policy.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_ftp_control_policy.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_ips_signature_rules.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_ips_signature_rules.schema.json"
     },
     {
       "fileMatch": [
@@ -50,9 +320,63 @@
     },
     {
       "fileMatch": [
+        "config/*/zia_mobile_malware_protection_policy.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_mobile_malware_protection_policy.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_nat_control_rules.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_nat_control_rules.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_nss_server.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_nss_server.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_risk_profiles.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_risk_profiles.schema.json"
+    },
+    {
+      "fileMatch": [
         "config/*/zia_rule_labels.auto.tfvars.json"
       ],
       "url": "./schemas/tfvars/zia_rule_labels.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_sandbox_behavioral_analysis.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_sandbox_behavioral_analysis.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_sandbox_behavioral_analysis_v2.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_sandbox_behavioral_analysis_v2.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_sandbox_file_submission.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_sandbox_file_submission.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_sandbox_rules.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_sandbox_rules.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_security_settings.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_security_settings.schema.json"
     },
     {
       "fileMatch": [
@@ -62,15 +386,99 @@
     },
     {
       "fileMatch": [
+        "config/*/zia_sub_cloud.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_sub_cloud.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_subscription_alert.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_subscription_alert.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_tenant_restriction_profile.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_tenant_restriction_profile.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_traffic_capture_rules.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_traffic_capture_rules.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_traffic_forwarding_gre_tunnel.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_traffic_forwarding_gre_tunnel.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_traffic_forwarding_static_ip.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_traffic_forwarding_static_ip.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_traffic_forwarding_vpn_credentials.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_traffic_forwarding_vpn_credentials.schema.json"
+    },
+    {
+      "fileMatch": [
         "config/*/zia_url_categories.auto.tfvars.json"
       ],
       "url": "./schemas/tfvars/zia_url_categories.schema.json"
     },
     {
       "fileMatch": [
+        "config/*/zia_url_categories_predefined.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_url_categories_predefined.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_url_filtering_and_cloud_app_settings.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_url_filtering_and_cloud_app_settings.schema.json"
+    },
+    {
+      "fileMatch": [
         "config/*/zia_url_filtering_rules.auto.tfvars.json"
       ],
       "url": "./schemas/tfvars/zia_url_filtering_rules.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_user_management.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_user_management.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_virtual_service_edge_cluster.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_virtual_service_edge_cluster.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_virtual_service_edge_node.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_virtual_service_edge_node.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_workload_groups.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_workload_groups.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_app_connector_assistant_schedule.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_app_connector_assistant_schedule.schema.json"
     },
     {
       "fileMatch": [
@@ -86,9 +494,99 @@
     },
     {
       "fileMatch": [
+        "config/*/zpa_application_segment_browser_access.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_application_segment_browser_access.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_application_segment_inspection.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_application_segment_inspection.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_application_segment_multimatch_bulk.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_application_segment_multimatch_bulk.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_application_segment_pra.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_application_segment_pra.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_application_segment_weightedlb_config.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_application_segment_weightedlb_config.schema.json"
+    },
+    {
+      "fileMatch": [
         "config/*/zpa_application_server.auto.tfvars.json"
       ],
       "url": "./schemas/tfvars/zpa_application_server.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_ba_certificate.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_ba_certificate.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_browser_access.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_browser_access.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_c2c_ip_ranges.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_c2c_ip_ranges.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_cloud_browser_isolation_banner.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_cloud_browser_isolation_banner.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_cloud_browser_isolation_certificate.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_cloud_browser_isolation_certificate.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_cloud_browser_isolation_external_profile.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_cloud_browser_isolation_external_profile.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_emergency_access_user.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_emergency_access_user.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_inspection_custom_controls.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_inspection_custom_controls.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_inspection_profile.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_inspection_profile.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_lss_config_controller.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_lss_config_controller.schema.json"
     },
     {
       "fileMatch": [
@@ -110,6 +608,132 @@
     },
     {
       "fileMatch": [
+        "config/*/zpa_policy_access_rule_v2.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_policy_access_rule_v2.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_policy_browser_protection_rule.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_policy_browser_protection_rule.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_policy_capabilities_rule.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_policy_capabilities_rule.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_policy_credential_rule.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_policy_credential_rule.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_policy_forwarding_rule.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_policy_forwarding_rule.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_policy_forwarding_rule_v2.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_policy_forwarding_rule_v2.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_policy_inspection_rule.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_policy_inspection_rule.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_policy_inspection_rule_v2.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_policy_inspection_rule_v2.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_policy_isolation_rule.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_policy_isolation_rule.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_policy_isolation_rule_v2.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_policy_isolation_rule_v2.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_policy_portal_access_rule.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_policy_portal_access_rule.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_policy_redirection_rule.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_policy_redirection_rule.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_policy_timeout_rule.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_policy_timeout_rule.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_policy_timeout_rule_v2.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_policy_timeout_rule_v2.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_pra_approval_controller.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_pra_approval_controller.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_pra_console_controller.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_pra_console_controller.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_pra_credential_controller.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_pra_credential_controller.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_pra_credential_pool.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_pra_credential_pool.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_pra_portal_controller.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_pra_portal_controller.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_private_cloud_group.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_private_cloud_group.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_provisioning_key.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_provisioning_key.schema.json"
+    },
+    {
+      "fileMatch": [
         "config/*/zpa_segment_group.auto.tfvars.json"
       ],
       "url": "./schemas/tfvars/zpa_segment_group.schema.json"
@@ -119,6 +743,60 @@
         "config/*/zpa_server_group.auto.tfvars.json"
       ],
       "url": "./schemas/tfvars/zpa_server_group.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_service_edge_assistant_schedule.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_service_edge_assistant_schedule.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_service_edge_group.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_service_edge_group.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_tag_group.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_tag_group.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_tag_key.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_tag_key.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_tag_namespace.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_tag_namespace.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_user_portal_aup.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_user_portal_aup.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_user_portal_controller.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_user_portal_controller.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_user_portal_link.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_user_portal_link.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_zia_cloud_config.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_zia_cloud_config.schema.json"
     }
   ]
 }

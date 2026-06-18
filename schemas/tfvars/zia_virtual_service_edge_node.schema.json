@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "cluster_name": {
+            "type": "string"
+          },
+          "default_gateway": {
+            "type": "string"
+          },
+          "deployment_mode": {
+            "type": "string"
+          },
+          "establish_support_tunnel_enabled": {
+            "type": "boolean"
+          },
+          "in_production": {
+            "type": "boolean"
+          },
+          "ip_address": {
+            "type": "string"
+          },
+          "ip_sec_enabled": {
+            "type": "boolean"
+          },
+          "load_balancer_ip_address": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "on_demand_support_tunnel_enabled": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "subnet_mask": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "vzen_sku_type": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zia_virtual_service_edge_node tfvars",
+  "type": "object"
+}

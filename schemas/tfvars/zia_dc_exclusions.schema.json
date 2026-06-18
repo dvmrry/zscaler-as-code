@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "datacenter_id": {
+            "type": "number"
+          },
+          "description": {
+            "type": "string"
+          },
+          "end_time": {
+            "type": "number"
+          },
+          "end_time_utc": {
+            "type": "string"
+          },
+          "start_time": {
+            "type": "number"
+          },
+          "start_time_utc": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zia_dc_exclusions tfvars",
+  "type": "object"
+}

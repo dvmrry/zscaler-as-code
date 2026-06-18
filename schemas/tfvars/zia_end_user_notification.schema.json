@@ -1,0 +1,110 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "aup_custom_frequency": {
+            "type": "number"
+          },
+          "aup_day_offset": {
+            "type": "number"
+          },
+          "aup_frequency": {
+            "type": "string"
+          },
+          "aup_message": {
+            "type": "string"
+          },
+          "caution_again_after": {
+            "type": "number"
+          },
+          "caution_custom_text": {
+            "type": "string"
+          },
+          "caution_per_domain": {
+            "type": "boolean"
+          },
+          "custom_text": {
+            "type": "string"
+          },
+          "display_company_logo": {
+            "type": "boolean"
+          },
+          "display_company_name": {
+            "type": "boolean"
+          },
+          "display_reason": {
+            "type": "boolean"
+          },
+          "idp_proxy_notification_text": {
+            "type": "string"
+          },
+          "notification_type": {
+            "type": "string"
+          },
+          "org_policy_link": {
+            "type": "string"
+          },
+          "quarantine_custom_notification_text": {
+            "type": "string"
+          },
+          "redirect_url": {
+            "type": "string"
+          },
+          "security_review_custom_location": {
+            "type": "string"
+          },
+          "security_review_enabled": {
+            "type": "boolean"
+          },
+          "security_review_submit_to_security_cloud": {
+            "type": "boolean"
+          },
+          "security_review_text": {
+            "type": "string"
+          },
+          "support_email": {
+            "type": "string"
+          },
+          "support_phone": {
+            "type": "string"
+          },
+          "url_cat_review_custom_location": {
+            "type": "string"
+          },
+          "url_cat_review_enabled": {
+            "type": "boolean"
+          },
+          "url_cat_review_submit_to_security_cloud": {
+            "type": "boolean"
+          },
+          "url_cat_review_text": {
+            "type": "string"
+          },
+          "web_dlp_review_custom_location": {
+            "type": "string"
+          },
+          "web_dlp_review_enabled": {
+            "type": "boolean"
+          },
+          "web_dlp_review_submit_to_security_cloud": {
+            "type": "boolean"
+          },
+          "web_dlp_review_text": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zia_end_user_notification tfvars",
+  "type": "object"
+}

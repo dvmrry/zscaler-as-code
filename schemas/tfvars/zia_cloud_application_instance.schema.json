@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "instance_identifiers": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "identifier_type": {
+                  "type": "string"
+                },
+                "instance_identifier": {
+                  "type": "string"
+                },
+                "instance_identifier_name": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "instance_type": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zia_cloud_application_instance tfvars",
+  "type": "object"
+}

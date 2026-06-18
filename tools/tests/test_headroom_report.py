@@ -34,16 +34,16 @@ class HeadroomReportTest(unittest.TestCase):
         self.assertIn("Activation is an action", text)
 
     def test_unmanaged_provider_resource_is_module_ready_headroom(self):
-        text = headroom_report.render_report(selectors=["zia_admin_roles"])
+        text = headroom_report.render_report(selectors=["zia_cloud_nss_feed"])
         self.assertIn("Provider resources in scope: 1", text)
-        self.assertIn("module-ready", text)
-        self.assertIn("not adopted", text)
+        self.assertIn("module-generated", text)
+        self.assertIn("generated but has no fetch", text)
 
     def test_product_selector_summarizes_many_rows(self):
         text = headroom_report.render_report(selectors=["zpa"])
         self.assertIn("Selector: zpa", text)
         self.assertIn("managed-fetch", text)
-        self.assertIn("module-ready", text)
+        self.assertIn("module-generated", text)
 
 
 if __name__ == "__main__":

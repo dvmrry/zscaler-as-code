@@ -1,0 +1,108 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "consider_embedded_sites": {
+            "type": "boolean"
+          },
+          "enable_block_override_for_non_auth_user": {
+            "type": "boolean"
+          },
+          "enable_chatgpt_prompt": {
+            "type": "boolean"
+          },
+          "enable_cipa_compliance": {
+            "type": "boolean"
+          },
+          "enable_claude_prompt": {
+            "type": "boolean"
+          },
+          "enable_creative_commons_search_results": {
+            "type": "boolean"
+          },
+          "enable_deep_seek_prompt": {
+            "type": "boolean"
+          },
+          "enable_dynamic_content_cat": {
+            "type": "boolean"
+          },
+          "enable_gemini_prompt": {
+            "type": "boolean"
+          },
+          "enable_grammarly_prompt": {
+            "type": "boolean"
+          },
+          "enable_grok_prompt": {
+            "type": "boolean"
+          },
+          "enable_meta_prompt": {
+            "type": "boolean"
+          },
+          "enable_microsoft_copilot_prompt": {
+            "type": "boolean"
+          },
+          "enable_mistral_ai_prompt": {
+            "type": "boolean"
+          },
+          "enable_msft_o365": {
+            "type": "boolean"
+          },
+          "enable_newly_registered_domains": {
+            "type": "boolean"
+          },
+          "enable_office365": {
+            "type": "boolean"
+          },
+          "enable_per_plexity_prompt": {
+            "type": "boolean"
+          },
+          "enable_poe_prompt": {
+            "type": "boolean"
+          },
+          "enable_ucaas_logmein": {
+            "type": "boolean"
+          },
+          "enable_ucaas_ring_central": {
+            "type": "boolean"
+          },
+          "enable_ucaas_talkdesk": {
+            "type": "boolean"
+          },
+          "enable_ucaas_webex": {
+            "type": "boolean"
+          },
+          "enable_ucaas_zoom": {
+            "type": "boolean"
+          },
+          "enable_writer_prompt": {
+            "type": "boolean"
+          },
+          "enforce_safe_search": {
+            "type": "boolean"
+          },
+          "safe_search_apps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "zvelo_db_lookup_disabled": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zia_url_filtering_and_cloud_app_settings tfvars",
+  "type": "object"
+}

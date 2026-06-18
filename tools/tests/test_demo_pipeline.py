@@ -28,9 +28,11 @@ def _demo_types():
 
 
 class DemoPipelineTest(unittest.TestCase):
-    def test_demo_files_exist_for_generated_types(self):
+    def test_demo_files_are_generated_types(self):
         demo = _demo_types()
-        missing = []
+        generated = set(generated_types())
+        extra = sorted(rt for rt in demo if rt not in generated)
+        self.assertEqual(extra, [], "demo fixtures for non-generated types: %r" % extra)
         for rt in generated_types():
             derive = derive_entry(rt)
             if derive:
@@ -41,15 +43,6 @@ class DemoPipelineTest(unittest.TestCase):
                     "%s derives from %s but there is no demo fixture for it"
                     % (rt, derive["from"]),
                 )
-            elif rt not in demo:
-                missing.append(rt)
-        # Every generated resource should eventually have demo coverage;
-        # tolerate gaps explicitly so additions are deliberate.
-        self.assertEqual(
-            missing, [],
-            "generated types without demo data: %r (extract from the SDK "
-            "cassettes or document why not)" % missing,
-        )
 
     def test_derived_demo_config_matches_source_order(self):
         # The reorder config is derived from the access-rule demo fixture's

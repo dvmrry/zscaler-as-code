@@ -1,4 +1,12 @@
 {
+  "zcc_device_cleanup": {
+    "fetch": {
+      "pagination": "single",
+      "path": "zcc/papi/public/v1/getDeviceCleanupInfo"
+    },
+    "generate": true,
+    "product": "zcc"
+  },
   "zcc_failopen_policy": {
     "fetch": {
       "pagination": "zia",
@@ -12,6 +20,10 @@
       "pagination": "zia",
       "path": "zcc/papi/public/v1/webForwardingProfile/listByCompany"
     },
+    "generate": true,
+    "product": "zcc"
+  },
+  "zcc_notification_template": {
     "generate": true,
     "product": "zcc"
   },
@@ -32,11 +44,143 @@
     "generate": true,
     "product": "zcc"
   },
+  "zcc_zia_posture": {
+    "generate": true,
+    "product": "zcc"
+  },
+  "zia_activation_status": {
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_admin_roles": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "adminRoles"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_admin_users": {
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_advanced_settings": {
+    "fetch": {
+      "pagination": "single",
+      "path": "advancedSettings"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_advanced_threat_settings": {
+    "fetch": {
+      "pagination": "single",
+      "path": "cyberThreatProtection/advancedThreatSettings"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_atp_malicious_urls": {
+    "fetch": {
+      "pagination": "single",
+      "path": "cyberThreatProtection/maliciousUrls"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_atp_malware_inspection": {
+    "fetch": {
+      "pagination": "single",
+      "path": "cyberThreatProtection/atpMalwareInspection"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_atp_malware_policy": {
+    "fetch": {
+      "pagination": "single",
+      "path": "cyberThreatProtection/malwarePolicy"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_atp_malware_protocols": {
+    "fetch": {
+      "pagination": "single",
+      "path": "cyberThreatProtection/atpMalwareProtocols"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_atp_malware_settings": {
+    "fetch": {
+      "pagination": "single",
+      "path": "cyberThreatProtection/malwareSettings"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_atp_security_exceptions": {
+    "fetch": {
+      "pagination": "single",
+      "path": "cyberThreatProtection/securityExceptions"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_auth_settings_urls": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "authSettings/exemptedUrls"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_bandwidth_classes": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "bandwidthClasses"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_bandwidth_classes_file_size": {
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_bandwidth_classes_web_conferencing": {
+    "generate": true,
+    "product": "zia"
+  },
   "zia_bandwidth_control_rule": {
     "fetch": {
       "pagination": "zia",
       "path": "bandwidthControlRules",
       "query": {}
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_browser_control_policy": {
+    "fetch": {
+      "pagination": "single",
+      "path": "browserControlSettings"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_casb_dlp_rules": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "casbDlpRules"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_casb_malware_rules": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "casbMalwareRules"
     },
     "generate": true,
     "product": "zia"
@@ -67,6 +211,54 @@
     "generate": true,
     "product": "zia"
   },
+  "zia_cloud_application_instance": {
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_cloud_nss_feed": {
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_custom_file_types": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "customFileTypes"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_dc_exclusions": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "dcExclusions"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_dlp_dictionaries": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "dlpDictionaries"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_dlp_engines": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "dlpEngines"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_dlp_notification_templates": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "dlpNotificationTemplates"
+    },
+    "generate": true,
+    "product": "zia"
+  },
   "zia_dlp_web_rules": {
     "fetch": {
       "pagination": "zia",
@@ -76,10 +268,170 @@
     "generate": true,
     "product": "zia"
   },
+  "zia_email_profile": {
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_end_user_notification": {
+    "fetch": {
+      "pagination": "single",
+      "path": "eun"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_extranet": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "extranet"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_file_type_control_rules": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "fileTypeRules"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_firewall_dns_rule": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "firewallDnsRules"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_firewall_filtering_destination_groups": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "ipDestinationGroups"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_firewall_filtering_ip_source_groups": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "ipSourceGroups"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_firewall_filtering_network_application_groups": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "networkApplicationGroups"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_firewall_filtering_network_service": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "networkServices"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_firewall_filtering_network_service_groups": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "networkServiceGroups"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_firewall_filtering_rule": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "firewallFilteringRules"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_firewall_ips_rule": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "firewallIpsRules"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_forwarding_control_proxies": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "proxies"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_forwarding_control_rule": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "forwardingRules"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_forwarding_control_zpa_gateway": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "zpaGateways"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_ftp_control_policy": {
+    "fetch": {
+      "pagination": "single",
+      "path": "ftpSettings"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_ips_signature_rules": {
+    "generate": true,
+    "product": "zia"
+  },
   "zia_location_management": {
     "fetch": {
       "pagination": "zia",
       "path": "locations"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_mobile_malware_protection_policy": {
+    "fetch": {
+      "pagination": "single",
+      "path": "mobileAdvanceThreatSettings"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_nat_control_rules": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "dnatRules"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_nss_server": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "nssServers"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_risk_profiles": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "riskProfiles"
     },
     "generate": true,
     "product": "zia"
@@ -92,10 +444,78 @@
     "generate": true,
     "product": "zia"
   },
+  "zia_sandbox_behavioral_analysis": {
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_sandbox_behavioral_analysis_v2": {
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_sandbox_file_submission": {
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_sandbox_rules": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "sandboxRules"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_security_settings": {
+    "generate": true,
+    "product": "zia"
+  },
   "zia_ssl_inspection_rules": {
     "fetch": {
       "pagination": "zia",
       "path": "sslInspectionRules"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_sub_cloud": {
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_subscription_alert": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "alertSubscriptions"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_tenant_restriction_profile": {
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_traffic_capture_rules": {
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_traffic_forwarding_gre_tunnel": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "greTunnels"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_traffic_forwarding_static_ip": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "staticIP"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_traffic_forwarding_vpn_credentials": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "vpnCredentials"
     },
     "generate": true,
     "product": "zia"
@@ -111,6 +531,18 @@
     "generate": true,
     "product": "zia"
   },
+  "zia_url_categories_predefined": {
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_url_filtering_and_cloud_app_settings": {
+    "fetch": {
+      "pagination": "single",
+      "path": "advancedUrlFilterAndCloudAppSettings"
+    },
+    "generate": true,
+    "product": "zia"
+  },
   "zia_url_filtering_rules": {
     "fetch": {
       "pagination": "zia",
@@ -118,6 +550,30 @@
     },
     "generate": true,
     "product": "zia"
+  },
+  "zia_user_management": {
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_virtual_service_edge_cluster": {
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_virtual_service_edge_node": {
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_workload_groups": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "workloadGroups"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zpa_app_connector_assistant_schedule": {
+    "generate": true,
+    "product": "zpa"
   },
   "zpa_app_connector_group": {
     "fetch": {
@@ -135,11 +591,87 @@
     "generate": true,
     "product": "zpa"
   },
+  "zpa_application_segment_browser_access": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_application_segment_inspection": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_application_segment_multimatch_bulk": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_application_segment_pra": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_application_segment_weightedlb_config": {
+    "generate": true,
+    "product": "zpa"
+  },
   "zpa_application_server": {
     "fetch": {
       "pagination": "zpa",
       "path": "server"
     },
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_ba_certificate": {
+    "fetch": {
+      "pagination": "zpa",
+      "path": "certificate"
+    },
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_browser_access": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_c2c_ip_ranges": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_cloud_browser_isolation_banner": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_cloud_browser_isolation_certificate": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_cloud_browser_isolation_external_profile": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_emergency_access_user": {
+    "fetch": {
+      "pagination": "zpa",
+      "path": "emergencyAccess/user"
+    },
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_inspection_custom_controls": {
+    "fetch": {
+      "pagination": "zpa",
+      "path": "inspectionControls/custom"
+    },
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_inspection_profile": {
+    "fetch": {
+      "pagination": "zpa",
+      "path": "inspectionProfile"
+    },
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_lss_config_controller": {
     "generate": true,
     "product": "zpa"
   },
@@ -168,6 +700,106 @@
     "generate": true,
     "product": "zpa"
   },
+  "zpa_policy_access_rule_v2": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_policy_browser_protection_rule": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_policy_capabilities_rule": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_policy_credential_rule": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_policy_forwarding_rule": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_policy_forwarding_rule_v2": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_policy_inspection_rule": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_policy_inspection_rule_v2": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_policy_isolation_rule": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_policy_isolation_rule_v2": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_policy_portal_access_rule": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_policy_redirection_rule": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_policy_timeout_rule": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_policy_timeout_rule_v2": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_pra_approval_controller": {
+    "fetch": {
+      "pagination": "zpa",
+      "path": "approval"
+    },
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_pra_console_controller": {
+    "fetch": {
+      "pagination": "zpa",
+      "path": "praConsole"
+    },
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_pra_credential_controller": {
+    "fetch": {
+      "pagination": "zpa",
+      "path": "credential"
+    },
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_pra_credential_pool": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_pra_portal_controller": {
+    "fetch": {
+      "pagination": "zpa",
+      "path": "praPortal"
+    },
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_private_cloud_group": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_provisioning_key": {
+    "generate": true,
+    "product": "zpa"
+  },
   "zpa_segment_group": {
     "fetch": {
       "pagination": "zpa",
@@ -181,6 +813,46 @@
       "pagination": "zpa",
       "path": "serverGroup"
     },
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_service_edge_assistant_schedule": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_service_edge_group": {
+    "fetch": {
+      "pagination": "zpa",
+      "path": "serviceEdgeGroup"
+    },
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_tag_group": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_tag_key": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_tag_namespace": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_user_portal_aup": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_user_portal_controller": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_user_portal_link": {
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_zia_cloud_config": {
     "generate": true,
     "product": "zpa"
   }

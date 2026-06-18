@@ -410,8 +410,14 @@ and `assert-clean` shows green. Never hand-edit `config/` to
 
 ## Adding a Resource Type
 
-1. Add one entry to `tools/registry.json` (plus `tools/overrides/<type>.json`
-   if the resource has quirky fields).
+For ZIA/ZPA/ZCC provider resources, `tools/registry.json` is already the
+full generated provider catalog. Adding a resource type is now unusual —
+normally the work is to add or validate a `fetch` entry and any
+`tools/overrides/<type>.json` quirks for a module-generated resource shown by
+`make headroom-report`.
+
+1. Add or update the `tools/registry.json` entry (plus
+   `tools/overrides/<type>.json` if the resource has quirky fields).
 2. Regenerate and test:
 
 ```

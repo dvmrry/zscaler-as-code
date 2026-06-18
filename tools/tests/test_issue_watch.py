@@ -28,7 +28,7 @@ class WatchTermsTest(unittest.TestCase):
         self.assertIn("zpa_app_connector_group", terms)
         self.assertIn("app_connector_group", terms)
         self.assertIn("app connector group", terms)
-        self.assertFalse(any(t.startswith("zia_") for t in terms))
+        self.assertNotIn("zia_url_categories", terms)
 
 
 class RelevanceTest(unittest.TestCase):

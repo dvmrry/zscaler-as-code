@@ -1,0 +1,131 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "city": {
+            "type": "string"
+          },
+          "city_country": {
+            "type": "string"
+          },
+          "country_code": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "enrollment_cert_id": {
+            "type": "string"
+          },
+          "exclusive_for_business_continuity": {
+            "type": "boolean"
+          },
+          "grace_distance_enabled": {
+            "type": "boolean"
+          },
+          "grace_distance_value": {
+            "type": "string"
+          },
+          "grace_distance_value_unit": {
+            "type": "string"
+          },
+          "is_public": {
+            "type": "boolean"
+          },
+          "latitude": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "longitude": {
+            "type": "string"
+          },
+          "microtenant_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "override_version_profile": {
+            "type": "boolean"
+          },
+          "service_edges": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
+            },
+            "type": "object"
+          },
+          "trusted_networks": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "upgrade_day": {
+            "type": "string"
+          },
+          "upgrade_time_in_secs": {
+            "type": "string"
+          },
+          "use_in_dr_mode": {
+            "type": "boolean"
+          },
+          "user_codes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "version_profile_id": {
+            "type": "string"
+          },
+          "version_profile_name": {
+            "type": "string"
+          },
+          "version_profile_visibility_scope": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "latitude",
+          "location",
+          "longitude",
+          "name"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zpa_service_edge_group tfvars",
+  "type": "object"
+}

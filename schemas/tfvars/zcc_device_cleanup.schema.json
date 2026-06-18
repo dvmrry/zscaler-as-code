@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "auto_purge_days": {
+            "type": "number"
+          },
+          "auto_removal_days": {
+            "type": "number"
+          },
+          "device_exceed_limit": {
+            "type": "number"
+          },
+          "force_remove_type": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zcc_device_cleanup tfvars",
+  "type": "object"
+}

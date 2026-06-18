@@ -1,0 +1,201 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "config": {
+            "additionalProperties": false,
+            "properties": {
+              "audit_message": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "filter": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "uniqueItems": true
+              },
+              "format": {
+                "type": "string"
+              },
+              "lss_host": {
+                "type": "string"
+              },
+              "lss_port": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "source_log_type": {
+                "type": "string"
+              },
+              "use_tls": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "format",
+              "lss_host",
+              "lss_port",
+              "name",
+              "source_log_type"
+            ],
+            "type": "object"
+          },
+          "connector_groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "policy_rule_resource": {
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "type": "string"
+              },
+              "action_id": {
+                "type": "string"
+              },
+              "bypass_default_rule": {
+                "type": "boolean"
+              },
+              "conditions": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "operands": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "entry_values": {
+                            "items": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "lhs": {
+                                  "type": "string"
+                                },
+                                "rhs": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "type": "array"
+                          },
+                          "object_type": {
+                            "type": "string"
+                          },
+                          "values": {
+                            "items": {
+                              "type": "string"
+                            },
+                            "type": "array",
+                            "uniqueItems": true
+                          }
+                        },
+                        "required": [
+                          "object_type"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "operator": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "operator"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "custom_msg": {
+                "type": "string"
+              },
+              "default_rule": {
+                "type": "boolean"
+              },
+              "description": {
+                "type": "string"
+              },
+              "lss_default_rule": {
+                "type": "boolean"
+              },
+              "microtenant_id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "operator": {
+                "type": "string"
+              },
+              "policy_set_id": {
+                "type": "string"
+              },
+              "policy_type": {
+                "type": "string"
+              },
+              "priority": {
+                "type": "string"
+              },
+              "reauth_default_rule": {
+                "type": "boolean"
+              },
+              "reauth_idle_timeout": {
+                "type": "string"
+              },
+              "reauth_timeout": {
+                "type": "string"
+              },
+              "zpn_cbi_profile_id": {
+                "type": "string"
+              },
+              "zpn_inspection_profile_id": {
+                "type": "string"
+              },
+              "zpn_isolation_profile_id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zpa_lss_config_controller tfvars",
+  "type": "object"
+}

@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "attach_content": {
+            "type": "boolean"
+          },
+          "html_message": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "plain_text_message": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "tls_enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "html_message",
+          "name",
+          "plain_text_message",
+          "subject"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zia_dlp_notification_templates tfvars",
+  "type": "object"
+}
