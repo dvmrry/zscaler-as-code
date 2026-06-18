@@ -1,16 +1,17 @@
-"""Tests for tools/audit.py — offline parts only (parse/filter/render).
+"""Tests for tools/audit.py - offline parts only (parse/filter/render).
 
 The network flow (async report request/poll/download) is exercised at
 work like the fetcher was; everything that consumes its output is
 testable here, including degraded shapes.
 """
 import io
+import json
 import sys
 import unittest
 
 try:
     from unittest import mock
-except ImportError:  # pragma: no cover — 3.6-floor stdlib has unittest.mock
+except ImportError:  # pragma: no cover - 3.6-floor stdlib has unittest.mock
     import mock
 
 from tools import audit
@@ -59,6 +60,7 @@ class RenderTest(unittest.TestCase):
         self.assertIn("| Time | Admin |", out)
         self.assertIn("infosec.admin@example.invalid", out)
         self.assertIn("<details>", out)
+        out.encode("ascii")
 
     def test_no_matches_message(self):
         out = render_attribution([], [], 24)
@@ -88,9 +90,82 @@ class RenderTest(unittest.TestCase):
         self.assertNotIn("UP\nDATE", out)
 
 
+class AuditFetchFlowTest(unittest.TestCase):
+    class Opener(object):
+        def __init__(self, responses):
+            self.responses = {}
+            for url, queue in responses.items():
+                self.responses[url] = list(queue)
+            self.calls = []
+            self.bodies = []
+
+        def __call__(self, method, url, headers, body):
+            self.calls.append((method, url, headers))
+            self.bodies.append(body)
+            status, payload = self.responses[url].pop(0)
+            if isinstance(payload, bytes):
+                raw = payload
+            elif isinstance(payload, str):
+                raw = payload.encode("utf-8")
+            else:
+                raw = json.dumps(payload).encode("utf-8")
+            return status, raw
+
+    def _fetch_with(self, responses):
+        opener = self.Opener(responses)
+        with mock.patch.object(audit, "real_opener", return_value=opener), \
+                mock.patch.object(audit, "acquire_token", return_value="tok"):
+            out = audit.fetch_audit_csv({}, 1, sleep=lambda _s: None,
+                                        now_ms=3600 * 1000)
+        return out, opener
+
+    def test_status_id_from_post_is_used_for_poll_and_download(self):
+        csv_text = "Time,Action,Admin ID\n"
+        base = "https://api.zsapi.net/zia/api/v1/"
+        out, opener = self._fetch_with({
+            base + "auditlogEntryReport": [
+                (200, {"statusId": "report-123"}),
+            ],
+            base + "auditlogEntryReport?statusId=report-123": [
+                (200, {"status": "COMPLETE"}),
+            ],
+            base + "auditlogEntryReport/download?statusId=report-123": [
+                (200, csv_text),
+            ],
+        })
+        self.assertEqual(out, csv_text)
+        self.assertEqual([call[1] for call in opener.calls], [
+            base + "auditlogEntryReport",
+            base + "auditlogEntryReport?statusId=report-123",
+            base + "auditlogEntryReport/download?statusId=report-123",
+        ])
+        body = json.loads(opener.bodies[0].decode("utf-8"))
+        self.assertEqual(body["startTime"], 0)
+        self.assertEqual(body["endTime"], 3600 * 1000)
+
+    def test_empty_post_response_keeps_legacy_bare_poll_shape(self):
+        csv_text = "Time,Action,Admin ID\n"
+        base = "https://api.zsapi.net/zia/api/v1/"
+        out, opener = self._fetch_with({
+            base + "auditlogEntryReport": [
+                (204, b""),
+                (200, {"status": "COMPLETE"}),
+            ],
+            base + "auditlogEntryReport/download": [
+                (200, csv_text),
+            ],
+        })
+        self.assertEqual(out, csv_text)
+        self.assertEqual([call[1] for call in opener.calls], [
+            base + "auditlogEntryReport",
+            base + "auditlogEntryReport",
+            base + "auditlogEntryReport/download",
+        ])
+
+
 class MainContractTest(unittest.TestCase):
     """main() is strictly advisory: ANY failure degrades to exit 0 with an
-    'attribution unavailable' note. These pin that contract — the most
+    'attribution unavailable' note. These pin that contract - the most
     important behavior in the module and previously untested."""
 
     def _run_main(self, argv):

@@ -1,11 +1,11 @@
-# Example scheduled drift -> backfill-PR pipeline — reference material, not
+# Example scheduled drift -> backfill-PR pipeline - reference material, not
 # a working config. Copy or point a pipeline at this file and adapt:
 # schedules, pool, variable group names, tenant labels. Keep it a thin
 # shell over make (AGENTS.md rule 9). The CI pipeline example
 # (azure-pipelines.example.yml, same folder) covers tests/validation.
 #
 # PRIVATE REPOS ONLY: the drift PR body carries live admin identities
-# (audit attribution) and tenant-derived values — never run this in a
+# (audit attribution) and tenant-derived values - never run this in a
 # public template/fork, or the PR would leak admin PII.
 #
 # Two cadences via two schedules: ADO schedules cannot carry parameters,
@@ -46,7 +46,7 @@ steps:
       if [ "$(Build.CronSchedule.DisplayName)" = "hourly-hot-path" ]; then
         echo "##vso[task.setvariable variable=SCOPE]RESOURCE=$(HOT_RESOURCE)"
       else
-        # RESOURCE also takes product tokens — to run with a product
+        # RESOURCE also takes product tokens - to run with a product
         # disabled (e.g. ZCC until OneAPI is enabled), scope the broad
         # sweep instead of deleting credentials (which turns every run
         # red): RESOURCE="zia zpa"
@@ -54,7 +54,7 @@ steps:
       fi
     displayName: Scope by schedule
   # Auth via the shared template (runs `eval cred_env` + maps the secret).
-  # `tenant` must be compile-time → pass the statically-defined TENANT
+  # `tenant` must be compile-time -> pass the statically-defined TENANT
   # variable; use a simple alphanumeric label so the prefix matches cred_env.
   - template: steps/zscaler-auth.yml
     parameters:
@@ -87,7 +87,7 @@ steps:
   - publish: reports/$(TENANT)
     artifact: drift-report
     condition: eq(variables.DRIFTED, 'true')
-  # Branch + commit + push + PR live in pipelines/commitback.sh — a
+  # Branch + commit + push + PR live in pipelines/commitback.sh - a
   # PULLED script, deliberately not inline YAML: adapted pipeline
   # definitions do not update on repo pull, and every commit-back
   # incident so far happened in an adapted inline block. The script is
@@ -95,14 +95,14 @@ steps:
   # names the failing step), and never hangs: stdin is closed, git
   # prompts are disabled, curl is time-capped.
   # It opens ONE rolling PR per CHANGED resource type, on a STABLE branch
-  # drift/<tenant>/<type> — a re-drift force-refreshes that PR instead of
+  # drift/<tenant>/<type> - a re-drift force-refreshes that PR instead of
   # stacking a new one (a fresh PR appears only after the prior merges).
-  # The per-type body is short; the FULL drift report is the published
-  # artifact (ARTIFACT_NOTE points at it) rather than inlined per PR.
+  # The full drift report is inlined into each per-type PR body; the
+  # published artifact remains the downloadable copy of the same markdown.
   # Requires the build service identity granted "Contribute" on this
   # repository (covers the branch push AND PR creation; without it the
   # push fails 403/TF401027) plus persistCredentials on checkout above.
-  # A HUMAN merges — the plan build policy shows per-root merge-readiness;
+  # A HUMAN merges - the plan build policy shows per-root merge-readiness;
   # review is read-and-click, not investigate.
   - script: bash pipelines/commitback.sh
     displayName: Open backfill PRs (one per changed resource type)
@@ -112,8 +112,9 @@ steps:
       TENANT: $(TENANT)
       BRANCH_PREFIX: drift
       PR_TITLE: "Drift backfill: $(TENANT)"  # the resource type is appended per PR
-      ARTIFACT_NOTE: "_Full drift report in the pipeline artifact: drift-report_"
-      # Proxied egress? Declare it HERE too — curl reads only the env;
+      PR_BODY_FILE: reports/$(TENANT)/drift.md
+      ARTIFACT_NOTE: "_Full drift report also published as pipeline artifact: drift-report_"
+      # Proxied egress? Declare it HERE too - curl reads only the env;
       # agent-level git proxy config gets the push through and then the
       # REST call hangs (field-hit):
       #   HTTPS_PROXY: $(HTTPS_PROXY)
@@ -122,6 +123,6 @@ steps:
 #   - script: make plan-changed BASE=origin/main SAVE=1 BACKEND_CONFIG=backend.conf
 #   - script: make assert-clean
 # Green = the backfill is a faithful snapshot (plan is pure no-op;
-# imports of new objects allowed) — the reviewer reads the PR body and
+# imports of new objects allowed) - the reviewer reads the PR body and
 # clicks merge. Red = the tenant moved again between fetch and plan, or
 # a transform gap: look closer before merging.
