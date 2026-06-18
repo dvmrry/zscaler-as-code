@@ -125,6 +125,20 @@ GET-style paginated endpoints. A resource the SDK reaches via a `POST …/search
 the SDK / `tools/FETCH.md`: confirm a clean GET endpoint and verify the
 *method*, not just the path, before committing to the type.
 
+If you have an exported automate.zscaler.com divergence artifact, use it as an
+advisory fact sheet before writing the override:
+
+```bash
+make contract-facts FILE=<product>-divergences.json RESOURCE=<type>
+```
+
+This consumes the external reconciler's contract-vs-Terraform facts
+(required/readonly/enum/presence) and cross-checks them against current
+`tools/overrides/` drops. It does **not** write or bless anything, and it is not
+a build dependency on the skill/KB repo; pass the JSON file explicitly. Treat
+"not directly in report" as a review note, not a failure: `zac` also drops
+expanded GET decoration that a POST contract report may not model.
+
 ## Phase 2 — Register
 
 Add one entry to `tools/registry.json`. It is strict JSON — no comments:
@@ -283,6 +297,7 @@ down the wrong path before any gate can catch it.
 |---|---|
 | Does this field exist? What type? | `schemas/provider/<product>.json` |
 | How does the API shape it (quirks)? | `make mine` / `make surface` + `tools/MINING.md` |
+| What does the live contract say about required/readonly/enum/presence? | `make contract-facts FILE=<product>-divergences.json RESOURCE=<type>` |
 | Fetch path / pagination? | the SDK + `tools/FETCH.md` |
 
 If none of those answer it, that's a **blocking unknown** — surface it, don't
