@@ -1,0 +1,72 @@
+[
+  {
+    "accessControl": "READ_WRITE",
+    "description": "Fictional DLP web rule for demo coverage.",
+    "dlpEngines": [
+      {
+        "id": [
+          1001
+        ],
+        "isNameL10nTag": false,
+        "name": "Fictional DLP Engine"
+      }
+    ],
+    "fileTypeCategories": [
+      {
+        "id": [
+          2001
+        ],
+        "name": "Fictional File Category",
+        "parent": "Fictional Parent"
+      }
+    ],
+    "id": 9101,
+    "lastModifiedBy": {
+      "id": 1001,
+      "name": "Fictional Admin"
+    },
+    "lastModifiedTime": 1773372484,
+    "locationGroups": [
+      {
+        "id": [
+          3001
+        ],
+        "name": "Fictional Location Group"
+      }
+    ],
+    "name": "Fictional DLP Web Rule",
+    "notificationTemplate": [
+      {
+        "id": 4001,
+        "name": "Fictional Notification Template"
+      }
+    ],
+    "order": 1,
+    "sourceIpGroups": [
+      {
+        "id": [
+          5001
+        ],
+        "name": "Fictional Source IP Group"
+      }
+    ],
+    "urlCategories": [
+      {
+        "id": [
+          6001
+        ],
+        "isNameL10nTag": false,
+        "name": "Fictional URL Category"
+      }
+    ],
+    "users": [
+      {
+        "id": [
+          7001
+        ],
+        "name": "Fictional User"
+      }
+    ],
+    "zscalerIncidentReceiver": false
+  }
+]

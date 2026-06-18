@@ -26,9 +26,21 @@
     },
     {
       "fileMatch": [
+        "config/*/zia_bandwidth_control_rule.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_bandwidth_control_rule.schema.json"
+    },
+    {
+      "fileMatch": [
         "config/*/zia_cloud_app_control_rule.auto.tfvars.json"
       ],
       "url": "./schemas/tfvars/zia_cloud_app_control_rule.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zia_dlp_web_rules.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zia_dlp_web_rules.schema.json"
     },
     {
       "fileMatch": [
@@ -77,6 +89,12 @@
         "config/*/zpa_application_server.auto.tfvars.json"
       ],
       "url": "./schemas/tfvars/zpa_application_server.schema.json"
+    },
+    {
+      "fileMatch": [
+        "config/*/zpa_microtenant_controller.auto.tfvars.json"
+      ],
+      "url": "./schemas/tfvars/zpa_microtenant_controller.schema.json"
     },
     {
       "fileMatch": [

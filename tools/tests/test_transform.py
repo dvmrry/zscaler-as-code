@@ -1425,12 +1425,21 @@ ESTATE_DROPS = {
                             "unified_tunnel[].send_trusted_network_result_to_zpa"],
  "zcc_trusted_network": ["id", "guid"],
  "zcc_web_privacy": ["id", "name"],
+ "zia_bandwidth_control_rule": ["access_control",
+    "bandwidth_classes.is_name_l10n_tag", "bandwidth_classes.name",
+    "default_rule", "id", "last_modified_by", "last_modified_time"],
  "zia_cloud_app_control_rule": ["access_control", "cbi_profile[].profile_seq",
     "departments.name", "device_groups.name", "groups.name", "id",
     "labels.name", "last_modified_by", "last_modified_time",
     "location_groups.name", "locations.is_name_l10n_tag", "locations.name",
     "predefined", "prompt_capture_enabled", "tenancy_profile_ids.name",
     "users.deleted", "users.name"],
+ "zia_dlp_web_rules": ["access_control", "dlp_engines.is_name_l10n_tag",
+    "dlp_engines.name", "file_type_categories.name",
+    "file_type_categories.parent", "id", "last_modified_by",
+    "last_modified_time", "location_groups.name",
+    "notification_template[].name", "source_ip_groups.name",
+    "url_categories.is_name_l10n_tag", "url_categories.name", "users.name"],
  "zia_location_management": ["bc_location", "cc_location", "child_count",
     "dynamiclocation_groups", "ec_location", "geo_override", "id",
     "jwt_auth", "language", "latitude", "longitude", "match_in_child",
@@ -1469,6 +1478,7 @@ ESTATE_DROPS = {
     "server_groups[].modified_by", "server_groups[].modified_time",
     "server_groups[].name", "sticky_entity", "sticky_group",
     "zscaler_managed"],
+ "zpa_microtenant_controller": ["id", "operator"],
  "zpa_policy_access_rule": ["conditions[].operands[].referenced_object_deleted",
     "app_server_groups[].config_space", "app_server_groups[].creation_time",
     "app_server_groups[].description", "app_server_groups[].dynamic_discovery",
@@ -1482,8 +1492,11 @@ ESTATE_BASE = {
  "zcc_forwarding_profile": {"id": 9, "name": "P"},
  "zcc_trusted_network": {"id": 9, "name": "T"},
  "zcc_web_privacy": {"id": 9, "name": "W"},
+ "zia_bandwidth_control_rule": {"id": 1, "name": "BW", "order": 1,
+    "protocols": ["ANY_RULE"]},
  "zia_cloud_app_control_rule": {"id": 1, "name": "R",
     "type": "STREAMING_MEDIA", "order": 1, "predefined": False},
+ "zia_dlp_web_rules": {"id": 1, "name": "DLP", "order": 1},
  "zia_location_management": {"id": 1, "name": "L"},
  "zia_rule_labels": {"id": 1, "name": "Lab"},
  "zia_ssl_inspection_rules": {"id": 1, "name": "R", "order": 1,
@@ -1495,6 +1508,7 @@ ESTATE_BASE = {
  "zpa_app_connector_group": {"id": "1", "name": "ACG"},
  "zpa_application_segment": {"id": "1", "name": "S",
     "domain_names": ["a.test"]},
+ "zpa_microtenant_controller": {"id": "1", "name": "MT"},
  "zpa_policy_access_rule": {"id": "1", "name": "R", "default_rule": False},
 }
 
@@ -1515,6 +1529,19 @@ class EstateDropTriageTest(unittest.TestCase):
                 cur.setdefault(segs[-1], "synthval")
             _, _, reported = transform_items([item], rt, load_override(rt))
             self.assertEqual(reported, [], "%s reports: %r" % (rt, reported))
+
+    def test_dlp_uc_template_id_remains_unacknowledged(self):
+        from tools.transform import load_override, transform_items
+
+        raw = [{
+            "id": 1,
+            "name": "DLP",
+            "order": 1,
+            "ucTemplateId": 7,
+        }]
+        _, _, reported = transform_items(
+            raw, "zia_dlp_web_rules", load_override("zia_dlp_web_rules"))
+        self.assertEqual(reported, ["uc_template_id"])
 
 
 

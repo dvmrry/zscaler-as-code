@@ -1,0 +1,19 @@
+{
+  "acknowledged_drops": [
+    "access_control",
+    "dlp_engines.is_name_l10n_tag",
+    "dlp_engines.name",
+    "file_type_categories.name",
+    "file_type_categories.parent",
+    "id",
+    "last_modified_by",
+    "last_modified_time",
+    "location_groups.name",
+    "notification_template[].name",
+    "source_ip_groups.name",
+    "url_categories.is_name_l10n_tag",
+    "url_categories.name",
+    "users.name"
+  ],
+  "import_id": "{id}"
+}

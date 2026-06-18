@@ -1,0 +1,7 @@
+{
+  "acknowledged_drops": [
+    "id",
+    "operator"
+  ],
+  "import_id": "{id}"
+}

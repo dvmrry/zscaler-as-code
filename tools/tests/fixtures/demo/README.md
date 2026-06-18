@@ -24,12 +24,15 @@ IDs, names, and cross-references are consistent within the cassettes (e.g.
 | `zpa_application_segment.json` | `zpa/cassettes/TestApplicationSegment.yaml` | `/application` |
 | `zia_url_categories.json` | `zia/cassettes/TestURLCategories.yaml` | `/urlCategories` (customOnly items) |
 | `zia_location_management.json` | `zia/cassettes/TestLocationManagement.yaml` | `/locations` |
+| `zia_bandwidth_control_rule.json` | synthetic — shaped from provider schema and DAV-25 clean-room drop report | `/bandwidthControlRules` |
+| `zia_dlp_web_rules.json` | synthetic — shaped from provider schema and DAV-25 clean-room drop report | `/webDlpRules` |
 | `zia_ssl_inspection_rules.json` | `zia/cassettes/TestSSLInspectionRules.yaml` | `/sslInspectionRules` |
 | `zia_cloud_app_control_rule.json` | `zia/cassettes/TestCloudAppControl.yaml` | `/webApplicationRules/STREAMING_MEDIA` |
 | `zia_url_filtering_rules.json` | `zia/cassettes/TestURLFilteringRule.yaml` | `/urlFilteringRules` |
 | `zia_rule_labels.json` | `zia/cassettes/TestRuleLabels.yaml` | `/ruleLabels` |
 | `zpa_app_connector_group.json` | `zpa/cassettes/TestAppConnectorGroup.yaml` | `/appConnectorGroup` |
 | `zpa_application_server.json` | `zpa/cassettes/TestApplicationServer.yaml` | `/server` |
+| `zpa_microtenant_controller.json` | synthetic — shaped from provider schema and DAV-25 clean-room drop report | `/microtenants` |
 | `zpa_policy_access_rule.json` | `zpa/cassettes/TestAccessPolicyRule.yaml` + `TestAccessPolicyRuleV2.yaml` | `policySet/rules/policyType/ACCESS_POLICY` |
 | `zcc_forwarding_profile.json` | synthetic — shaped from ZCC provider schema | `zcc/papi/public/v1/webForwardingProfile/listByCompany` |
 | `zcc_trusted_network.json` | synthetic — shaped from ZCC provider schema | `zcc/papi/public/v2/trusted-networks` |

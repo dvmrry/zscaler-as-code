@@ -1,0 +1,10 @@
+[
+  {
+    "criteriaAttribute": "AuthDomain",
+    "description": "Fictional microtenant for demo coverage.",
+    "id": "mt-1",
+    "name": "Fictional Microtenant",
+    "operator": "AND",
+    "privilegedApprovalsEnabled": false
+  }
+]
