@@ -916,6 +916,22 @@ class QuirkClosureTest(unittest.TestCase):
                 load_override(rt).get("drop_if_default", {}).get(
                     "microtenant_id"), "0", rt)
 
+    def test_default_microtenant_controller_is_skipped(self):
+        # DAV-30 bootstrap finding: the API lists the Default microtenant
+        # as id "0", but the provider cannot import that system object.
+        from tools.transform import load_override, transform_items
+
+        raw = [
+            {"id": "0", "name": "Default"},
+            {"id": "1", "name": "Microtenant"},
+        ]
+        ov = load_override("zpa_microtenant_controller")
+        items, originals, drops = transform_items(
+            raw, "zpa_microtenant_controller", ov)
+        self.assertEqual(sorted(items), ["microtenant"])
+        self.assertEqual(sorted(originals), ["microtenant"])
+        self.assertEqual(drops, [])
+
     def test_url_category_urls_sorted(self):
         # zia suppressURLCategoriesReorderDiff treats urls as a SET at
         # plan time; the API returns unstable order. Sorting makes
@@ -1454,11 +1470,11 @@ class DropsCheckGateTest(unittest.TestCase):
         self.assertNotIn("NEW API surface", err)
 
     def test_known_holds_do_not_fail_drops_check(self):
-        raw = [{"id": 1, "name": "DLP", "order": 1, "ucTemplateId": 7}]
+        raw = [{"id": 1, "name": "Role", "aiPromptAccess": "enabled"}]
         code, err = self._run_main(
-            raw, env_flag=True, resource_type="zia_dlp_web_rules")
+            raw, env_flag=True, resource_type="zia_admin_roles")
         self.assertEqual(code, 0)
-        self.assertIn("known-held zia_dlp_web_rules.uc_template_id", err)
+        self.assertIn("known-held zia_admin_roles.ai_prompt_access", err)
         self.assertNotIn("NEW API surface", err)
 
     def test_gre_vip_read_only_extras_are_known_holds(self):
@@ -1497,16 +1513,15 @@ class DropsCheckGateTest(unittest.TestCase):
     def test_known_holds_do_not_hide_new_surface(self):
         raw = [{
             "id": 1,
-            "name": "DLP",
-            "order": 1,
-            "ucTemplateId": 7,
+            "name": "Role",
+            "aiPromptAccess": "enabled",
             "brandNewApiField": "x",
         }]
         code, err = self._run_main(
-            raw, env_flag=True, resource_type="zia_dlp_web_rules")
+            raw, env_flag=True, resource_type="zia_admin_roles")
         self.assertEqual(code, 4)
-        self.assertIn("known-held zia_dlp_web_rules.uc_template_id", err)
-        self.assertIn("dropped zia_dlp_web_rules.brand_new_api_field", err)
+        self.assertIn("known-held zia_admin_roles.ai_prompt_access", err)
+        self.assertIn("dropped zia_admin_roles.brand_new_api_field", err)
         self.assertIn("NEW API surface", err)
         self.assertIn('"brand_new_api_field"', err)
 
@@ -1668,7 +1683,7 @@ class EstateDropTriageTest(unittest.TestCase):
             _, _, reported = transform_items([item], rt, load_override(rt))
             self.assertEqual(reported, [], "%s reports: %r" % (rt, reported))
 
-    def test_dlp_uc_template_id_remains_unacknowledged(self):
+    def test_dlp_uc_template_id_is_acknowledged(self):
         from tools.transform import load_override, transform_items
 
         raw = [{
@@ -1679,7 +1694,7 @@ class EstateDropTriageTest(unittest.TestCase):
         }]
         _, _, reported = transform_items(
             raw, "zia_dlp_web_rules", load_override("zia_dlp_web_rules"))
-        self.assertEqual(reported, ["uc_template_id"])
+        self.assertEqual(reported, [])
 
 
 

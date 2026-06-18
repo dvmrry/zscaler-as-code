@@ -218,13 +218,6 @@
         "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
       }
     ],
-    "zia_dlp_web_rules": [
-      {
-        "issue": "zia-70",
-        "path": "uc_template_id",
-        "reason": "Live reads return ucTemplateId, absent from the provider schema and held out of acknowledged_drops pending clarification."
-      }
-    ],
     "zia_end_user_notification": [
       {
         "path": "display_comp_logo",

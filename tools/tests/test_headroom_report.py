@@ -8,9 +8,9 @@ class AdoptionStatusTest(unittest.TestCase):
     def test_real_status_file_validates(self):
         data = adoption_status.load_status()
         self.assertIn("zia_activation_status", data["dispositions"])
-        self.assertEqual(
-            adoption_status.known_hold_paths("zia_dlp_web_rules", data),
-            ["uc_template_id"],
+        self.assertIn(
+            "ai_prompt_access",
+            adoption_status.known_hold_paths("zia_admin_roles", data),
         )
 
     def test_invalid_status_rejected(self):
@@ -21,11 +21,11 @@ class AdoptionStatusTest(unittest.TestCase):
 
 class HeadroomReportTest(unittest.TestCase):
     def test_managed_resource_shows_fetch_and_known_hold(self):
-        text = headroom_report.render_report(selectors=["zia_dlp_web_rules"])
+        text = headroom_report.render_report(selectors=["zia_admin_roles"])
         self.assertIn("Provider resources in scope: 1", text)
-        self.assertIn("| `zia_dlp_web_rules` | `zia` | `managed-fetch` |", text)
-        self.assertIn("fetch zia/webDlpRules", text)
-        self.assertIn("known hold: uc_template_id (zia-70)", text)
+        self.assertIn("| `zia_admin_roles` | `zia` | `managed-fetch` |", text)
+        self.assertIn("fetch zia/adminRoles", text)
+        self.assertIn("known hold: ai_prompt_access", text)
 
     def test_dispositioned_resource_not_reported_as_adopted(self):
         text = headroom_report.render_report(selectors=["zia_activation_status"])

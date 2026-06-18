@@ -11,6 +11,7 @@
     "location_groups.name",
     "notification_template[].name",
     "source_ip_groups.name",
+    "uc_template_id",
     "url_categories.is_name_l10n_tag",
     "url_categories.name",
     "users.name"
