@@ -72,7 +72,7 @@ triage: ## Classify unacknowledged drop-report fields (IN=pulls/<tenant> [APPLY=
 	@test -n "$(IN)" || { echo "usage: make triage IN=pulls/<tenant> [APPLY=1]"; exit 2; }
 	$(PYTHON) -m tools.triage "$(IN)"
 
-plan-checks: ## Policy gates over a plan's NEW url-category additions (FILE=plan.json TENANT=<label> [SSL_EXEMPT_CATEGORY=<config key>]) — subdomain redundancy vs wildcards; SSL-bypass exact-entry requirement; exit 1 = violations
+plan-checks: ## Policy gates over a plan's NEW additions (FILE=plan.json TENANT=<label> [SSL_EXEMPT_CATEGORY=<config key>]) — URL category shadowing/SSL bypass + location IP overlap; exit 1 = violations
 	@test -n "$(FILE)" -a -n "$(TENANT)" || { echo "usage: make plan-checks FILE=plan.json TENANT=<label> [SSL_EXEMPT_CATEGORY=<config key>]"; exit 2; }
 	$(PYTHON) -m tools.plan_checks "$(FILE)" "$(TENANT)"
 
