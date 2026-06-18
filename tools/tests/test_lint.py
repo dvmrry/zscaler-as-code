@@ -16,6 +16,7 @@ from tools.lint import (
     _shadows,
     _split_entry,
     check_category_shadowing,
+    check_dns_labels,
     check_ip_entry,
     check_list_duplicates,
     check_order_collisions,
@@ -45,6 +46,16 @@ class StringHygieneTest(unittest.TestCase):
         r = report()
         check_string("name\x0b", "rt", "w", r)
         self.assertTrue(any("control" in e for e in r.errors))
+
+    def test_bidi_control_is_error(self):
+        r = report()
+        check_string("safe\u202Etxt", "rt", "w", r)
+        self.assertTrue(any("bidirectional" in e for e in r.errors))
+
+    def test_non_ascii_whitespace_is_error(self):
+        r = report()
+        check_string("corp\u2007name", "rt", "w", r)
+        self.assertTrue(any("non-ASCII whitespace" in e for e in r.errors))
 
     def test_edge_whitespace_is_error(self):
         r = report()
@@ -139,6 +150,35 @@ class UrlEntryTest(unittest.TestCase):
         r = report()
         check_url_entry("example..com", "rt", "w", r)
         self.assertTrue(any("consecutive dots" in e for e in r.errors))
+
+    def test_common_tld_typo_is_warning(self):
+        r = report()
+        check_url_entry("example.cmo", "zia_url_categories", "w", r,
+                        field="urls")
+        self.assertEqual(r.errors, [])
+        self.assertTrue(any("TLD typo" in w for w in r.warnings))
+
+    def test_dns_label_rules_are_errors(self):
+        bad = [
+            "bad_label.example.com",
+            "-bad.example.com",
+            "bad-.example.com",
+            "%s.example.com" % ("a" * 64),
+            ".",
+        ]
+        for entry in bad:
+            r = report()
+            check_dns_labels(entry, "rt", "w", r)
+            self.assertTrue(r.errors, entry)
+
+    def test_cross_product_wildcard_syntax_warns(self):
+        r = report()
+        check_url_entry("*.example.com", "zia_url_categories", "w", r,
+                        field="urls")
+        check_url_entry(".example.com", "zpa_application_segment", "w", r,
+                        field="domain_names")
+        self.assertEqual(r.errors, [])
+        self.assertEqual(len(r.warnings), 2)
 
 
 class IpEntryTest(unittest.TestCase):

@@ -35,9 +35,29 @@ ORDER_GROUP_FIELD = {"zia_cloud_app_control_rule": "type"}
 
 _HTML_ENTITY = re.compile(r"&(?:[A-Za-z]+|#[0-9]+|#x[0-9A-Fa-f]+);")
 _INVISIBLE = ("​", "‌", "‍", "⁠", "﻿")
+_BIDI_CONTROLS = tuple(
+    chr(c) for c in
+    list(range(0x202A, 0x202F)) + list(range(0x2066, 0x206A)) + [0x061C]
+)
+_NON_ASCII_SPACE = tuple(
+    chr(c) for c in
+    [0x00A0, 0x1680] + list(range(0x2000, 0x200B)) +
+    [0x2028, 0x2029, 0x202F, 0x205F, 0x3000]
+)
 _PASTED = {
     "‘": "'", "’": "'", "“": '"', "”": '"',
-    "–": "-", "—": "-", " ": " ",
+    "–": "-", "—": "-",
+}
+_DNS_LABEL = re.compile(r"^[A-Za-z0-9-]+$")
+_COMMON_TLD_TYPOS = {
+    "cmo": "com",
+    "con": "com",
+    "ocm": "com",
+    "comm": "com",
+    "nett": "net",
+    "ney": "net",
+    "ogr": "org",
+    "rog": "org",
 }
 
 
@@ -62,6 +82,16 @@ def check_string(value, rt, where, report, allow_entities=False):
         if ch in _INVISIBLE:
             report.error(rt, where, "invisible character U+%04X" % ord(ch),
                          "delete it (pasted zero-width/BOM)")
+            break
+    for ch in value:
+        if ch in _BIDI_CONTROLS:
+            report.error(rt, where, "bidirectional control U+%04X" % ord(ch),
+                         "delete it (invisible source-text override)")
+            break
+    for ch in value:
+        if ch in _NON_ASCII_SPACE:
+            report.error(rt, where, "non-ASCII whitespace U+%04X" % ord(ch),
+                         "replace with plain ASCII space")
             break
     for ch in value:
         if (ord(ch) < 32 and ch not in "\n\t") or ord(ch) == 127:
@@ -110,6 +140,15 @@ def check_url_entry(entry, rt, where, report, field=None):
                      "one entry per list element (CSV paste?)")
     if ".." in entry:
         report.error(rt, where, "consecutive dots in %r" % entry, "fix the typo")
+    if rt.startswith("zia_") and field in ("urls", "db_categorized_urls"):
+        if entry.startswith("*."):
+            report.warn(rt, where, "ZPA-style wildcard syntax %r" % entry,
+                        "use leading-dot ZIA syntax, e.g. .example.com")
+    if rt.startswith("zpa_") and field == "domain_names":
+        if entry.startswith("."):
+            report.warn(rt, where, "ZIA-style wildcard syntax %r" % entry,
+                        "use ZPA wildcard syntax, e.g. *.example.com")
+    check_dns_labels(entry, rt, where, report)
     if entry != low and field == "domain_names":
         # ZPA lowercases domain_names on response (provider-documented)
         # -> uppercase hand-edits perma-diff. ZIA url entries keep the
@@ -117,6 +156,59 @@ def check_url_entry(entry, rt, where, report, field=None):
         # (field-hit: tenant-scale noise).
         report.warn(rt, where, "uppercase in %r" % entry,
                     "the API lowercases this on read -> perma-diff; lowercase it")
+
+
+def _host_part(entry):
+    host = entry.split("/", 1)[0].strip().rstrip(".")
+    if host.startswith("*."):
+        host = host[2:]
+    elif host.startswith("."):
+        host = host[1:]
+    return host
+
+
+def _looks_like_ip(host):
+    import ipaddress
+    try:
+        ipaddress.ip_address(u"" + host)
+        return True
+    except ValueError:
+        return False
+
+
+def check_dns_labels(entry, rt, where, report):
+    host = _host_part(entry)
+    if not host:
+        report.error(rt, where, "empty host in %r" % entry,
+                     "use a DNS name, not a bare wildcard/dot")
+        return
+    if _looks_like_ip(host):
+        return
+    if len(host) > 253:
+        report.error(rt, where, "host exceeds DNS length limit in %r" % entry,
+                     "shorten to 253 characters or less")
+    labels = host.split(".")
+    for label in labels:
+        if label == "":
+            report.error(rt, where, "empty DNS label in %r" % entry,
+                         "remove the extra dot")
+            return
+        if len(label) > 63:
+            report.error(rt, where, "DNS label exceeds 63 characters in %r" % entry,
+                         "shorten the label")
+            return
+        if label.startswith("-") or label.endswith("-"):
+            report.error(rt, where, "DNS label starts/ends with hyphen in %r" % entry,
+                         "move the hyphen inside the label")
+            return
+        if not _DNS_LABEL.match(label):
+            report.error(rt, where, "invalid DNS label characters in %r" % entry,
+                         "use letters, digits, hyphens, dots, and optional path")
+            return
+    tld = labels[-1].lower()
+    if tld in _COMMON_TLD_TYPOS:
+        report.warn(rt, where, "possible TLD typo .%s in %r" % (tld, entry),
+                    "did you mean .%s?" % _COMMON_TLD_TYPOS[tld])
 
 
 def check_ip_entry(entry, rt, where, report):

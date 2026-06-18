@@ -1,7 +1,7 @@
-"""Plan-diff policy gates for ZIA URL categories — NEW additions only.
+"""Plan-diff policy gates for tenant changes — NEW additions only.
 
-Two field-designed checks that run between `plan` and approval, against
-`terraform show -json tfplan` output. Both deliberately judge only what
+Field-designed checks that run between `plan` and approval, against
+`terraform show -json tfplan` output. They deliberately judge only what
 THIS plan ADDS (legacy tenant data is whatever it is — config-wide
 scans of it are noise; the gate's job is stopping new mistakes):
 
@@ -19,6 +19,10 @@ scans of it are noise; the gate's job is stopping new mistakes):
    host that falls under an exemptions suffix must ALSO be added to
    the exemptions category as an exact entry.
 
+3. LOCATION IP OVERLAP - a newly added location IP/CIDR/range that
+   overlaps another location range creates ambiguous location assignment.
+   Existing overlap is left alone; new overlap is blocked.
+
 The SSL-exemptions category is tenant-specific, so it is configured,
 never hardcoded: set SSL_EXEMPT_CATEGORY to the category's CONFIG KEY
 (the items map key). Check 2 is skipped with a loud note when unset.
@@ -33,6 +37,7 @@ Stdlib-only, Python 3.6-floor — see AGENTS.md rule 5.
 import json
 import os
 import sys
+import ipaddress
 
 URL_FIELDS = ("urls", "db_categorized_urls")
 
@@ -77,10 +82,39 @@ def added_hosts(plan):
     return out
 
 
-def load_categories(tenant):
-    path = os.path.join("config", tenant, "zia_url_categories.auto.tfvars.json")
+def added_location_ranges(plan):
+    """[(location_key, range)] newly ADDED to location ip_addresses."""
+    out = []
+    for rc in plan.get("resource_changes") or []:
+        if rc.get("type") != "zia_location_management":
+            continue
+        actions = set((rc.get("change") or {}).get("actions") or [])
+        if not actions & {"create", "update"}:
+            continue
+        key = rc.get("index")
+        change = rc.get("change") or {}
+        before, after = change.get("before") or {}, change.get("after") or {}
+        olds = set(_hosts(before.get("ip_addresses")))
+        for entry in _hosts(after.get("ip_addresses")):
+            if entry not in olds:
+                out.append((key, entry))
+    return out
+
+
+def load_items(tenant, resource_type):
+    path = os.path.join("config", tenant, resource_type + ".auto.tfvars.json")
+    if not os.path.exists(path):
+        return {}
     with open(path, encoding="utf-8") as f:
         return json.load(f).get("items") or {}
+
+
+def load_categories(tenant):
+    return load_items(tenant, "zia_url_categories")
+
+
+def load_locations(tenant):
+    return load_items(tenant, "zia_location_management")
 
 
 def check_redundancy(adds, categories, exempt_key):
@@ -145,6 +179,68 @@ def check_ssl_bypass(adds, categories, exempt_key):
     return failures
 
 
+def _ip_interval(entry):
+    text = entry.strip()
+    try:
+        if "-" in text:
+            parts = [p.strip() for p in text.split("-")]
+            if len(parts) != 2:
+                raise ValueError("bad range")
+            start = ipaddress.ip_address(u"" + parts[0])
+            end = ipaddress.ip_address(u"" + parts[1])
+            if start.version != end.version:
+                raise ValueError("mixed IP versions")
+            if int(start) > int(end):
+                raise ValueError("range start after end")
+            return start.version, int(start), int(end)
+        if "/" in text:
+            network = ipaddress.ip_network(u"" + text, strict=False)
+            return (
+                network.version,
+                int(network.network_address),
+                int(network.broadcast_address),
+            )
+        ip = ipaddress.ip_address(u"" + text)
+        return ip.version, int(ip), int(ip)
+    except ValueError:
+        return None
+
+
+def _overlaps(left, right):
+    return (
+        left[0] == right[0]
+        and left[1] <= right[2]
+        and right[1] <= left[2]
+    )
+
+
+def check_location_ip_overlap(adds, locations):
+    """New location ranges must not overlap existing or same-plan ranges."""
+    seen = []
+    failures = []
+    for key in sorted(locations):
+        for entry in _hosts(locations[key].get("ip_addresses")):
+            interval = _ip_interval(entry)
+            if interval is not None:
+                seen.append((interval, key, entry))
+    for key, entry in adds:
+        interval = _ip_interval(entry)
+        if interval is None:
+            failures.append(
+                "LOCATION-IP %s: %r is not an IP / CIDR / address range "
+                "- fix the value before approval" % (key, entry))
+            continue
+        for other, other_key, other_entry in seen:
+            if _overlaps(interval, other):
+                failures.append(
+                    "LOCATION-IP-OVERLAP %s: %r overlaps %r in location "
+                    "%r - location assignment becomes ambiguous; narrow "
+                    "or remove one range" % (key, entry, other_entry, other_key))
+                break
+        seen.append((interval, key, entry))
+    return failures
+
+
 def main(argv=None):
     argv = argv if argv is not None else sys.argv[1:]
     if len(argv) != 2:
@@ -162,6 +258,7 @@ def main(argv=None):
             raise ValueError("not plan JSON (no format_version) — feed "
                              "this `terraform show -json tfplan` output")
         categories = load_categories(tenant)
+        locations = load_locations(tenant)
     except (ValueError, OSError) as exc:
         sys.stderr.write("error: %s\n" % exc)
         return 1
@@ -169,6 +266,8 @@ def main(argv=None):
 
     adds = added_hosts(plan)
     failures = check_redundancy(adds, categories, exempt_key)
+    location_adds = added_location_ranges(plan)
+    failures += check_location_ip_overlap(location_adds, locations)
     if exempt_key:
         if exempt_key not in categories:
             sys.stderr.write("error: SSL_EXEMPT_CATEGORY %r is not a key in "
@@ -182,9 +281,10 @@ def main(argv=None):
                          "config key to enable)\n")
     for line in failures:
         sys.stdout.write(line + "\n")
-    sys.stdout.write("%d newly added URL entr%s checked, %d violation(s)\n"
-                     % (len(adds), "y" if len(adds) == 1 else "ies",
-                        len(failures)))
+    checked = len(adds) + len(location_adds)
+    sys.stdout.write(
+        "%d newly added URL/location entr%s checked, %d violation(s)\n"
+        % (checked, "y" if checked == 1 else "ies", len(failures)))
     return 1 if failures else 0
 
 
