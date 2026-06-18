@@ -34,6 +34,19 @@ class AdoptionCheckTest(unittest.TestCase):
         self.assertEqual(result["drops"], ["uc_template_id"])
         self.assertEqual(result["unexpected"], [])
 
+    def test_known_hold_render_names_issue(self):
+        _write_json(os.path.join(self.tmp, "zia_dlp_web_rules.json"), [{
+            "id": 1,
+            "name": "DLP",
+            "order": 1,
+            "ucTemplateId": 7,
+        }])
+        result = adoption_check.check_resource(
+            "zia_dlp_web_rules", "tenant", self.tmp, self.status, write=False)
+        self.assertEqual(
+            adoption_check.render_result(result),
+            "KNOWN-HOLD zia_dlp_web_rules: uc_template_id (zia-70)")
+
     def test_unexpected_drop_fails(self):
         _write_json(os.path.join(self.tmp, "zpa_segment_group.json"), [{
             "id": "1",

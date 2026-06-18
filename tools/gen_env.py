@@ -11,13 +11,43 @@ import os
 import subprocess
 import sys
 
-from tools.registry import generated_types
+from tools.registry import generated_types, load_registry
 
 ENVS_ROOT = "envs"
 
 
 def _provider_of(resource_type):
     return resource_type.split("_", 1)[0]
+
+
+def expand_resources(selectors):
+    """Expand optional resource/product selectors to generated resource types."""
+    generated = set(generated_types())
+    if not selectors:
+        return sorted(generated)
+    registry = load_registry()
+    selected = set()
+    unknown = []
+    for selector in selectors:
+        if selector in generated:
+            selected.add(selector)
+            continue
+        if selector in registry:
+            unknown.append(selector)
+            continue
+        matches = sorted(
+            rt for rt in generated
+            if rt.startswith(selector + "_")
+        )
+        if matches:
+            selected.update(matches)
+        else:
+            unknown.append(selector)
+    if unknown:
+        raise ValueError(
+            "unknown or non-generated resource selector(s): %s"
+            % ", ".join(sorted(unknown)))
+    return sorted(selected)
 
 
 def render_env_main(resource_type, tenant, backend=None):
@@ -117,7 +147,8 @@ def _fmt(text):
     return proc.stdout.decode()
 
 
-def generate_env(tenant, out_root=ENVS_ROOT, fmt=True, backend=None):
+def generate_env(tenant, out_root=ENVS_ROOT, fmt=True, backend=None,
+                 selectors=None):
     """Generate (or faithfully regenerate) a tenant's env roots.
 
     The backend choice is recorded as data in envs/<tenant>/.backend so a
@@ -133,7 +164,7 @@ def generate_env(tenant, out_root=ENVS_ROOT, fmt=True, backend=None):
     if backend:
         with open(marker, "w", encoding="utf-8") as f:
             f.write(backend + "\n")
-    for resource_type in generated_types():
+    for resource_type in expand_resources(selectors or []):
         base = os.path.join(out_root, tenant, resource_type)
         os.makedirs(base, exist_ok=True)
         main_text = render_env_main(resource_type, tenant, backend=backend)
@@ -165,12 +196,39 @@ def generate_env(tenant, out_root=ENVS_ROOT, fmt=True, backend=None):
                 % (resource_type, tenant))
 
 
+USAGE = (
+    "usage: python -m tools.gen_env <tenant> "
+    "[--backend <backend>] [resource|product ...]\n"
+)
+
+
+def _parse_args(argv):
+    if not argv:
+        raise ValueError(USAGE.strip())
+    tenant = argv[0]
+    backend = None
+    selectors = []
+    i = 1
+    while i < len(argv):
+        if argv[i] == "--backend":
+            if i + 1 >= len(argv):
+                raise ValueError("--backend requires a value")
+            backend = argv[i + 1]
+            i += 2
+        else:
+            selectors.append(argv[i])
+            i += 1
+    return tenant, backend, selectors
+
+
 def main(argv=None):
     argv = argv if argv is not None else sys.argv[1:]
-    if len(argv) not in (1, 2):
-        sys.stderr.write("usage: python -m tools.gen_env <tenant> [backend]\n")
+    try:
+        tenant, backend, selectors = _parse_args(argv)
+        generate_env(tenant, backend=backend, selectors=selectors)
+    except ValueError as exc:
+        sys.stderr.write("error: %s\n" % exc)
         return 2
-    generate_env(argv[0], backend=argv[1] if len(argv) == 2 else None)
     return 0
 
 
