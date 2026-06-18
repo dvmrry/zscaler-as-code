@@ -1,0 +1,14 @@
+{
+  "defaults": {
+    "id": "app_setting"
+  },
+  "key_field": "id",
+  "renames": {
+    "enable_chat_gpt_prompt": "enable_chatgpt_prompt",
+    "enable_deepseek_prompt": "enable_deep_seek_prompt",
+    "enable_microsoft_co_pilot_prompt": "enable_microsoft_copilot_prompt",
+    "enable_perplexity_prompt": "enable_per_plexity_prompt",
+    "enable_po_e_prompt": "enable_poe_prompt",
+    "enable_ucaas_log_me_in": "enable_ucaas_logmein"
+  }
+}

@@ -1,4 +1,10 @@
 {
+  "acknowledged_drops": [
+    "city",
+    "last_modification_time",
+    "last_modified_by"
+  ],
+  "key_field": "ip_address",
   "sample": {
     "ip_address": "192.0.2.20"
   }

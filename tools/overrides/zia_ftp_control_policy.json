@@ -1,0 +1,6 @@
+{
+  "defaults": {
+    "id": "ftp_control"
+  },
+  "key_field": "id"
+}

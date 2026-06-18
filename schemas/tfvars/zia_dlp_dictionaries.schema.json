@@ -1,0 +1,164 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "bin_numbers": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "confidence_level_for_predefined_dict": {
+            "type": "string"
+          },
+          "confidence_threshold": {
+            "type": "string"
+          },
+          "custom": {
+            "type": "boolean"
+          },
+          "custom_phrase_match_type": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "dict_template_id": {
+            "type": "number"
+          },
+          "dictionary_type": {
+            "type": "string"
+          },
+          "exact_data_match_details": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "dictionary_edm_mapping_id": {
+                  "type": "number"
+                },
+                "primary_fields": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array"
+                },
+                "schema_id": {
+                  "type": "number"
+                },
+                "secondary_field_match_on": {
+                  "type": "string"
+                },
+                "secondary_fields": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "hierarchical_identifiers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "idm_profile_match_accuracy": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "adp_idm_profile": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "extensions": {
+                        "additionalProperties": {
+                          "type": "string"
+                        },
+                        "type": "object"
+                      },
+                      "id": {
+                        "type": "number"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "match_accuracy": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "ignore_exact_match_idm_dict": {
+            "type": "boolean"
+          },
+          "include_bin_numbers": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "patterns": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string"
+                },
+                "pattern": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "phrases": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string"
+                },
+                "phrase": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "proximity": {
+            "type": "number"
+          },
+          "proximity_enabled_for_custom_dictionary": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zia_dlp_dictionaries tfvars",
+  "type": "object"
+}

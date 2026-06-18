@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "cloud_id": {
+            "type": "number"
+          },
+          "exclusions": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "country": {
+                  "type": "string"
+                },
+                "datacenter": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "country": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "number"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "type": "object"
+                },
+                "end_time": {
+                  "type": "number"
+                },
+                "end_time_utc": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "country",
+                "datacenter"
+              ],
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "cloud_id"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zia_sub_cloud tfvars",
+  "type": "object"
+}

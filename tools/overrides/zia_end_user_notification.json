@@ -1,0 +1,6 @@
+{
+  "defaults": {
+    "id": "enduser_notification"
+  },
+  "key_field": "id"
+}

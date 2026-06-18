@@ -1,0 +1,6 @@
+{
+  "defaults": {
+    "id": "advanced_threat_settings"
+  },
+  "key_field": "id"
+}

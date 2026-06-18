@@ -1,0 +1,146 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "admin_audit_logs": {
+            "type": "string"
+          },
+          "certifications": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "custom_tags": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "type": "object"
+          },
+          "data_breach": {
+            "type": "string"
+          },
+          "data_encryption_in_transit": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "dns_caa_policy": {
+            "type": "string"
+          },
+          "domain_based_message_auth": {
+            "type": "string"
+          },
+          "domain_keys_identified_mail": {
+            "type": "string"
+          },
+          "evasive": {
+            "type": "string"
+          },
+          "exclude_certificates": {
+            "type": "number"
+          },
+          "file_sharing": {
+            "type": "string"
+          },
+          "http_security_headers": {
+            "type": "string"
+          },
+          "malware_scanning_for_content": {
+            "type": "string"
+          },
+          "mfa_support": {
+            "type": "string"
+          },
+          "password_strength": {
+            "type": "string"
+          },
+          "poor_items_of_service": {
+            "type": "string"
+          },
+          "profile_name": {
+            "type": "string"
+          },
+          "profile_type": {
+            "type": "string"
+          },
+          "remote_screen_sharing": {
+            "type": "string"
+          },
+          "risk_index": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "sender_policy_framework": {
+            "type": "string"
+          },
+          "source_ip_restrictions": {
+            "type": "string"
+          },
+          "ssl_cert_key_size": {
+            "type": "string"
+          },
+          "ssl_cert_validity": {
+            "type": "string"
+          },
+          "ssl_pinned": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "support_for_waf": {
+            "type": "string"
+          },
+          "vulnerability": {
+            "type": "string"
+          },
+          "vulnerability_disclosure": {
+            "type": "string"
+          },
+          "vulnerable_to_heart_bleed": {
+            "type": "string"
+          },
+          "vulnerable_to_log_jam": {
+            "type": "string"
+          },
+          "vulnerable_to_poodle": {
+            "type": "string"
+          },
+          "weak_cipher_support": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "profile_name"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zia_risk_profiles tfvars",
+  "type": "object"
+}

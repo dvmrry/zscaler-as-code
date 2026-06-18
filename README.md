@@ -44,6 +44,13 @@ Common ops targets:
 | `make validate-imports TENANT=<label>` | Validate fixture import addresses against a tenant's roots |
 | `make validate-config` | Validate config/ tfvars against generated JSON Schemas (dev-only; tries uv if jsonschema is not installed, skips gracefully if neither is available) |
 
+`tools/registry.json` is the generated provider-surface catalog. Every
+published ZIA/ZPA/ZCC Terraform resource has a generated module and tfvars
+schema; only entries with a `fetch` block are live-read by `make fetch`.
+`make headroom-report RESOURCE='zia zpa zcc'` shows the split between
+fetch-managed resources, derived resources, generated-but-not-fetch-wired
+resources, and known non-bulk/adoption holds.
+
 ## Layout
 
     RUNBOOK.md                 adoption and drift-detection procedures

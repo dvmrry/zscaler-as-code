@@ -12,12 +12,14 @@ import re
 import sys
 
 from tools.registry import derive_entry
+from tools.adoption_status import known_hold_paths
 from tools.tfschema import (
     attr_type,
     block_is_single,
     classify_attributes,
     input_block_types,
     load_resource,
+    resource_input_attrs,
 )
 
 _SNAKE_1 = re.compile(r"(.)([A-Z][a-z]+)")
@@ -58,7 +60,8 @@ def _matches_default(val, default):
 
 
 def filter_item(item, block, path, drops, merge_blocks=frozenset(),
-                override_drops=frozenset(), override_drop_defaults=None):
+                override_drops=frozenset(), override_drop_defaults=None,
+                resource_top=False):
     """Keep only schema-input attrs and blocks, recursively.
 
     Computed-only and unknown keys are dropped and their paths recorded in
@@ -75,7 +78,7 @@ def filter_item(item, block, path, drops, merge_blocks=frozenset(),
     full path with "[]" markers stripped; drops requested by the operator
     are intentional, so they are NOT added to the coverage-gap report.
     """
-    cls = classify_attributes(block)
+    cls = resource_input_attrs(block) if resource_top else classify_attributes(block)
     keep_attrs = set(cls["required"] + cls["optional"])
     block_types = input_block_types(block)
     out = {}
@@ -149,7 +152,7 @@ def filter_item(item, block, path, drops, merge_blocks=frozenset(),
                                 merged, inner_block, inner_path, drops,
                                 override_drops=override_drops,
                                 override_drop_defaults=override_drop_defaults)
-                        ]
+                            ]
                         continue
                     out[key] = [
                         filter_item(
@@ -171,6 +174,12 @@ def filter_item(item, block, path, drops, merge_blocks=frozenset(),
                 else:
                     drops.append(child_path)
         else:
+            top_id = (
+                resource_top and key == "id"
+                and (block.get("attributes") or {}).get("id", {}).get("computed")
+            )
+            if top_id:
+                continue
             drops.append(child_path)
     return out
 
@@ -599,6 +608,26 @@ def _unescape_html_fields(snake_raw, resource_type, override=None):
             snake_raw[field] = html.unescape(html.unescape(value))
 
 
+def _go_html_escape(value):
+    import html
+
+    text = html.unescape(html.unescape(value))
+    return (
+        text.replace("&", "&amp;")
+        .replace("'", "&#39;")
+        .replace('"', "&#34;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+    )
+
+
+def _escape_html_fields(snake_raw, override=None):
+    for field in sorted((override or {}).get("html_escape_fields") or []):
+        value = snake_raw.get(field)
+        if isinstance(value, str):
+            snake_raw[field] = _go_html_escape(value)
+
+
 def transform_items(raw_items, resource_type, override):
     """Full per-item pipeline. Returns (items_map, originals_map, drops).
 
@@ -621,6 +650,7 @@ def transform_items(raw_items, resource_type, override):
             )
             continue
         normalized = apply_overrides(snake_raw, override)
+        _escape_html_fields(normalized, override)
         key = derive_key(normalized, override)
         if key in items:
             raise ValueError(
@@ -636,6 +666,7 @@ def transform_items(raw_items, resource_type, override):
                 (k, v)
                 for k, v in (override.get("drop_if_default") or {}).items()
                 if "." in k),
+            resource_top=True,
         )
         items[key] = coerce_item(filtered, block)
         originals[key] = normalized
@@ -864,11 +895,18 @@ def main(argv=None):
         f.write(render_tfvars(items))
     with open(imports_path, "w", encoding="utf-8") as f:
         f.write(new_imports)
-    # drops contains only unacknowledged paths; acknowledged_drops in the override
-    # suppress known-unmanageable metadata from this report (fields still removed).
-    for path in drops:
+    # drops contains paths not in acknowledged_drops. Split the repo-declared
+    # known-holds from genuinely new paths: holds are intentionally NOT
+    # acknowledged as safe omissions, but strict pipeline transform should not
+    # halt on provider gaps already recorded in adoption_status.json.
+    held_paths = set(known_hold_paths(resource_type))
+    held = sorted(d for d in drops if d in held_paths)
+    unexpected = sorted(d for d in drops if d not in held_paths)
+    for path in held:
+        sys.stderr.write("known-held %s.%s\n" % (resource_type, path))
+    for path in unexpected:
         sys.stderr.write("dropped %s.%s\n" % (resource_type, path))
-    if drops:
+    if unexpected:
         # NEW API surface is a tripwire, not noise: the signingCertId
         # incident was visible here for weeks as an unacknowledged
         # dropped field that turned out to be write-required under a
@@ -882,13 +920,17 @@ def main(argv=None):
             "`make triage IN=<pulls dir> APPLY=1` bulk-classifies, but it is "
             "GLOBAL: it writes acks for EVERY type in <pulls dir>, so for a "
             "single resource prefer the per-type ack above. DROPS_CHECK=1 "
-            "makes this exit 4.\n" % (len(drops), resource_type, resource_type))
+            "makes this exit 4.\n"
+            % (len(unexpected), resource_type, resource_type))
         sys.stderr.write(
             "Exact paths from this run (merge into tools/overrides/%s.json "
             "only after verification):\n%s\n"
-            % (resource_type, render_acknowledged_drops_snippet(override, drops)))
+            % (
+                resource_type,
+                render_acknowledged_drops_snippet(override, unexpected),
+            ))
     sys.stderr.write("wrote %s\nwrote %s\n" % (tfvars_path, imports_path))
-    if drops and os.environ.get("DROPS_CHECK"):
+    if unexpected and os.environ.get("DROPS_CHECK"):
         # outputs are already written — the exit only makes the run red
         return 4
     return 0

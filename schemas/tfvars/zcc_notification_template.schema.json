@@ -1,0 +1,95 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "duration_in_seconds": {
+            "type": "number"
+          },
+          "enable_app_updates": {
+            "type": "boolean"
+          },
+          "enable_client": {
+            "type": "boolean"
+          },
+          "enable_do_not_disturb": {
+            "type": "boolean"
+          },
+          "enable_persistent": {
+            "type": "boolean"
+          },
+          "enable_service_status": {
+            "type": "boolean"
+          },
+          "enable_zia": {
+            "type": "boolean"
+          },
+          "is_default_template": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "zia_notification_template": {
+            "additionalProperties": false,
+            "properties": {
+              "enable_zia_dns": {
+                "type": "boolean"
+              },
+              "enable_zia_dns_popup": {
+                "type": "boolean"
+              },
+              "enable_zia_firewall": {
+                "type": "boolean"
+              },
+              "enable_zia_firewall_popup": {
+                "type": "boolean"
+              },
+              "enable_zia_ips": {
+                "type": "boolean"
+              },
+              "enable_zia_ips_popup": {
+                "type": "boolean"
+              },
+              "enable_zia_persistent": {
+                "type": "boolean"
+              }
+            },
+            "type": "object"
+          },
+          "zpa_notification_template": {
+            "additionalProperties": false,
+            "properties": {
+              "delay_posture_failure_seconds": {
+                "type": "number"
+              },
+              "enable_device_posture_failure": {
+                "type": "boolean"
+              },
+              "enable_zpa_reauth": {
+                "type": "boolean"
+              },
+              "zpa_reauth_interval_in_minutes": {
+                "type": "number"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zcc_notification_template tfvars",
+  "type": "object"
+}

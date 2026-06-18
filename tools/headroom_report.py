@@ -54,6 +54,7 @@ def _hold_note(holds):
 
 def classify_resource(resource_type, product, registry, status):
     entry = registry.get(resource_type)
+    disposition = (status.get("dispositions") or {}).get(resource_type)
     if entry and entry.get("generate"):
         if entry.get("derive"):
             state = "managed-derived"
@@ -64,11 +65,20 @@ def classify_resource(resource_type, product, registry, status):
                 entry["fetch"].get("pagination", product),
                 entry["fetch"].get("path"),
             )
+            if disposition:
+                note += "; %s: %s" % (
+                    disposition["status"],
+                    disposition.get("reason", ""),
+                )
+        elif disposition:
+            state = disposition["status"]
+            note = "%s (module generated; no fetch entry)" % (
+                disposition.get("reason", "")
+            )
         else:
-            state = "managed-no-fetch"
+            state = "module-generated"
             note = "generated but has no fetch/derive entry"
     else:
-        disposition = (status.get("dispositions") or {}).get(resource_type)
         if disposition:
             state = disposition["status"]
             note = disposition.get("reason", "")

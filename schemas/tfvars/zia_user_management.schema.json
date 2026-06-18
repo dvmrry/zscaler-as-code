@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "auth_methods": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "comments": {
+            "type": "string"
+          },
+          "department": {
+            "additionalProperties": false,
+            "properties": {
+              "comments": {
+                "type": "string"
+              },
+              "deleted": {
+                "type": "boolean"
+              },
+              "id": {
+                "type": "number"
+              },
+              "idp_id": {
+                "type": "number"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "email": {
+            "type": "string"
+          },
+          "groups": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
+            },
+            "type": "object"
+          },
+          "name": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "temp_auth_email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "department",
+          "email",
+          "name",
+          "password"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zia_user_management tfvars",
+  "type": "object"
+}

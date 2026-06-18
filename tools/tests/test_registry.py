@@ -1,6 +1,7 @@
 """Tests for tools/registry.py."""
 import unittest
 
+from tools.headroom_report import provider_resources
 from tools.registry import (
     derive_entry,
     derived_types,
@@ -15,28 +16,7 @@ class RegistryTest(unittest.TestCase):
     def test_generated_types_sorted(self):
         self.assertEqual(
             generated_types(),
-            [
-                "zcc_failopen_policy",
-                "zcc_forwarding_profile",
-                "zcc_trusted_network",
-                "zcc_web_privacy",
-                "zia_bandwidth_control_rule",
-                "zia_cloud_app_control_rule",
-                "zia_dlp_web_rules",
-                "zia_location_management",
-                "zia_rule_labels",
-                "zia_ssl_inspection_rules",
-                "zia_url_categories",
-                "zia_url_filtering_rules",
-                "zpa_app_connector_group",
-                "zpa_application_segment",
-                "zpa_application_server",
-                "zpa_microtenant_controller",
-                "zpa_policy_access_rule",
-                "zpa_policy_access_rule_reorder",
-                "zpa_segment_group",
-                "zpa_server_group",
-            ],
+            sorted(provider_resources()),
         )
 
     def test_derived_resource_has_no_fetch(self):

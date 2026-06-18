@@ -1,0 +1,274 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "api_session_timeout": {
+            "type": "number"
+          },
+          "auth_bypass_apps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "auth_bypass_url_categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "auth_bypass_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "basic_bypass_apps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "basic_bypass_url_categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "block_connect_host_sni_mismatch": {
+            "type": "boolean"
+          },
+          "block_domain_fronting_apps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "block_domain_fronting_on_host_header": {
+            "type": "boolean"
+          },
+          "block_http_tunnel_on_non_http_ports": {
+            "type": "boolean"
+          },
+          "block_non_compliant_http_request_on_http_ports": {
+            "type": "boolean"
+          },
+          "block_non_http_on_http_port_enabled": {
+            "type": "boolean"
+          },
+          "cascade_url_filtering": {
+            "type": "boolean"
+          },
+          "digest_auth_bypass_apps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "digest_auth_bypass_url_categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "digest_auth_bypass_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "dns_resolution_on_transparent_proxy_apps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "dns_resolution_on_transparent_proxy_exempt_apps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "dns_resolution_on_transparent_proxy_exempt_url_categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "dns_resolution_on_transparent_proxy_exempt_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "dns_resolution_on_transparent_proxy_ipv6_apps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "dns_resolution_on_transparent_proxy_ipv6_exempt_apps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "dns_resolution_on_transparent_proxy_ipv6_exempt_url_categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "dns_resolution_on_transparent_proxy_ipv6_url_categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "dns_resolution_on_transparent_proxy_url_categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "dns_resolution_on_transparent_proxy_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "domain_fronting_bypass_url_categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "dynamic_user_risk_enabled": {
+            "type": "boolean"
+          },
+          "ecs_for_all_enabled": {
+            "type": "boolean"
+          },
+          "enable_admin_rank_access": {
+            "type": "boolean"
+          },
+          "enable_dns_resolution_on_transparent_proxy": {
+            "type": "boolean"
+          },
+          "enable_evaluate_policy_on_global_ssl_bypass": {
+            "type": "boolean"
+          },
+          "enable_ipv6_dns_optimization_on_all_transparent_proxy": {
+            "type": "boolean"
+          },
+          "enable_ipv6_dns_resolution_on_transparent_proxy": {
+            "type": "boolean"
+          },
+          "enable_office365": {
+            "type": "boolean"
+          },
+          "enable_policy_for_unauthenticated_traffic": {
+            "type": "boolean"
+          },
+          "enforce_surrogate_ip_for_windows_app": {
+            "type": "boolean"
+          },
+          "http2_nonbrowser_traffic_enabled": {
+            "type": "boolean"
+          },
+          "http_range_header_remove_url_categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "kerberos_bypass_apps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "kerberos_bypass_url_categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "kerberos_bypass_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "log_internal_ip": {
+            "type": "boolean"
+          },
+          "prefer_sni_over_conn_host": {
+            "type": "boolean"
+          },
+          "prefer_sni_over_conn_host_apps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "sipa_xff_header_enabled": {
+            "type": "boolean"
+          },
+          "sni_dns_optimization_bypass_url_categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "track_http_tunnel_on_http_ports": {
+            "type": "boolean"
+          },
+          "ui_session_timeout": {
+            "type": "number"
+          },
+          "zscaler_client_connector_1_and_pac_road_warrior_in_firewall": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zia_advanced_settings tfvars",
+  "type": "object"
+}

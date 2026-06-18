@@ -1,0 +1,100 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "conditions": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "microtenant_id": {
+                  "type": "string"
+                },
+                "operands": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "idp_id": {
+                        "type": "string"
+                      },
+                      "lhs": {
+                        "type": "string"
+                      },
+                      "microtenant_id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "object_type": {
+                        "type": "string"
+                      },
+                      "rhs": {
+                        "type": "string"
+                      },
+                      "rhs_list": {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": true
+                      }
+                    },
+                    "required": [
+                      "lhs",
+                      "object_type"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "operator": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "operator"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "description": {
+            "type": "string"
+          },
+          "microtenant_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "operator": {
+            "type": "string"
+          },
+          "policy_set_id": {
+            "type": "string"
+          },
+          "zpn_isolation_profile_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zpa_policy_isolation_rule tfvars",
+  "type": "object"
+}

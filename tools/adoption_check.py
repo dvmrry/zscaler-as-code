@@ -16,7 +16,7 @@ import os
 import re
 import sys
 
-from tools.adoption_status import known_holds_for, load_status
+from tools.adoption_status import disposition_for, known_holds_for, load_status
 from tools.fetch import expand_selectors, load_manifest, products_in_manifest
 from tools.registry import derive_entry, fetch_entry, load_registry
 from tools.transform import load_override, main as transform_main, transform_items
@@ -80,6 +80,16 @@ def check_resource(resource_type, tenant, pulls_dir, status, write=True):
     fetch_entry(resource_type)
     path = os.path.join(pulls_dir, resource_type + ".json")
     if not os.path.exists(path):
+        disposition = disposition_for(resource_type, status)
+        if disposition:
+            return {
+                "resource": resource_type,
+                "state": "known-skip",
+                "drops": [],
+                "unexpected": [],
+                "path": path,
+                "disposition": disposition,
+            }
         return {
             "resource": resource_type,
             "state": "missing-pull",
@@ -136,6 +146,11 @@ def render_result(result):
         return "KNOWN-HOLD %s: %s" % (
             rt,
             ", ".join(_format_drop(path, known_holds) for path in result["drops"]))
+    if state == "known-skip":
+        disposition = result.get("disposition") or {}
+        return "KNOWN-SKIP %s: %s" % (
+            rt,
+            disposition.get("reason", "dispositioned resource missing pull"))
     if state == "missing-pull":
         return "FAIL %s: missing %s" % (rt, result["path"])
     if state == "transform-failed":
@@ -186,7 +201,7 @@ def main(argv=None):
     for result in results:
         line = render_result(result)
         sys.stdout.write(line + "\n")
-        if result["state"] not in ("clean", "known-hold"):
+        if result["state"] not in ("clean", "known-hold", "known-skip"):
             bad = True
     if bad:
         sys.stdout.write(

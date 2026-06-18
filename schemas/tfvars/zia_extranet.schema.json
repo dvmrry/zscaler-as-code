@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "extranet_dns_list": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "primary_dns_server": {
+                  "type": "string"
+                },
+                "secondary_dns_server": {
+                  "type": "string"
+                },
+                "use_as_default": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "name",
+                "primary_dns_server"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "extranet_ip_pool_list": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "ip_end": {
+                  "type": "string"
+                },
+                "ip_start": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "use_as_default": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "ip_end",
+                "ip_start",
+                "name"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zia_extranet tfvars",
+  "type": "object"
+}

@@ -1,0 +1,162 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "banner_id": {
+            "type": "string"
+          },
+          "certificate_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "debug_mode": {
+            "additionalProperties": false,
+            "properties": {
+              "allowed": {
+                "type": "boolean"
+              },
+              "file_password": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "region_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "security_controls": {
+            "additionalProperties": false,
+            "properties": {
+              "allow_printing": {
+                "type": "boolean"
+              },
+              "copy_paste": {
+                "type": "string"
+              },
+              "deep_link": {
+                "additionalProperties": false,
+                "properties": {
+                  "applications": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array",
+                    "uniqueItems": true
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  }
+                },
+                "type": "object"
+              },
+              "document_viewer": {
+                "type": "boolean"
+              },
+              "flattened_pdf": {
+                "type": "boolean"
+              },
+              "local_render": {
+                "type": "boolean"
+              },
+              "restrict_keystrokes": {
+                "type": "boolean"
+              },
+              "upload_download": {
+                "type": "string"
+              },
+              "watermark": {
+                "additionalProperties": false,
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "show_message": {
+                    "type": "boolean"
+                  },
+                  "show_timestamp": {
+                    "type": "boolean"
+                  },
+                  "show_user_id": {
+                    "type": "boolean"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "type": "object"
+          },
+          "user_experience": {
+            "additionalProperties": false,
+            "properties": {
+              "browser_in_browser": {
+                "type": "boolean"
+              },
+              "forward_to_zia": {
+                "additionalProperties": false,
+                "properties": {
+                  "cloud_name": {
+                    "type": "string"
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "organization_id": {
+                    "type": "string"
+                  },
+                  "pac_file_url": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "persist_isolation_bar": {
+                "type": "boolean"
+              },
+              "session_persistence": {
+                "type": "boolean"
+              },
+              "translate": {
+                "type": "boolean"
+              },
+              "zgpu": {
+                "type": "boolean"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "banner_id",
+          "name"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zpa_cloud_browser_isolation_external_profile tfvars",
+  "type": "object"
+}

@@ -650,6 +650,58 @@ class PipelineTest(unittest.TestCase):
                 {},
             )
 
+    def test_singleton_default_id_keys_and_imports_but_not_config(self):
+        raw = [{"maliciousUrls": ["bad.example"]}]
+        override = load_override("zia_atp_malicious_urls")
+        items, originals, drops = transform_items(
+            raw, "zia_atp_malicious_urls", override
+        )
+        self.assertEqual(sorted(items), ["all_urls"])
+        self.assertEqual(items["all_urls"], {"malicious_urls": ["bad.example"]})
+        self.assertEqual(originals["all_urls"]["id"], "all_urls")
+        self.assertEqual(drops, [])
+        self.assertIn(
+            'id = "all_urls"',
+            render_imports("zia_atp_malicious_urls", originals, override),
+        )
+
+    def test_dlp_predefined_engine_name_feeds_required_name(self):
+        raw = [{
+            "id": "7",
+            "predefinedEngineName": "Predefined PCI",
+            "customDlpEngine": False,
+        }]
+        items, _, drops = transform_items(
+            raw, "zia_dlp_engines", load_override("zia_dlp_engines")
+        )
+        self.assertEqual(sorted(items), ["predefined_pci"])
+        self.assertEqual(items["predefined_pci"]["name"], "Predefined PCI")
+        self.assertEqual(drops, [])
+
+    def test_url_cloud_app_prompt_acronym_renames(self):
+        raw = [{
+            "id": "app_setting",
+            "enableChatGptPrompt": True,
+            "enableMicrosoftCoPilotPrompt": True,
+            "enablePerplexityPrompt": True,
+            "enableDeepseekPrompt": True,
+            "enablePoEPrompt": True,
+            "enableUcaasLogMeIn": True,
+        }]
+        items, _, drops = transform_items(
+            raw,
+            "zia_url_filtering_and_cloud_app_settings",
+            load_override("zia_url_filtering_and_cloud_app_settings"),
+        )
+        item = items["app_setting"]
+        self.assertTrue(item["enable_chatgpt_prompt"])
+        self.assertTrue(item["enable_microsoft_copilot_prompt"])
+        self.assertTrue(item["enable_per_plexity_prompt"])
+        self.assertTrue(item["enable_deep_seek_prompt"])
+        self.assertTrue(item["enable_poe_prompt"])
+        self.assertTrue(item["enable_ucaas_logmein"])
+        self.assertEqual(drops, [])
+
     def test_two_non_ascii_names_transform_without_empty_key(self):
         # Two distinct CJK-named items both slug to '' on their name alone;
         # the id fallback gives each a distinct non-empty key, so the
@@ -909,6 +961,32 @@ class QuirkClosureTest(unittest.TestCase):
         _unescape_html_fields(zia, "zia_url_filtering_rules")
         self.assertEqual(zia["name"], "A &amp; B")
 
+    def test_policy_access_custom_msg_html_escaped(self):
+        # zpa_policy_access_rule.custom_msg is the opposite of the normal
+        # ZPA name/description path: provider read-back/state carries Go's
+        # HTML-escaped string, so config copied from raw API pulls must
+        # escape this field or import/bootstrap plans want to rewrite it.
+        from tools.transform import load_override, transform_items
+
+        raw = [
+            {
+                "id": "1",
+                "name": "Raw apostrophe",
+                "customMsg": "Contact your organization's admin & security",
+            },
+            {
+                "id": "2",
+                "name": "Already escaped",
+                "customMsg": "Contact your organization&#39;s admin &amp; security",
+            },
+        ]
+        ov = load_override("zpa_policy_access_rule")
+        items, _, drops = transform_items(raw, "zpa_policy_access_rule", ov)
+        expected = "Contact your organization&#39;s admin &amp; security"
+        self.assertEqual(items["raw_apostrophe"]["custom_msg"], expected)
+        self.assertEqual(items["already_escaped"]["custom_msg"], expected)
+        self.assertEqual(drops, [])
+
     def test_operand_drift_fields_dropped(self):
         # zpa#287: operands.name is Computed+Optional — the API rewrites it
         # to the referenced object's display name, so a config copy can
@@ -1146,10 +1224,11 @@ class AcknowledgedDropsTest(unittest.TestCase):
         self.assertNotIn("config_space", items["a"])
 
     def test_no_acknowledged_drops_reports_all(self):
-        raw = [{"id": "1", "name": "A", "config_space": "X"}]
+        raw = [{"id": "1", "name": "A", "config_space": "X", "creation_time": "9"}]
         _, _, drops = transform_items(raw, "zpa_segment_group", {})
         self.assertIn("config_space", drops)
-        self.assertIn("id", drops)
+        self.assertIn("creation_time", drops)
+        self.assertNotIn("id", drops)
 
 
 class SlimWarningTest(unittest.TestCase):
@@ -1330,7 +1409,7 @@ class DropsCheckGateTest(unittest.TestCase):
     """DROPS_CHECK=1 turns new API surface (unacknowledged drops) into a
     red run — the tripwire the signingCertId incident needed."""
 
-    def _run_main(self, raw, env_flag):
+    def _run_main(self, raw, env_flag, resource_type="zpa_segment_group"):
         import io, sys, tempfile, json as _json, shutil
         from tools.transform import main
         with tempfile.TemporaryDirectory() as td:
@@ -1341,7 +1420,7 @@ class DropsCheckGateTest(unittest.TestCase):
                 os.environ["DROPS_CHECK"] = "1"
             old_err, sys.stderr = sys.stderr, io.StringIO()
             try:
-                code = main(["zpa_segment_group", src, "tmpdropschk"])
+                code = main([resource_type, src, "tmpdropschk"])
                 err = sys.stderr.getvalue()
             finally:
                 sys.stderr = old_err
@@ -1373,6 +1452,63 @@ class DropsCheckGateTest(unittest.TestCase):
                                    env_flag=True)
         self.assertEqual(code, 0)
         self.assertNotIn("NEW API surface", err)
+
+    def test_known_holds_do_not_fail_drops_check(self):
+        raw = [{"id": 1, "name": "DLP", "order": 1, "ucTemplateId": 7}]
+        code, err = self._run_main(
+            raw, env_flag=True, resource_type="zia_dlp_web_rules")
+        self.assertEqual(code, 0)
+        self.assertIn("known-held zia_dlp_web_rules.uc_template_id", err)
+        self.assertNotIn("NEW API surface", err)
+
+    def test_gre_vip_read_only_extras_are_known_holds(self):
+        raw = [{
+            "id": "gre-1",
+            "sourceIp": "192.0.2.10",
+            "primaryDestVip": [{
+                "id": "vip-1",
+                "datacenter": "A",
+                "dontProvision": True,
+                "privateServiceEdge": False,
+            }],
+            "secondaryDestVip": [{
+                "id": "vip-2",
+                "datacenter": "B",
+                "dontProvision": False,
+                "privateServiceEdge": True,
+            }],
+        }]
+        code, err = self._run_main(
+            raw, env_flag=True,
+            resource_type="zia_traffic_forwarding_gre_tunnel")
+        self.assertEqual(code, 0)
+        self.assertIn(
+            "known-held zia_traffic_forwarding_gre_tunnel."
+            "primary_dest_vip[].dont_provision",
+            err,
+        )
+        self.assertIn(
+            "known-held zia_traffic_forwarding_gre_tunnel."
+            "secondary_dest_vip[].private_service_edge",
+            err,
+        )
+        self.assertNotIn("NEW API surface", err)
+
+    def test_known_holds_do_not_hide_new_surface(self):
+        raw = [{
+            "id": 1,
+            "name": "DLP",
+            "order": 1,
+            "ucTemplateId": 7,
+            "brandNewApiField": "x",
+        }]
+        code, err = self._run_main(
+            raw, env_flag=True, resource_type="zia_dlp_web_rules")
+        self.assertEqual(code, 4)
+        self.assertIn("known-held zia_dlp_web_rules.uc_template_id", err)
+        self.assertIn("dropped zia_dlp_web_rules.brand_new_api_field", err)
+        self.assertIn("NEW API surface", err)
+        self.assertIn('"brand_new_api_field"', err)
 
 
 

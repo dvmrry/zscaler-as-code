@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "app_connector_group_id": {
+            "type": "string"
+          },
+          "association_type": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "enrollment_cert_id": {
+            "type": "string"
+          },
+          "ip_acl": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "max_usage": {
+            "type": "string"
+          },
+          "microtenant_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "ui_config": {
+            "type": "string"
+          },
+          "usage_count": {
+            "type": "string"
+          },
+          "zcomponent_id": {
+            "type": "string"
+          },
+          "zcomponent_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "association_type",
+          "enrollment_cert_id",
+          "max_usage",
+          "name",
+          "zcomponent_id"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zpa_provisioning_key tfvars",
+  "type": "object"
+}

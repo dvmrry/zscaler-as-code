@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "file_path": {
+            "type": "string"
+          },
+          "force": {
+            "type": "boolean"
+          },
+          "submission_method": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_path",
+          "submission_method"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zia_sandbox_file_submission tfvars",
+  "type": "object"
+}

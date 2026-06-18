@@ -337,6 +337,48 @@ class FetchAllResilienceTest(unittest.TestCase):
         self.assertIn("FAILED", err)
         self.assertIn(broken, err)
 
+    def test_optional_http_status_skips_without_failing(self):
+        import tempfile
+        from tools.fetch import fetch_all, compose_url, manifest_entry
+
+        env = {
+            "ZSCALER_VANITY_DOMAIN": "acme", "ZSCALER_CLOUD": "",
+            "ZSCALER_CLIENT_ID": "cid", "ZSCALER_CLIENT_SECRET": "sec",
+        }
+        ctx = {"cloud": "", "customer_id": "C", "zcc_cloud": ""}
+        ok = "zia_rule_labels"
+        skipped = "zia_extranet"
+        pages = {
+            "https://acme.zslogin.net/oauth2/v1/token": [
+                (200, {"access_token": "TOK", "expires_in": "3600"})
+            ],
+            compose_url("oneapi", "zia", manifest_entry(ok)["path"], ctx): [
+                (200, [{"id": "1", "name": "Label"}])
+            ],
+            compose_url("oneapi", "zia", manifest_entry(skipped)["path"], ctx): [
+                (403, {"error": "feature disabled"})
+            ],
+        }
+        opener = FakeOpener(pages)
+        old = sys.stderr
+        sys.stderr = io.StringIO()
+        try:
+            with tempfile.TemporaryDirectory() as td:
+                rc = fetch_all(
+                    "oneapi", env, ctx, opener, td, only=set([ok, skipped])
+                )
+                written = set(
+                    f[:-len(".json")] for f in os.listdir(td) if f.endswith(".json")
+                )
+            err = sys.stderr.getvalue()
+        finally:
+            sys.stderr = old
+        self.assertEqual(rc, 0)
+        self.assertEqual(written, set([ok]))
+        self.assertIn("SKIPPED", err)
+        self.assertIn(skipped, err)
+        self.assertNotIn("FAILED", err)
+
 
 class FetchAllAuthIsolationTest(unittest.TestCase):
     def test_one_product_auth_failure_does_not_block_others(self):

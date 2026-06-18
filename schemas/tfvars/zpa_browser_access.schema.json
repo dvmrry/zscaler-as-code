@@ -1,0 +1,224 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "bypass_type": {
+            "type": "string"
+          },
+          "clientless_apps": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "allow_options": {
+                  "type": "boolean"
+                },
+                "application_port": {
+                  "type": "string"
+                },
+                "application_protocol": {
+                  "type": "string"
+                },
+                "certificate_id": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "domain": {
+                  "type": "string"
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "ext_domain": {
+                  "type": "string"
+                },
+                "ext_label": {
+                  "type": "string"
+                },
+                "microtenant_id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "trust_untrusted_cert": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "application_port",
+                "application_protocol",
+                "name"
+              ],
+              "type": "object"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "config_space": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "domain_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "double_encrypt": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "fqdn_dns_check": {
+            "type": "boolean"
+          },
+          "health_check_type": {
+            "type": "string"
+          },
+          "health_reporting": {
+            "type": "string"
+          },
+          "icmp_access_type": {
+            "type": "string"
+          },
+          "ip_anchored": {
+            "type": "boolean"
+          },
+          "is_cname_enabled": {
+            "type": "boolean"
+          },
+          "is_incomplete_dr_config": {
+            "type": "boolean"
+          },
+          "microtenant_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "passive_health_enabled": {
+            "type": "boolean"
+          },
+          "segment_group_id": {
+            "type": "string"
+          },
+          "segment_group_name": {
+            "type": "string"
+          },
+          "select_connector_close_to_app": {
+            "type": "boolean"
+          },
+          "server_groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "tcp_keep_alive": {
+            "type": "string"
+          },
+          "tcp_port_range": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "from": {
+                  "type": "string"
+                },
+                "to": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "tcp_port_ranges": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "udp_port_range": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "from": {
+                  "type": "string"
+                },
+                "to": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "udp_port_ranges": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "use_in_dr_mode": {
+            "type": "boolean"
+          },
+          "zpn_er_id": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "clientless_apps",
+          "domain_names",
+          "name",
+          "segment_group_id"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zpa_browser_access tfvars",
+  "type": "object"
+}

@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "zpa_app_segments": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "external_id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "external_id",
+                "name"
+              ],
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "zpa_server_group": {
+            "additionalProperties": false,
+            "properties": {
+              "external_id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "external_id",
+              "name"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "name",
+          "zpa_server_group"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zia_forwarding_control_zpa_gateway tfvars",
+  "type": "object"
+}

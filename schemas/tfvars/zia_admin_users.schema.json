@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "admin_scope_entities": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
+            },
+            "type": "object"
+          },
+          "admin_scope_type": {
+            "type": "string"
+          },
+          "comments": {
+            "type": "string"
+          },
+          "disabled": {
+            "type": "boolean"
+          },
+          "email": {
+            "type": "string"
+          },
+          "is_auditor": {
+            "type": "boolean"
+          },
+          "is_exec_mobile_app_enabled": {
+            "type": "boolean"
+          },
+          "is_non_editable": {
+            "type": "boolean"
+          },
+          "is_password_expired": {
+            "type": "boolean"
+          },
+          "is_password_login_allowed": {
+            "type": "boolean"
+          },
+          "is_product_update_comm_enabled": {
+            "type": "boolean"
+          },
+          "is_security_report_comm_enabled": {
+            "type": "boolean"
+          },
+          "is_service_update_comm_enabled": {
+            "type": "boolean"
+          },
+          "login_name": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "role": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "login_name",
+          "username"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zia_admin_users tfvars",
+  "type": "object"
+}

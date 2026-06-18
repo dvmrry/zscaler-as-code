@@ -1,0 +1,117 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "conditions": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "operands": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "entry_values": {
+                        "items": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "lhs": {
+                              "type": "string"
+                            },
+                            "rhs": {
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "type": "array",
+                        "uniqueItems": true
+                      },
+                      "object_type": {
+                        "type": "string"
+                      },
+                      "values": {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": true
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "operator": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "description": {
+            "type": "string"
+          },
+          "microtenant_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "privileged_capabilities": {
+            "additionalProperties": false,
+            "properties": {
+              "clipboard_copy": {
+                "type": "boolean"
+              },
+              "clipboard_paste": {
+                "type": "boolean"
+              },
+              "file_download": {
+                "type": "boolean"
+              },
+              "file_upload": {
+                "type": "boolean"
+              },
+              "inspect_file_download": {
+                "type": "boolean"
+              },
+              "inspect_file_upload": {
+                "type": "boolean"
+              },
+              "monitor_session": {
+                "type": "boolean"
+              },
+              "record_session": {
+                "type": "boolean"
+              },
+              "share_session": {
+                "type": "boolean"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zpa_policy_capabilities_rule tfvars",
+  "type": "object"
+}

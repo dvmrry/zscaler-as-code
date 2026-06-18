@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "allow_gcp_cloud_storage_read": {
+            "type": "boolean"
+          },
+          "allow_google_consumers": {
+            "type": "boolean"
+          },
+          "allow_google_visitors": {
+            "type": "boolean"
+          },
+          "app_type": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "item_data_primary": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "item_data_secondary": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "item_type_primary": {
+            "type": "string"
+          },
+          "item_type_secondary": {
+            "type": "string"
+          },
+          "item_value": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "ms_login_services_tr_v2": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "restrict_personal_o365_domains": {
+            "type": "boolean"
+          },
+          "timeouts": {
+            "additionalProperties": false,
+            "properties": {
+              "create": {
+                "type": "string"
+              },
+              "update": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zia_tenant_restriction_profile tfvars",
+  "type": "object"
+}

@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "zia_cloud_domain": {
+            "type": "string"
+          },
+          "zia_cloud_service_api_key": {
+            "type": "string"
+          },
+          "zia_password": {
+            "type": "string"
+          },
+          "zia_sandbox_api_token": {
+            "type": "string"
+          },
+          "zia_username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "zia_cloud_domain",
+          "zia_cloud_service_api_key",
+          "zia_password",
+          "zia_sandbox_api_token",
+          "zia_username"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zpa_zia_cloud_config tfvars",
+  "type": "object"
+}
