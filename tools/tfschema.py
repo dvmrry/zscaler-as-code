@@ -88,11 +88,6 @@ def classify_attributes(block):
     """
     out = {"required": [], "optional": [], "computed_only": []}
     for name, attr in sorted((block.get("attributes") or {}).items()):
-        if "nested_type" in attr:
-            raise ValueError(
-                "attribute %r uses nested_type (plugin framework); "
-                "the generator does not support it — add an override" % name
-            )
         if attr.get("deprecated") and not attr.get("required"):
             out["computed_only"].append(name)
         elif attr.get("required"):
@@ -122,6 +117,74 @@ def resource_input_attrs(block):
     return cls
 
 
+def attr_type(attr):
+    """Return a Terraform type encoding for either SDKv2 or framework attrs."""
+    if "type" in attr:
+        return attr["type"]
+    if "nested_type" in attr:
+        return nested_type_encoding(attr["nested_type"])
+    raise ValueError("attribute has no type or nested_type: %r" % attr)
+
+
+def nested_type_encoding(nested_type):
+    """Convert plugin-framework nested_type metadata into our type encoding."""
+    members = {}
+    for name, attr in sorted((nested_type.get("attributes") or {}).items()):
+        if attr.get("deprecated") and not attr.get("required"):
+            continue
+        if attr.get("required") or attr.get("optional"):
+            members[name] = attr_type(attr)
+    enc = ["object", members]
+    mode = nested_type.get("nesting_mode")
+    if mode == "single":
+        return enc
+    if mode in ("list", "set", "map"):
+        return [mode, enc]
+    raise ValueError("unsupported nested_type nesting_mode %r" % mode)
+
+
+def block_has_inputs(block):
+    """True when a nested block has at least one settable input."""
+    cls = classify_attributes(block)
+    if cls["required"] or cls["optional"]:
+        return True
+    for bt in (block.get("block_types") or {}).values():
+        if block_has_inputs(bt["block"]):
+            return True
+    return False
+
+
+def input_block_types(block):
+    """Nested blocks that are real inputs, excluding computed-only blocks."""
+    return dict(
+        (name, bt)
+        for name, bt in sorted((block.get("block_types") or {}).items())
+        if block_has_inputs(bt["block"])
+    )
+
+
+def _encoding_has_sensitive(encoding, attr=None):
+    if attr is not None and attr.get("sensitive"):
+        return True
+    if isinstance(encoding, list) and len(encoding) == 2:
+        kind, inner = encoding
+        if kind in ("list", "set", "map"):
+            return _encoding_has_sensitive(inner)
+        if kind == "object" and isinstance(inner, dict):
+            return any(_encoding_has_sensitive(v) for v in inner.values())
+    return False
+
+
+def block_has_sensitive(block):
+    for attr in (block.get("attributes") or {}).values():
+        if _encoding_has_sensitive(attr_type(attr), attr):
+            return True
+    for bt in (block.get("block_types") or {}).values():
+        if block_has_sensitive(bt["block"]):
+            return True
+    return False
+
+
 _PRIMITIVES_HCL = {"string": "string", "bool": "bool", "number": "number"}
 _PRIMITIVES_JSON = {"string": "string", "bool": "boolean", "number": "number"}
 
@@ -139,16 +202,17 @@ def hcl_type(encoding, indent=4):
         raise ValueError("unsupported primitive type encoding: %r" % encoding)
     if isinstance(encoding, list) and len(encoding) == 2:
         kind, inner = encoding
-        if kind in ("list", "set", "map") and isinstance(inner, str):
-            return "%s(%s)" % (kind, hcl_type(inner))
-        if kind in ("list", "set") and isinstance(inner, list) and inner[0] == "object":
-            members = inner[1]
+        if kind == "object" and isinstance(inner, dict):
             pad = " " * (indent + 2)
             lines = [
-                "%s%s = optional(%s)" % (pad, name, hcl_type(members[name], indent + 2))
-                for name in sorted(members)
+                "%s%s = optional(%s)" % (pad, name, hcl_type(inner[name], indent + 2))
+                for name in sorted(inner)
             ]
-            return "%s(object({\n%s\n%s}))" % (kind, "\n".join(lines), " " * indent)
+            return "object({\n%s\n%s})" % ("\n".join(lines), " " * indent)
+        if kind in ("list", "set", "map") and isinstance(inner, str):
+            return "%s(%s)" % (kind, hcl_type(inner))
+        if kind in ("list", "set", "map") and isinstance(inner, list):
+            return "%s(%s)" % (kind, hcl_type(inner, indent))
     raise ValueError("unsupported type encoding: %r" % (encoding,))
 
 
@@ -160,7 +224,16 @@ def json_schema_type(encoding):
         raise ValueError("unsupported primitive type encoding: %r" % encoding)
     if isinstance(encoding, list) and len(encoding) == 2:
         kind, inner = encoding
-        if kind == "map" and isinstance(inner, str):
+        if kind == "object" and isinstance(inner, dict):
+            return {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    name: json_schema_type(inner[name])
+                    for name in sorted(inner)
+                },
+            }
+        if kind == "map":
             return {"type": "object", "additionalProperties": json_schema_type(inner)}
         if kind in ("list", "set"):
             if isinstance(inner, str):
@@ -168,19 +241,8 @@ def json_schema_type(encoding):
                 if kind == "set":
                     frag["uniqueItems"] = True
                 return frag
-            if isinstance(inner, list) and inner[0] == "object":
-                members = inner[1]
-                frag = {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": False,
-                        "properties": {
-                            name: json_schema_type(members[name])
-                            for name in sorted(members)
-                        },
-                    },
-                }
+            if isinstance(inner, list):
+                frag = {"type": "array", "items": json_schema_type(inner)}
                 if kind == "set":
                     frag["uniqueItems"] = True
                 return frag

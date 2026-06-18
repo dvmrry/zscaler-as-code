@@ -11,8 +11,10 @@ import sys
 
 from tools.registry import generated_types
 from tools.tfschema import (
+    attr_type,
     block_is_single,
     classify_attributes,
+    input_block_types,
     load_resource,
     resource_input_attrs,
 )
@@ -55,6 +57,19 @@ def check_value(value, encoding):
         return []
 
     kind, inner = encoding
+
+    # object type
+    if kind == "object" and isinstance(inner, dict):
+        if not isinstance(value, dict):
+            return [("", encoding, type(value).__name__)]
+        issues = []
+        for mk, mv in value.items():
+            if mk not in inner:
+                issues.append((".%s" % mk, "not an input", type(mv).__name__))
+                continue
+            for suffix, exp, got in check_value(mv, inner[mk]):
+                issues.append((".%s%s" % (mk, suffix), exp, got))
+        return issues
 
     # map type
     if kind == "map":
@@ -106,7 +121,7 @@ def check_item(item, block, top_level=False):
     valid input — same exclusion the module and JSON Schema apply.
     """
     attrs = block.get("attributes") or {}
-    block_types = block.get("block_types") or {}
+    block_types = input_block_types(block)
     cls = resource_input_attrs(block) if top_level else classify_attributes(block)
     valid_attrs = set(cls["required"] + cls["optional"])
 
@@ -144,7 +159,7 @@ def check_item(item, block, top_level=False):
             issues.append(("", key, "not an input — transform should have dropped it", type(value).__name__))
             continue
 
-        enc = attrs.get(key, {}).get("type")
+        enc = attr_type(attrs[key])
         if enc is None:
             continue
         for suffix, exp, got in check_value(value, enc):

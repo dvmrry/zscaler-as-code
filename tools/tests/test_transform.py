@@ -334,6 +334,31 @@ class CoerceTest(unittest.TestCase):
         out = coerce_item(item, fake_block)
         self.assertEqual(out["ranges"], [{"port": 443}, {"port": 8080}])
 
+    def test_nested_type_object_attr_members_coerce(self):
+        # Plugin-framework nested_type attributes are object attributes, not
+        # block_types. They still need recursive member coercion and strict
+        # object-member filtering.
+        fake_block = {
+            "attributes": {
+                "settings": {
+                    "nested_type": {
+                        "nesting_mode": "single",
+                        "attributes": {
+                            "enabled": {"type": "bool", "optional": True},
+                            "port": {"type": "number", "optional": True},
+                            "label": {"type": "string", "computed": True},
+                        },
+                    },
+                    "optional": True,
+                }
+            }
+        }
+        out = coerce_item(
+            {"settings": {"enabled": "1", "port": {"id": "443"}, "label": "drop"}},
+            fake_block,
+        )
+        self.assertEqual(out, {"settings": {"enabled": True, "port": 443}})
+
 
 class OverrideTest(unittest.TestCase):
     def test_missing_override_is_empty(self):

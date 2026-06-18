@@ -123,6 +123,18 @@ class CheckValueCollectionsTest(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertIn("[0].extra", result[0][0])
 
+    def test_object_attr_unknown_member(self):
+        enc = ["object", {"enabled": "bool", "port": "number"}]
+        result = check_value({"enabled": True, "extra": "bad"}, enc)
+        self.assertEqual(len(result), 1)
+        self.assertIn(".extra", result[0][0])
+
+    def test_object_attr_member_wrong_type(self):
+        enc = ["object", {"enabled": "bool", "port": "number"}]
+        result = check_value({"enabled": "true", "port": 443}, enc)
+        self.assertEqual(len(result), 1)
+        self.assertIn(".enabled", result[0][0])
+
 
 # ---------------------------------------------------------------------------
 # check_item — walking block attrs + block_types

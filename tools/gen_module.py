@@ -11,9 +11,12 @@ import subprocess
 import sys
 from tools.registry import generated_types
 from tools.tfschema import (
+    attr_type,
     block_is_single,
+    block_has_sensitive,
     classify_attributes,
     hcl_type,
+    input_block_types,
     load_resource,
     resource_input_attrs,
 )
@@ -84,37 +87,15 @@ def _provider_of(resource_type):
     return resource_type.split("_", 1)[0]
 
 
-def _check_block_has_inputs(name, block):
-    """Fail loudly on blocks with no settable inputs anywhere.
-
-    An all-computed leaf block would render an empty content {} that
-    terraform rejects. None exist in the scoped resources today; when one
-    arrives, decide deliberately (exclude it like computed-only attrs, or
-    add an override) instead of generating broken HCL.
-    """
-    cls = classify_attributes(block)
-    if cls["required"] or cls["optional"]:
-        return
-    if block.get("block_types"):
-        for child_name, bt in sorted(block["block_types"].items()):
-            _check_block_has_inputs(child_name, bt["block"])
-        return
-    raise ValueError(
-        "block %r has only computed attributes; the generator would emit "
-        "an empty content {} — exclude it via an override or extend the "
-        "generator deliberately" % name
-    )
-
-
 def _block_object_type(block, indent):
     """HCL object({...}) type for a nested block's input shape."""
     cls = classify_attributes(block)
     pad = " " * (indent + 2)
     lines = []
     for name in cls["required"] + cls["optional"]:
-        attr_t = hcl_type(block["attributes"][name]["type"], indent + 2)
+        attr_t = hcl_type(attr_type(block["attributes"][name]), indent + 2)
         lines.append("%s%s = optional(%s)" % (pad, name, attr_t))
-    for name, bt in sorted((block.get("block_types") or {}).items()):
+    for name, bt in input_block_types(block).items():
         lines.append(
             "%s%s = optional(%s)" % (pad, name, _block_input_type(bt, indent + 2, name))
         )
@@ -122,7 +103,6 @@ def _block_object_type(block, indent):
 
 
 def _block_input_type(block_type, indent, name="<unknown>"):
-    _check_block_has_inputs(name, block_type["block"])
     inner = _block_object_type(block_type["block"], indent)
     mode = block_type["nesting_mode"]
     if block_is_single(block_type):
@@ -148,8 +128,7 @@ def _render_block_body(block, ref, indent, top_level=False):
     lines = []
     for name in names:
         lines.append("%s%s = %s.%s" % (pad, name, ref, name))
-    for name, bt in sorted((block.get("block_types") or {}).items()):
-        _check_block_has_inputs(name, bt["block"])
+    for name, bt in input_block_types(block).items():
         source = "%s.%s" % (ref, name)
         if block_is_single(bt):
             iterable = "%s == null ? [] : [%s]" % (source, source)
@@ -182,12 +161,12 @@ def render_variables(resource_type, resource_schema):
     cls = resource_input_attrs(block)  # drops the top-level resource-identity id
     lines = []
     for name in cls["required"]:
-        lines.append("    %s = %s" % (name, hcl_type(block["attributes"][name]["type"])))
+        lines.append("    %s = %s" % (name, hcl_type(attr_type(block["attributes"][name]))))
     for name in cls["optional"]:
         lines.append(
-            "    %s = optional(%s)" % (name, hcl_type(block["attributes"][name]["type"]))
+            "    %s = optional(%s)" % (name, hcl_type(attr_type(block["attributes"][name])))
         )
-    for name, bt in sorted((block.get("block_types") or {}).items()):
+    for name, bt in input_block_types(block).items():
         lines.append("    %s = optional(%s)" % (name, _block_input_type(bt, 4, name)))
     return (
         _header(resource_type, _provider_of(resource_type))
@@ -206,6 +185,7 @@ def render_outputs(resource_type, resource_schema):
     attrs = block.get("attributes") or {}
     deprecated = sorted(n for n, a in attrs.items() if a.get("deprecated"))
     header = _header(resource_type, _provider_of(resource_type))
+    sensitive_line = "  sensitive   = true\n" if block_has_sensitive(block) else ""
     if deprecated:
         # Exposing the whole resource object would READ the deprecated
         # attribute(s) and emit a "Deprecated value used" warning on every
@@ -219,6 +199,7 @@ def render_outputs(resource_type, resource_schema):
             + 'output "items" {\n'
             + '  description = "All managed %s resources (excludes deprecated: '
             '%s), keyed as in var.items."\n' % (resource_type, ", ".join(deprecated))
+            + sensitive_line
             + "  value = {\n    for k, v in %s.this : k => {\n%s\n    }\n  }\n}\n"
             % (resource_type, projection)
         )
@@ -228,6 +209,7 @@ def render_outputs(resource_type, resource_schema):
             + 'output "items" {\n'
             + '  description = "All managed %s resources, keyed as in var.items."\n'
             % resource_type
+            + sensitive_line
             + "  value = %s.this\n}\n" % resource_type
         )
     if attrs.get("name", {}).get("required") and "id" in attrs:
@@ -295,8 +277,8 @@ def _sample_item(block):
     cls = classify_attributes(block)
     item = {}
     for name in cls["required"]:
-        item[name] = _sample_value(block["attributes"][name]["type"])
-    for name, bt in sorted((block.get("block_types") or {}).items()):
+        item[name] = _sample_value(attr_type(block["attributes"][name]))
+    for name, bt in input_block_types(block).items():
         if (bt.get("min_items") or 0) >= 1:
             inner = _sample_item(bt["block"])
             item[name] = inner if block_is_single(bt) else [inner]
