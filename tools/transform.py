@@ -11,6 +11,7 @@ import os
 import re
 import sys
 
+from tools import lookup
 from tools.registry import derive_entry
 from tools.adoption_status import known_hold_paths
 from tools.tfschema import (
@@ -863,6 +864,11 @@ def main(argv=None):
     imports_dir = os.path.join("imports", tenant)
     os.makedirs(config_dir, exist_ok=True)
     os.makedirs(imports_dir, exist_ok=True)
+    if resource_type in lookup.lookup_sources():
+        lookup_path = lookup.write_lookup(
+            tenant, resource_type, [snake_keys(raw) for raw in raw_items]
+        )
+        sys.stderr.write("wrote %s\n" % lookup_path)
     tfvars_path = os.path.join(config_dir, resource_type + ".auto.tfvars.json")
     imports_path = os.path.join(imports_dir, resource_type + "_imports.tf")
     moves_path = os.path.join(imports_dir, resource_type + "_moves.tf")
