@@ -22,30 +22,38 @@ class AdoptionCheckTest(unittest.TestCase):
         self.status = load_status()
 
     def test_known_hold_is_accepted(self):
-        _write_json(os.path.join(self.tmp, "zia_dlp_web_rules.json"), [{
+        _write_json(os.path.join(self.tmp, "zia_admin_roles.json"), [{
             "id": 1,
-            "name": "DLP",
-            "order": 1,
-            "ucTemplateId": 7,
+            "name": "Role",
+            "aiPromptAccess": "enabled",
         }])
         result = adoption_check.check_resource(
-            "zia_dlp_web_rules", "tenant", self.tmp, self.status, write=False)
+            "zia_admin_roles", "tenant", self.tmp, self.status, write=False)
         self.assertEqual(result["state"], "known-hold")
-        self.assertEqual(result["drops"], ["uc_template_id"])
+        self.assertEqual(result["drops"], ["ai_prompt_access"])
         self.assertEqual(result["unexpected"], [])
 
     def test_known_hold_render_names_issue(self):
-        _write_json(os.path.join(self.tmp, "zia_dlp_web_rules.json"), [{
-            "id": 1,
-            "name": "DLP",
-            "order": 1,
-            "ucTemplateId": 7,
+        status = {
+            "dispositions": {},
+            "known_holds": {
+                "zpa_segment_group": [{
+                    "issue": "test-1",
+                    "path": "brand_new_api_field",
+                    "reason": "synthetic test hold",
+                }],
+            },
+        }
+        _write_json(os.path.join(self.tmp, "zpa_segment_group.json"), [{
+            "id": "1",
+            "name": "Segment Group",
+            "brandNewApiField": "x",
         }])
         result = adoption_check.check_resource(
-            "zia_dlp_web_rules", "tenant", self.tmp, self.status, write=False)
+            "zpa_segment_group", "tenant", self.tmp, status, write=False)
         self.assertEqual(
             adoption_check.render_result(result),
-            "KNOWN-HOLD zia_dlp_web_rules: uc_template_id (zia-70)")
+            "KNOWN-HOLD zpa_segment_group: brand_new_api_field (test-1)")
 
     def test_provider_gap_holds_are_accepted_without_issue(self):
         _write_json(
