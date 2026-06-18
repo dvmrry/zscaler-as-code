@@ -1461,6 +1461,39 @@ class DropsCheckGateTest(unittest.TestCase):
         self.assertIn("known-held zia_dlp_web_rules.uc_template_id", err)
         self.assertNotIn("NEW API surface", err)
 
+    def test_gre_vip_read_only_extras_are_known_holds(self):
+        raw = [{
+            "id": "gre-1",
+            "sourceIp": "192.0.2.10",
+            "primaryDestVip": [{
+                "id": "vip-1",
+                "datacenter": "A",
+                "dontProvision": True,
+                "privateServiceEdge": False,
+            }],
+            "secondaryDestVip": [{
+                "id": "vip-2",
+                "datacenter": "B",
+                "dontProvision": False,
+                "privateServiceEdge": True,
+            }],
+        }]
+        code, err = self._run_main(
+            raw, env_flag=True,
+            resource_type="zia_traffic_forwarding_gre_tunnel")
+        self.assertEqual(code, 0)
+        self.assertIn(
+            "known-held zia_traffic_forwarding_gre_tunnel."
+            "primary_dest_vip[].dont_provision",
+            err,
+        )
+        self.assertIn(
+            "known-held zia_traffic_forwarding_gre_tunnel."
+            "secondary_dest_vip[].private_service_edge",
+            err,
+        )
+        self.assertNotIn("NEW API surface", err)
+
     def test_known_holds_do_not_hide_new_surface(self):
         raw = [{
             "id": 1,

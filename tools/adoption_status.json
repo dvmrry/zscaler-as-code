@@ -611,11 +611,19 @@
         "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
       },
       {
+        "path": "primary_dest_vip[].dont_provision",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
         "path": "primary_dest_vip[].latitude",
         "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
       },
       {
         "path": "primary_dest_vip[].longitude",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "primary_dest_vip[].private_service_edge",
         "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
       },
       {
@@ -631,11 +639,19 @@
         "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
       },
       {
+        "path": "secondary_dest_vip[].dont_provision",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
         "path": "secondary_dest_vip[].latitude",
         "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
       },
       {
         "path": "secondary_dest_vip[].longitude",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "secondary_dest_vip[].private_service_edge",
         "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
       },
       {
