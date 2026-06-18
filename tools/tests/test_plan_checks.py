@@ -1,9 +1,10 @@
 """Tests for the plan-diff policy gates (tools/plan_checks.py).
 
-Checks judge NEW additions only — pins cover the field-specified
+Checks judge NEW additions only - pins cover the field-specified
 behaviors verbatim: wildcard coverage fails redundancy (except inside
 the exemptions category), a new host under an exemptions suffix must be
-an exact exemptions entry, and new location IP ranges must not overlap.
+an exact exemptions entry, and new location IP ranges must not overlap
+within the same location parent.
 """
 import unittest
 
@@ -58,14 +59,16 @@ class AddedHostsTest(unittest.TestCase):
 class AddedLocationRangesTest(unittest.TestCase):
     def test_update_diff_and_create_full(self):
         plan = _location_plan(
-            {"ip_addresses": ["10.0.0.0/24"]},
-            {"ip_addresses": ["10.0.0.0/24", "10.1.0.0/24"]})
+            {"ip_addresses": ["10.0.0.0/24"], "parent_id": 0},
+            {"ip_addresses": ["10.0.0.0/24", "10.1.0.0/24"],
+             "parent_id": 0})
         self.assertEqual(added_location_ranges(plan),
-                         [("branch", "10.1.0.0/24")])
-        plan = _location_plan(None, {"ip_addresses": ["192.0.2.1"]},
-                              action="create")
+                         [("branch", "10.1.0.0/24", None)])
+        plan = _location_plan(
+            None, {"ip_addresses": ["192.0.2.1"], "parent_id": 123},
+            action="create")
         self.assertEqual(added_location_ranges(plan),
-                         [("branch", "192.0.2.1")])
+                         [("branch", "192.0.2.1", "123")])
 
 
 class RedundancyTest(unittest.TestCase):
@@ -99,7 +102,7 @@ class RedundancyTest(unittest.TestCase):
         self.assertEqual(fails, [])
 
     def test_concrete_entry_does_not_cover(self):
-        # plain.test is concrete, not a base — sub.plain.test is fine
+        # plain.test is concrete, not a base - sub.plain.test is fine
         fails = check_redundancy([("alloweds", "sub.plain.test")],
                                  CATEGORIES, EXEMPT)
         self.assertEqual(fails, [])
@@ -138,7 +141,7 @@ class LocationIpOverlapTest(unittest.TestCase):
             "branch": {"ip_addresses": ["192.0.2.10-192.0.2.20"]},
         }
         fails = check_location_ip_overlap(
-            [("new_branch", "10.10.20.0/24")], locations)
+            [("new_branch", "10.10.20.0/24", None)], locations)
         self.assertEqual(len(fails), 1)
         self.assertIn("LOCATION-IP-OVERLAP", fails[0])
         self.assertIn("hq", fails[0])
@@ -146,20 +149,65 @@ class LocationIpOverlapTest(unittest.TestCase):
     def test_new_ranges_that_do_not_overlap_pass(self):
         locations = {"hq": {"ip_addresses": ["10.10.0.0/16"]}}
         fails = check_location_ip_overlap(
-            [("new_branch", "10.11.0.0/24")], locations)
+            [("new_branch", "10.11.0.0/24", None)], locations)
+        self.assertEqual(fails, [])
+
+    def test_new_range_does_not_overlap_itself_in_after_config(self):
+        locations = {
+            "new_branch": {"ip_addresses": ["10.11.0.0/24"]},
+        }
+        fails = check_location_ip_overlap(
+            [("new_branch", "10.11.0.0/24", None)], locations)
         self.assertEqual(fails, [])
 
     def test_same_plan_overlaps_are_caught(self):
         locations = {}
         fails = check_location_ip_overlap([
-            ("a", "203.0.113.1-203.0.113.10"),
-            ("b", "203.0.113.5"),
+            ("a", "203.0.113.1-203.0.113.10", None),
+            ("b", "203.0.113.5", None),
         ], locations)
         self.assertEqual(len(fails), 1)
         self.assertIn("location 'a'", fails[0])
 
+    def test_sibling_sublocation_overlap_is_caught(self):
+        locations = {
+            "site_a_child_1": {
+                "parent_id": 1001,
+                "ip_addresses": ["10.40.0.0/24"],
+            },
+        }
+        fails = check_location_ip_overlap([
+            ("site_a_child_2", "10.40.0.128/25", "1001"),
+        ], locations)
+        self.assertEqual(len(fails), 1)
+        self.assertIn("site_a_child_1", fails[0])
+
+    def test_cross_parent_sublocation_overlap_passes(self):
+        locations = {
+            "site_a_child": {
+                "parent_id": 1001,
+                "ip_addresses": ["10.40.0.0/24"],
+            },
+        }
+        fails = check_location_ip_overlap([
+            ("site_b_child", "10.40.0.128/25", "2002"),
+        ], locations)
+        self.assertEqual(fails, [])
+
+    def test_top_level_and_sublocation_overlap_passes(self):
+        locations = {
+            "site_a": {
+                "ip_addresses": ["10.50.0.0/24"],
+            },
+        }
+        fails = check_location_ip_overlap([
+            ("site_a_child", "10.50.0.128/25", "1001"),
+        ], locations)
+        self.assertEqual(fails, [])
+
     def test_invalid_new_range_fails(self):
-        fails = check_location_ip_overlap([("a", "10.0.0.9-10.0.0.1")], {})
+        fails = check_location_ip_overlap(
+            [("a", "10.0.0.9-10.0.0.1", None)], {})
         self.assertEqual(len(fails), 1)
         self.assertIn("not an IP / CIDR / address range", fails[0])
 

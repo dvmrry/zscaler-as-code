@@ -22,6 +22,8 @@
 #                       this one)
 # Optional env:
 #   TARGET_BRANCH       PR target (default: main)
+#   PR_BODY_FILE        markdown file to use as every PR body (for drift,
+#                       reports/<tenant>/drift.md)
 #   ARTIFACT_NOTE       extra line appended to every PR body (e.g. a pointer
 #                       to the published full drift report)
 #   HTTPS_PROXY         declare on the step if egress rides a proxy: curl
@@ -94,6 +96,10 @@ if [ -z "$types" ]; then
   exit 0
 fi
 say 1/5 "changed types:$(printf ' %s' $types)"
+if [ -n "${PR_BODY_FILE:-}" ] && ! [ -s "$PR_BODY_FILE" ]; then
+  echo "error: PR_BODY_FILE is set but missing or empty: $PR_BODY_FILE"
+  exit 2
+fi
 
 # --- snapshot the working tree so per-type branches can cherry-pick paths ---
 # A throwaway commit captures every change (incl. NEW files) in one tree we
@@ -136,19 +142,46 @@ fi
 enc_proj="$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))' "$SYSTEM_TEAMPROJECT")"
 pr_url="${SYSTEM_COLLECTIONURI}${enc_proj}/_apis/git/repositories/${BUILD_REPOSITORY_ID}/pullrequests?api-version=7.0"
 
-open_pr() {   # $1 branch  $2 title
-  local br="$1" title="$2" desc code
-  desc="Automated $BRANCH_PREFIX for $TENANT - resource type \`${br##*/}\`."
-  if [ -n "${ARTIFACT_NOTE:-}" ]; then desc="$desc
+body_for_pr() {   # $1 branch
+  local br="$1"
+  if [ -n "${PR_BODY_FILE:-}" ]; then
+    cat "$PR_BODY_FILE"
+  else
+    printf 'Automated %s for %s - resource type `%s`.\n' \
+      "$BRANCH_PREFIX" "$TENANT" "${br##*/}"
+  fi
+  if [ -n "${ARTIFACT_NOTE:-}" ]; then
+    printf '\n%s\n' "$ARTIFACT_NOTE"
+  fi
+}
 
-$ARTIFACT_NOTE"; fi
-  python3 - "$br" "$TARGET_BRANCH" "$title" "$desc" > "$tmpdir/pr.json" <<'PYEOF'
+open_pr() {   # $1 branch  $2 title
+  local br="$1" title="$2" body_file code
+  body_file="$tmpdir/pr-body-${br##*/}.md"
+  body_for_pr "$br" > "$body_file"
+  python3 - "$br" "$TARGET_BRANCH" "$title" "$body_file" > "$tmpdir/pr.json" <<'PYEOF'
 import json, sys
+REPLACEMENTS = {
+    "\u00a0": " ",
+    "\u2018": "'",
+    "\u2019": "'",
+    "\u201c": '"',
+    "\u201d": '"',
+    "\u2013": "-",
+    "\u2014": "--",
+    "\u2026": "...",
+    "\u2212": "-",
+}
+with open(sys.argv[4], encoding="utf-8") as f:
+    desc = f.read()
+for old, new in REPLACEMENTS.items():
+    desc = desc.replace(old, new)
+desc = desc.encode("ascii", "replace").decode("ascii")
 print(json.dumps({
     "sourceRefName": "refs/heads/" + sys.argv[1],
     "targetRefName": "refs/heads/" + sys.argv[2],
     "title": sys.argv[3],
-    "description": sys.argv[4],
+    "description": desc,
 }))
 PYEOF
   code="$(curl -sS --max-time 60 -X POST \

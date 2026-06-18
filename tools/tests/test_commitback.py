@@ -1,6 +1,6 @@
 """Tests for the commit-back script (pipelines/commitback.sh).
 
-The script is the pulled home for commit-back logic — every field
+The script is the pulled home for commit-back logic - every field
 incident (az hangs, set -e killing the PR call after the push, PR
 pileup) happened in adapted inline YAML, so its behavior is pinned here
 like any tool. Runs against a scratch repo with a local bare origin and
@@ -97,6 +97,13 @@ class CommitbackTest(unittest.TestCase):
                       "w", encoding="utf-8") as f:
                 f.write("# import blocks for %s\n" % rt)
 
+    def _write_report(self, body):
+        path = os.path.join(self.work, "reports/t1/drift.md")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(body)
+        return "reports/t1/drift.md"
+
     def _run(self, **env_extra):
         env = dict(self.env)
         env.update(env_extra)
@@ -142,7 +149,7 @@ class CommitbackTest(unittest.TestCase):
         self._stage_types("zia_rule_labels")
         code, out = self._run()
         self.assertEqual(code, 0, out)
-        # exact stable name — nothing appended (no date), so a re-drift
+        # exact stable name - nothing appended (no date), so a re-drift
         # refreshes this same branch instead of stacking a new one
         self.assertEqual(self._origin_branches(), ["bootstrap/t1/zia_rule_labels"])
 
@@ -152,12 +159,12 @@ class CommitbackTest(unittest.TestCase):
         self._stage_types("zia_url_categories", "zpa_segment_group")  # workspace is ephemeral
         code, out = self._run()
         self.assertEqual(code, 0, out)
-        # still exactly two branches — stable names, force-pushed, not doubled
+        # still exactly two branches - stable names, force-pushed, not doubled
         self.assertEqual(len(self._origin_branches()), 2, out)
 
     def test_409_is_success_already_open(self):
         # a stable branch whose PR is already open: the push refreshed it,
-        # and ADO 409s the create — that is success, not failure
+        # and ADO 409s the create - that is success, not failure
         self._stage_types("zia_url_categories")
         code, out = self._run(CURL_STATUS="409")
         self.assertEqual(code, 0, out)
@@ -182,6 +189,51 @@ class CommitbackTest(unittest.TestCase):
             self.assertIn("_full report: drift-report_", b["description"])
             self.assertIn("resource type", b["description"])
 
+    def test_pr_body_file_replaces_one_liner_in_every_body(self):
+        self._stage_types("zia_url_categories", "zpa_segment_group")
+        report = "## Drift report\n\n| resource | count |\n|---|---|\n"
+        body_file = self._write_report(report)
+        code, out = self._run(PR_BODY_FILE=body_file)
+        self.assertEqual(code, 0, out)
+        bodies = self._pr_bodies()
+        self.assertEqual(len(bodies), 2)
+        for b in bodies:
+            self.assertEqual(b["description"], report)
+            self.assertNotIn("Automated bootstrap", b["description"])
+
+    def test_pr_body_file_can_still_append_artifact_note(self):
+        self._stage_types("zia_url_categories")
+        body_file = self._write_report("## Drift report\n")
+        code, out = self._run(PR_BODY_FILE=body_file,
+                              ARTIFACT_NOTE="_also in artifact_")
+        self.assertEqual(code, 0, out)
+        self.assertEqual(
+            self._pr_bodies()[0]["description"],
+            "## Drift report\n\n_also in artifact_\n",
+        )
+
+    def test_pr_body_file_is_ascii_normalized(self):
+        self._stage_types("zia_url_categories")
+        body_file = self._write_report(
+            "## Drift \u2014 report\n"
+            "- **\u2212 item** \u2014 changed\u2026 \u201cquoted\u201d\n"
+        )
+        code, out = self._run(PR_BODY_FILE=body_file)
+        self.assertEqual(code, 0, out)
+        desc = self._pr_bodies()[0]["description"]
+        self.assertEqual(
+            desc,
+            '## Drift -- report\n- **- item** -- changed... "quoted"\n',
+        )
+        desc.encode("ascii")
+
+    def test_missing_pr_body_file_fails_before_push(self):
+        self._stage_types("zia_url_categories")
+        code, out = self._run(PR_BODY_FILE="reports/t1/missing.md")
+        self.assertEqual(code, 2, out)
+        self.assertIn("PR_BODY_FILE", out)
+        self.assertEqual(self._origin_branches(), [])
+
     def test_clean_worktree_is_a_quiet_success(self):
         code, out = self._run()
         self.assertEqual(code, 0, out)
@@ -203,7 +255,7 @@ class CommitbackTest(unittest.TestCase):
 
     def _commit_types_to_main(self, *types):
         """Commit + push config/imports for types to main, so the PR base
-        (origin/main) already tracks them — needed to exercise deletions."""
+        (origin/main) already tracks them - needed to exercise deletions."""
         self._stage_types(*types)
         self._git("-C", self.work, "add", "-A")
         self._git("-C", self.work, "-c", "user.name=t", "-c", "user.email=t@invalid",
@@ -211,7 +263,7 @@ class CommitbackTest(unittest.TestCase):
         self._git("-C", self.work, "push", "-q", "origin", "main")
 
     def test_deletion_propagates_to_its_branch(self):
-        # a resource dropped upstream: its file is removed, not rewritten —
+        # a resource dropped upstream: its file is removed, not rewritten -
         # the per-type branch must carry the removal, not silently skip it
         self._commit_types_to_main("zia_url_categories")
         os.remove(os.path.join(self.work, "config/t1/zia_url_categories.auto.tfvars.json"))
@@ -227,7 +279,7 @@ class CommitbackTest(unittest.TestCase):
 
     def test_config_only_first_bootstrap_no_imports_dir(self):
         # first bootstrap of a type with no import blocks: config/t1 exists,
-        # imports/t1 does not — `git add` must not 128 on the missing dir
+        # imports/t1 does not - `git add` must not 128 on the missing dir
         os.makedirs(os.path.join(self.work, "config/t1"), exist_ok=True)
         with open(os.path.join(self.work, "config/t1", "zia_rule_labels.auto.tfvars.json"),
                   "w", encoding="utf-8") as f:

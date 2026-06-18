@@ -2,13 +2,13 @@
 
 After `make drift` exits 3, the worktree holds the regenerated config;
 this renders a reviewer-facing markdown summary: per resource, which
-items were added (with import note), removed, or changed — and for
+items were added (with import note), removed, or changed - and for
 changed items, WHICH fields. Deterministic; the PR-creation pipeline
 pipes stdout into the PR description.
 
 Usage: python -m tools.drift_summary <tenant>
 
-Stdlib-only, Python 3.6-floor — see AGENTS.md rule 5.
+Stdlib-only, Python 3.6-floor - see AGENTS.md rule 5.
 """
 import json
 import os
@@ -69,7 +69,7 @@ def _mass_change_banners(per_resource):
         moved = len(added) + len(removed) + len(changed)
         if moved >= MASS_CHANGE_THRESHOLD:
             banners.append(
-                "> :warning: **MASS CHANGE — %s: %d item(s) affected.** "
+                "> :warning: **MASS CHANGE -- %s: %d item(s) affected.** "
                 "This shape suggests a cascade (rule insert/delete "
                 "shifting neighbors) or a bulk/scripted change, not "
                 "routine click-ops. Review the audit table before "
@@ -85,7 +85,7 @@ def _mass_change_banners(per_resource):
                     "> :warning: **%s: `%s` changed on %d item(s).** One "
                     "field moving across many items usually means a "
                     "cascade (e.g. ZIA re-sequenced rule order after an "
-                    "insert/delete) — merging adopts the NEW arrangement "
+                    "insert/delete) -- merging adopts the NEW arrangement "
                     "as truth; applying old config would re-shuffle the "
                     "tenant." % (rt, f, field_counts[f])
                 )
@@ -107,29 +107,29 @@ def render_summary(tenant, per_resource):
         lines.append("### %s" % rt)
         for key in added:
             lines.append(
-                "- **+ %s** — new in tenant; import block staged in "
+                "- **+ %s** -- new in tenant; import block staged in "
                 "`imports/%s/`" % (key, tenant)
             )
         for key in removed:
             lines.append(
-                "- **− %s** — gone from tenant; merging removes it from "
+                "- **- %s** -- gone from tenant; merging removes it from "
                 "config (state cleanup on next apply)" % key
             )
         for key, fields in sorted(changed.items()):
-            lines.append("- **~ %s** — changed: %s" % (key, ", ".join(fields)))
+            lines.append("- **~ %s** -- changed: %s" % (key, ", ".join(fields)))
         lines.append("")
     if total == 0:
         return "No config-level drift.\n"
     lines.append(
         "Backfill PR: config now matches the tenant, so the plan on this "
         "PR should show **0 to add/change/destroy** (imports allowed). "
-        "A non-zero plan means the tenant moved again — re-run drift."
+        "A non-zero plan means the tenant moved again -- re-run drift."
     )
     lines.append("")
     lines.append(
         "> If this PR appears to UNDO a recently merged change, and the "
         "audit table shows no matching console change, the likely cause "
-        "is that the change was merged but never APPLIED — check the "
+        "is that the change was merged but never APPLIED -- check the "
         "delivery pipeline's apply stage before merging this."
     )
     return "\n".join(lines) + "\n"

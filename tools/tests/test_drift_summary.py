@@ -1,4 +1,4 @@
-"""Tests for tools/drift_summary.py — drift PR body generation."""
+"""Tests for tools/drift_summary.py - drift PR body generation."""
 import unittest
 
 from tools.drift_summary import diff_items, render_summary
@@ -44,12 +44,13 @@ class RenderSummaryTest(unittest.TestCase):
         self.assertIn("### zia_url_categories", out)
         self.assertIn("+ new_cat", out)
         self.assertIn("import block staged", out)
-        self.assertIn("− old_cat", out)
+        self.assertIn("- old_cat", out)
         self.assertIn("~ edited_cat", out)
         self.assertIn("urls, keywords", out)
         self.assertIn("0 to add/change/destroy", out)
         # the merged-but-never-applied tell, pre-interpreted for the reviewer
         self.assertIn("merged but never APPLIED", out)
+        out.encode("ascii")
 
     def test_mass_change_banner_on_many_items(self):
         changed = {"r%d" % i: ["description"] for i in range(12)}

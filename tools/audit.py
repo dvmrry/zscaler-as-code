@@ -9,18 +9,18 @@ STRICTLY ADVISORY: this must never gate a drift PR. Any failure (no
 entitlement, report timeout, unexpected CSV shape) degrades to a
 one-line "attribution unavailable" note and exit 0. The ZIA endpoint
 is an async report (request -> poll -> download CSV) and only one
-report can generate at a time per org — another reason it stays
+report can generate at a time per org - another reason it stays
 best-effort.
 
 The rendered output embeds live admin identities (email addresses) and
 tenant-derived strings, so it must only ever be produced in the
-operator's PRIVATE deployment repo — never a public template/fork, where
+operator's PRIVATE deployment repo - never a public template/fork, where
 the drift PR body would leak admin PII.
 
 Usage: python -m tools.audit <tenant> <hours> [resource_type ...]
 (creds via the same env vars as make fetch; tenant label is opaque)
 
-Stdlib-only, Python 3.6-floor — see AGENTS.md rule 5.
+Stdlib-only, Python 3.6-floor - see AGENTS.md rule 5.
 """
 import csv
 import io
@@ -28,6 +28,7 @@ import json
 import os
 import sys
 import time
+from urllib.parse import quote as _urlquote
 
 from tools.fetch import (
     acquire_token,
@@ -40,7 +41,7 @@ from tools.fetch import (
 )
 
 # resource type -> case-insensitive keywords matched against the audit
-# row's category/subcategory/resource columns. Advisory keywords — rows
+# row's category/subcategory/resource columns. Advisory keywords - rows
 # matching nothing still appear under "other admin changes".
 CATEGORY_KEYWORDS = {
     "zia_url_categories": ("URL_CATEGOR", "URL CATEGOR"),
@@ -67,6 +68,26 @@ def _zia(opener, method, auth_mode, ctx, token, path, body=None):
     return raw
 
 
+def _status_id_from_report_request(raw):
+    if not raw:
+        return ""
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except ValueError:
+        return ""
+    if not isinstance(payload, dict):
+        return ""
+    status_id = payload.get("statusId")
+    return str(status_id) if status_id else ""
+
+
+def _audit_report_path(suffix="", status_id=""):
+    path = "auditlogEntryReport" + suffix
+    if status_id:
+        path = path + "?statusId=" + _urlquote(status_id, safe="")
+    return path
+
+
 def fetch_audit_csv(env, hours, sleep=time.sleep, now_ms=None):
     """Request, poll, and download the audit report. Returns CSV text."""
     auth_mode = auth_mode_from_env(env)
@@ -76,17 +97,22 @@ def fetch_audit_csv(env, hours, sleep=time.sleep, now_ms=None):
         "customer_id": env.get("ZPA_CUSTOMER_ID", ""),
     }
     # Honor the same legacy host overrides as the fetcher (ZIA_LEGACY_BASE_URL)
-    # so audit attribution hits the SAME ZIA host the fetch did — otherwise an
+    # so audit attribution hits the SAME ZIA host the fetch did - otherwise an
     # overridden tenant degrades to the derived host.
     ctx.update(host_overrides(env))
     token = acquire_token(auth_mode, "zia", env, ctx, opener)
     end_ms = now_ms if now_ms is not None else int(time.time() * 1000)
     start_ms = end_ms - hours * 3600 * 1000
-    _zia(opener, "POST", auth_mode, ctx, token, "auditlogEntryReport",
-         {"startTime": start_ms, "endTime": end_ms})
+    raw = _zia(opener, "POST", auth_mode, ctx, token, "auditlogEntryReport",
+               {"startTime": start_ms, "endTime": end_ms})
+    # Newer ZIA clouds return a statusId; older 204-style responses require
+    # the original bare status/download endpoints.
+    status_id = _status_id_from_report_request(raw)
     for _ in range(_POLL_LIMIT):
         sleep(_POLL_SECONDS)
-        raw = _zia(opener, "GET", auth_mode, ctx, token, "auditlogEntryReport")
+        raw = _zia(
+            opener, "GET", auth_mode, ctx, token,
+            _audit_report_path(status_id=status_id))
         status = json.loads(raw.decode("utf-8")).get("status", "")
         if status == "COMPLETE":
             break
@@ -94,7 +120,9 @@ def fetch_audit_csv(env, hours, sleep=time.sleep, now_ms=None):
             raise RuntimeError("audit report status %s" % status)
     else:
         raise RuntimeError("audit report did not complete in time")
-    raw = _zia(opener, "GET", auth_mode, ctx, token, "auditlogEntryReport/download")
+    raw = _zia(
+        opener, "GET", auth_mode, ctx, token,
+        _audit_report_path("/download", status_id))
     return raw.decode("utf-8", "replace")
 
 
@@ -189,7 +217,7 @@ def render_attribution(matched, other, hours, limit=50):
     else:
         lines.append(
             "No audit entries matched the drifted resource types in the "
-            "window — the change may be older than %dh." % hours)
+            "window - the change may be older than %dh." % hours)
     if other:
         lines.append("")
         lines.append(
@@ -197,7 +225,7 @@ def render_attribution(matched, other, hours, limit=50):
             "</summary>" % len(other))
         lines.append("")
         for row in other[:limit]:
-            lines.append("- %s — %s: %s (%s)" % (
+            lines.append("- %s -- %s: %s (%s)" % (
                 _cell(row["time"]), _cell(row["admin"]),
                 _cell(row["action"]), _cell(row["category"])))
         if len(other) > limit:
@@ -223,7 +251,7 @@ def main(argv=None):
         matched, other = filter_rows(rows, resource_types)
         sys.stdout.write(render_attribution(matched, other, hours))
     except (Exception, SystemExit) as exc:
-        # Advisory only — the drift PR proceeds without attribution.
+        # Advisory only - the drift PR proceeds without attribution.
         # SystemExit included: missing-credential helpers in the fetch
         # plumbing raise it, and it must not escape this contract.
         # a multi-line message (fetch hints carry \n) would break the
