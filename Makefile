@@ -15,7 +15,7 @@ TF     ?= terraform
 # guarded, so fetch/transform (which DO take multi-token) are unaffected.
 SCOPE_GLOB = $(if $(word 2,$(RESOURCE)),$(error RESOURCE takes a SINGLE selector for per-root targets (plan/apply/stage-imports/assert-clean/...) — got "$(RESOURCE)". Use one resource type, one glob (zia_*), or one product token (zia|zpa|zcc); for a multi-type scope, loop the target once per type. Multi-token RESOURCE is fetch/drift-only.),$(if $(RESOURCE),$(if $(filter zia zpa zcc,$(RESOURCE)),$(RESOURCE)_*,$(RESOURCE)),*))
 
-.PHONY: help env install-tf bump-check mine issue-watch triage surface plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports import-one statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report plan-summary-line assert-clean apply drift check-envs validate-config demo check-demo lint lint-pipelines fmt-config typecheck refresh-gates conformance find-key url-add url-rm domain-add domain-rm
+.PHONY: help env install-tf bump-check mine issue-watch triage surface contract-facts plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports import-one statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report plan-summary-line assert-clean apply drift check-envs validate-config demo check-demo lint lint-pipelines fmt-config typecheck refresh-gates conformance find-key url-add url-rm domain-add domain-rm
 
 # Company/deployment extensions: a private repo adds its own targets and
 # variable overrides in local.mk — NEVER by editing this file, which is
@@ -50,6 +50,10 @@ issue-watch: ## Watch provider issue trackers for problems with OUR resources (e
 
 surface: ## Sweep the ENTIRE SDK<->terraform surface with synthetic maximal items — no tenant data ([APPLY=1]; exit 4 = paths need eyes; run at every provider/SDK bump; needs network)
 	$(PYTHON) -m tools.surface
+
+contract-facts: ## Summarize an automate divergences JSON against our registry/overrides (FILE=<*-divergences.json> [RESOURCE=<type|product|glob> ...])
+	@test -n "$(FILE)" || { echo "usage: make contract-facts FILE=<*-divergences.json> [RESOURCE=<type|product|glob>]"; exit 2; }
+	$(PYTHON) -m tools.contract_facts "$(FILE)" $(RESOURCE)
 
 triage: ## Classify unacknowledged drop-report fields (IN=pulls/<tenant> [APPLY=1 writes safe classes to acknowledged_drops]; exit 4 = SYNONYM/UNKNOWN paths need eyes; SDK lane needs network)
 	@test -n "$(IN)" || { echo "usage: make triage IN=pulls/<tenant> [APPLY=1]"; exit 2; }
