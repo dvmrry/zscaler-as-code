@@ -1,4 +1,6 @@
 """Tests for tools.lookup ID-readability sidecars and explain output."""
+import contextlib
+import io
 import json
 import os
 import shutil
@@ -188,13 +190,16 @@ class LookupExplainTest(unittest.TestCase):
         self._write_config("t", "zia_url_filtering_rules", {
             "r": {"name": "R", "url_categories": ["CUSTOM_01"]},
         })
+        missing = []
         self.assertEqual(
             lookup.render_explain(
-                "t", ["zia_url_filtering_rules"], config_root=self.config_root),
+                "t", ["zia_url_filtering_rules"], config_root=self.config_root,
+                missing_lookups=missing),
             "zia_url_filtering_rules\n"
             "  R\n"
             "    url_categories: %s (CUSTOM_01)\n" % lookup.UNKNOWN,
         )
+        self.assertEqual(missing, ["zia_url_categories"])
 
     def test_unmanifested_resource_prints_nothing(self):
         self._write_config("t", "zia_url_categories", {
@@ -204,6 +209,34 @@ class LookupExplainTest(unittest.TestCase):
             lookup.render_explain(
                 "t", ["zia_url_categories"], config_root=self.config_root),
             "",
+        )
+
+
+class LookupCliTest(unittest.TestCase):
+    TENANT = "tmplookupcli"
+
+    def setUp(self):
+        self.addCleanup(shutil.rmtree, os.path.join(REPO_ROOT, "config", self.TENANT), True)
+
+    def test_explain_warns_when_lookup_file_is_missing(self):
+        _write_json(
+            os.path.join(REPO_ROOT, "config", self.TENANT,
+                         "zia_url_filtering_rules.auto.tfvars.json"),
+            {"items": {
+                "r": {"name": "R", "url_categories": ["CUSTOM_01"]},
+            }},
+        )
+        out = io.StringIO()
+        err = io.StringIO()
+
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = lookup.main(["explain", self.TENANT, "zia_url_filtering_rules"])
+
+        self.assertEqual(code, 0)
+        self.assertIn("%s (CUSTOM_01)" % lookup.UNKNOWN, out.getvalue())
+        self.assertEqual(
+            err.getvalue(),
+            "warning: no lookup for zia_url_categories - run transform\n",
         )
 
 

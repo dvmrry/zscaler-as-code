@@ -199,7 +199,12 @@ def _item_label(key, item):
     return key
 
 
-def render_explain(tenant, selectors=None, config_root="config"):
+def _note_missing_lookup(missing_lookups, referent):
+    if missing_lookups is not None and referent not in missing_lookups:
+        missing_lookups.append(referent)
+
+
+def render_explain(tenant, selectors=None, config_root="config", missing_lookups=None):
     check_tenant(tenant)
     lines = []
     for resource_type in _expand_selectors(selectors or []):
@@ -214,8 +219,12 @@ def render_explain(tenant, selectors=None, config_root="config"):
         resource_lines = []
         lookups = {}
         for field, spec in refs.items():
+            referent = spec["referent"]
+            if not os.path.exists(
+                    lookup_path(tenant, referent, config_root=config_root)):
+                _note_missing_lookup(missing_lookups, referent)
             lookups[field] = load_lookup(
-                tenant, spec["referent"], config_root=config_root
+                tenant, referent, config_root=config_root
             )
         for key in sorted(items):
             item = items[key]
@@ -251,7 +260,13 @@ def main(argv=None):
     tenant = argv[1]
     selectors = argv[2:]
     try:
-        sys.stdout.write(render_explain(tenant, selectors))
+        missing_lookups = []
+        sys.stdout.write(render_explain(
+            tenant, selectors, missing_lookups=missing_lookups))
+        for referent in sorted(missing_lookups):
+            sys.stderr.write(
+                "warning: no lookup for %s - run transform\n" % referent
+            )
     except LookupDataError as e:
         sys.stderr.write("error: %s\n" % e)
         return 1
