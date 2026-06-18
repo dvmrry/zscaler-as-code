@@ -21,8 +21,8 @@
       "status": "entitlement-gated"
     },
     "zpa_emergency_access_user": {
-      "reason": "Live validation returned HTTP 404 for emergency access users on the tested gateway; fetch path is source-backed but the surface may not be mounted without the feature.",
-      "status": "gateway-parked"
+      "reason": "Live validation returned HTTP 401 for emergency access users on the tested tenant after the plural endpoint fix; treat as entitlement/scope-gated unless an entitled tenant proves otherwise.",
+      "status": "entitlement-gated"
     },
     "zpa_inspection_custom_controls": {
       "reason": "Live validation returned HTTP 403 for this fetch path on the tested tenant; treat as inspection entitlement/scope-gated unless an entitled tenant proves otherwise.",

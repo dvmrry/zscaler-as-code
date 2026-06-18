@@ -657,8 +657,7 @@
       "path": "emergencyAccess/users",
       "optional_http_statuses": [
         401,
-        403,
-        404
+        403
       ]
     },
     "generate": true,

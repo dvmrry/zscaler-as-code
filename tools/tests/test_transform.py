@@ -678,6 +678,28 @@ class PipelineTest(unittest.TestCase):
         self.assertEqual(items["predefined_pci"]["name"], "Predefined PCI")
         self.assertEqual(drops, [])
 
+    def test_url_cloud_app_prompt_acronym_renames(self):
+        raw = [{
+            "id": "app_setting",
+            "enableChatGptPrompt": True,
+            "enableMicrosoftCoPilotPrompt": True,
+            "enablePerplexityPrompt": True,
+            "enableDeepseekPrompt": True,
+            "enablePoEPrompt": True,
+        }]
+        items, _, drops = transform_items(
+            raw,
+            "zia_url_filtering_and_cloud_app_settings",
+            load_override("zia_url_filtering_and_cloud_app_settings"),
+        )
+        item = items["app_setting"]
+        self.assertTrue(item["enable_chatgpt_prompt"])
+        self.assertTrue(item["enable_microsoft_copilot_prompt"])
+        self.assertTrue(item["enable_per_plexity_prompt"])
+        self.assertTrue(item["enable_deep_seek_prompt"])
+        self.assertTrue(item["enable_poe_prompt"])
+        self.assertEqual(drops, [])
+
     def test_two_non_ascii_names_transform_without_empty_key(self):
         # Two distinct CJK-named items both slug to '' on their name alone;
         # the id fallback gives each a distinct non-empty key, so the
