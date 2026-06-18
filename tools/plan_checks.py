@@ -1,18 +1,18 @@
-"""Plan-diff policy gates for tenant changes — NEW additions only.
+"""Plan-diff policy gates for tenant changes - NEW additions only.
 
 Field-designed checks that run between `plan` and approval, against
 `terraform show -json tfplan` output. They deliberately judge only what
-THIS plan ADDS (legacy tenant data is whatever it is — config-wide
+THIS plan ADDS (legacy tenant data is whatever it is - config-wide
 scans of it are noise; the gate's job is stopping new mistakes):
 
-1. SUBDOMAIN REDUNDANCY — a newly added concrete host that is already
+1. SUBDOMAIN REDUNDANCY - a newly added concrete host that is already
    covered by a wildcard/leading-dot base (".example.com" or
    "*.example.com") anywhere in the categories is redundant: it adds
    nothing, bloats the category, and (worse) creates a more-specific
    entry that can shadow policy. The SSL-exemptions category is exempt
-   — adding concrete hosts THERE is exactly what check 2 requires.
+   - adding concrete hosts THERE is exactly what check 2 requires.
 
-2. SSL BYPASS VALIDATION — ZIA is most-specific-match: adding
+2. SSL BYPASS VALIDATION - ZIA is most-specific-match: adding
    "www.example.com" to any category while the SSL-exemptions category
    carries ".example.com" re-categorizes that host, and SSL inspection
    ENGAGES on traffic the bypass was protecting. Every newly added
@@ -20,19 +20,20 @@ scans of it are noise; the gate's job is stopping new mistakes):
    the exemptions category as an exact entry.
 
 3. LOCATION IP OVERLAP - a newly added location IP/CIDR/range that
-   overlaps another location range creates ambiguous location assignment.
-   Existing overlap is left alone; new overlap is blocked.
+   overlaps another range under the same parent location creates
+   ambiguous location assignment. Existing overlap is left alone; new
+   overlap is blocked. Cross-parent sublocation overlap is allowed.
 
 The SSL-exemptions category is tenant-specific, so it is configured,
 never hardcoded: set SSL_EXEMPT_CATEGORY to the category's CONFIG KEY
 (the items map key). Check 2 is skipped with a loud note when unset.
 Baselines (wildcard bases, exemption entries) come from the tenant's
-committed config — the same files the plan was built from.
+committed config - the same files the plan was built from.
 
 Exit: 0 = clean; 1 = violations (each line names the host, the
 covering base, and the fix); 2 = usage. Offline; no credentials.
 
-Stdlib-only, Python 3.6-floor — see AGENTS.md rule 5.
+Stdlib-only, Python 3.6-floor - see AGENTS.md rule 5.
 """
 import json
 import os
@@ -82,8 +83,27 @@ def added_hosts(plan):
     return out
 
 
+def _parent_scope(location):
+    """Comparison scope for a location's IP ranges.
+
+    ZIA represents top-level locations either without parent_id or with
+    parent_id=0 in some API/provider shapes; treat both as one top-level
+    scope. Sublocations compare only against siblings with the same
+    non-zero parent_id.
+    """
+    parent_id = (location or {}).get("parent_id")
+    if parent_id in (None, "", 0, "0"):
+        return None
+    try:
+        value = int(parent_id)
+    except (TypeError, ValueError):
+        return str(parent_id)
+    return None if value == 0 else str(value)
+
+
 def added_location_ranges(plan):
-    """[(location_key, range)] newly ADDED to location ip_addresses."""
+    """[(location_key, range, parent_scope)] newly ADDED to location
+    ip_addresses."""
     out = []
     for rc in plan.get("resource_changes") or []:
         if rc.get("type") != "zia_location_management":
@@ -94,10 +114,11 @@ def added_location_ranges(plan):
         key = rc.get("index")
         change = rc.get("change") or {}
         before, after = change.get("before") or {}, change.get("after") or {}
+        parent = _parent_scope(after)
         olds = set(_hosts(before.get("ip_addresses")))
         for entry in _hosts(after.get("ip_addresses")):
             if entry not in olds:
-                out.append((key, entry))
+                out.append((key, entry, parent))
     return out
 
 
@@ -138,7 +159,7 @@ def check_redundancy(adds, categories, exempt_key):
                 bkey, braw = hit
                 failures.append(
                     "REDUNDANT %s: %r is already covered by %r in "
-                    "category %r — adding it changes nothing except "
+                    "category %r - adding it changes nothing except "
                     "creating a more-specific entry that can shadow "
                     "policy; drop the addition" % (key, entry, braw, bkey))
                 break
@@ -172,7 +193,7 @@ def check_ssl_bypass(adds, categories, exempt_key):
         if matched and host not in exact:
             failures.append(
                 "SSL-BYPASS %s: %r falls under SSL-exemptions suffix %r "
-                "but is NOT an exact entry there — most-specific-match "
+                "but is NOT an exact entry there - most-specific-match "
                 "re-categorizes it and SSL inspection ENGAGES on bypassed "
                 "traffic; add %r to the %r category in the same change"
                 % (key, entry, matched, host, exempt_key))
@@ -215,29 +236,33 @@ def _overlaps(left, right):
 
 
 def check_location_ip_overlap(adds, locations):
-    """New location ranges must not overlap existing or same-plan ranges."""
+    """New location ranges must not overlap ranges in the same parent scope."""
+    added_entries = set((key, entry) for key, entry, _parent in adds)
     seen = []
     failures = []
     for key in sorted(locations):
+        parent = _parent_scope(locations[key])
         for entry in _hosts(locations[key].get("ip_addresses")):
+            if (key, entry) in added_entries:
+                continue
             interval = _ip_interval(entry)
             if interval is not None:
-                seen.append((interval, key, entry))
-    for key, entry in adds:
+                seen.append((interval, key, entry, parent))
+    for key, entry, parent in adds:
         interval = _ip_interval(entry)
         if interval is None:
             failures.append(
                 "LOCATION-IP %s: %r is not an IP / CIDR / address range "
                 "- fix the value before approval" % (key, entry))
             continue
-        for other, other_key, other_entry in seen:
-            if _overlaps(interval, other):
+        for other, other_key, other_entry, other_parent in seen:
+            if parent == other_parent and _overlaps(interval, other):
                 failures.append(
                     "LOCATION-IP-OVERLAP %s: %r overlaps %r in location "
                     "%r - location assignment becomes ambiguous; narrow "
                     "or remove one range" % (key, entry, other_entry, other_key))
                 break
-        seen.append((interval, key, entry))
+        seen.append((interval, key, entry, parent))
     return failures
 
 
@@ -255,7 +280,7 @@ def main(argv=None):
         with open(plan_path, encoding="utf-8") as f:
             plan = json.load(f)
         if not isinstance(plan, dict) or "format_version" not in plan:
-            raise ValueError("not plan JSON (no format_version) — feed "
+            raise ValueError("not plan JSON (no format_version) - feed "
                              "this `terraform show -json tfplan` output")
         categories = load_categories(tenant)
         locations = load_locations(tenant)
@@ -276,7 +301,7 @@ def main(argv=None):
             return 1
         failures += check_ssl_bypass(adds, categories, exempt_key)
     else:
-        sys.stdout.write("note: SSL_EXEMPT_CATEGORY unset — the SSL-bypass "
+        sys.stdout.write("note: SSL_EXEMPT_CATEGORY unset - the SSL-bypass "
                          "check is OFF (set it to the exemptions category's "
                          "config key to enable)\n")
     for line in failures:
