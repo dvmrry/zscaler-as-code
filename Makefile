@@ -51,8 +51,8 @@ issue-watch: ## Watch provider issue trackers for problems with OUR resources (e
 surface: ## Sweep the ENTIRE SDK<->terraform surface with synthetic maximal items — no tenant data ([APPLY=1]; exit 4 = paths need eyes; run at every provider/SDK bump; needs network)
 	$(PYTHON) -m tools.surface
 
-contract-facts: ## Summarize an automate divergences JSON against our registry/overrides (FILE=<*-divergences.json> [RESOURCE=<type|product|glob> ...])
-	@test -n "$(FILE)" || { echo "usage: make contract-facts FILE=<*-divergences.json> [RESOURCE=<type|product|glob>]"; exit 2; }
+contract-facts: ## Summarize an automate divergences/rosetta JSON against our registry/overrides (FILE=<*-divergences.json|rosetta.json> [RESOURCE=<type|product|glob> ...])
+	@test -n "$(FILE)" || { echo "usage: make contract-facts FILE=<*-divergences.json|rosetta.json> [RESOURCE=<type|product|glob>]"; exit 2; }
 	$(PYTHON) -m tools.contract_facts "$(FILE)" $(RESOURCE)
 
 headroom-report: ## Provider schema vs adoption matrix ([RESOURCE=<type|product|glob> ...])
