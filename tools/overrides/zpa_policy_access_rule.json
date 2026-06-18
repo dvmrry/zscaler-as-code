@@ -80,6 +80,9 @@
     "priority",
     "rule_order"
   ],
+  "html_escape_fields": [
+    "custom_msg"
+  ],
   "import_id": "{id}",
   "merge_blocks": [
     "app_server_groups",

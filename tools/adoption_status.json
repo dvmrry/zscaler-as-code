@@ -50,11 +50,597 @@
     }
   },
   "known_holds": {
+    "zia_admin_roles": [
+      {
+        "path": "ai_prompt_access",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      }
+    ],
+    "zia_advanced_settings": [
+      {
+        "path": "dns_resolution_on_transparent_proxy_i_pv6_apps",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "dns_resolution_on_transparent_proxy_i_pv6_exempt_apps",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "dns_resolution_on_transparent_proxy_i_pv6_exempt_url_categories",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "dns_resolution_on_transparent_proxy_i_pv6_url_categories",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "domain_fronting_bypass_apps",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "domain_fronting_exempted_url_categories",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "enable_i_pv6_dns_optimization_on_all_transparent_proxy",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "enable_i_pv6_dns_resolution_on_transparent_proxy",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "zscaler_client_connector1_and_pac_road_warrior_in_firewall",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      }
+    ],
+    "zia_advanced_threat_settings": [
+      {
+        "path": "active_x_blocked",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "active_x_capture",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "alert_for_unknown_or_suspicious_c2_traffic",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "webspam_blocked",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "webspam_capture",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "wpad_blocked",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      }
+    ],
+    "zia_bandwidth_classes": [
+      {
+        "path": "applications",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "file_size",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "is_name_l10n_tag",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "type",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      }
+    ],
+    "zia_browser_control_policy": [
+      {
+        "path": "smart_isolation_profile.profile_seq",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "smart_isolation_profile_id",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      }
+    ],
+    "zia_dlp_dictionaries": [
+      {
+        "path": "custom_phrase_supported",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "dictionary_cloning_enabled",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "hierarchical_dictionary",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "idm_profile_match_accuracy_details",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "include_ssn_numbers",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "low_confidence_disabled",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "name_l10n_tag",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "parent_dictionary",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "parent_dictionary_id",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "predefined_clone",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "predefined_count_action_type",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "predefined_phrases",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "proximity_length_enabled",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "sub_dictionaries",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "threshold_allowed",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "unicode_phrase_matching_enabled",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "view_only",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      }
+    ],
     "zia_dlp_web_rules": [
       {
         "issue": "zia-70",
         "path": "uc_template_id",
         "reason": "Live reads return ucTemplateId, absent from the provider schema and held out of acknowledged_drops pending clarification."
+      }
+    ],
+    "zia_end_user_notification": [
+      {
+        "path": "display_comp_logo",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "display_comp_name",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      }
+    ],
+    "zia_file_type_control_rules": [
+      {
+        "path": "access_control",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "enforce_time_validity",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "file_type_categories",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "last_modified_by",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "last_modified_time",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "location_groups.name",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "locations.is_name_l10n_tag",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "locations.name",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "password_protected",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      }
+    ],
+    "zia_firewall_dns_rule": [
+      {
+        "path": "access_control",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "end_point_application_groups",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "end_point_applications",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "eun_template_id",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "exclude_context_shield_end_point",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "is_eun_enabled",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "last_modified_by",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "last_modified_time",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "locations.is_name_l10n_tag",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "locations.name",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "users.name",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      }
+    ],
+    "zia_firewall_filtering_destination_groups": [
+      {
+        "path": "creator_context",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "ip_addresses",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "url_categories",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      }
+    ],
+    "zia_firewall_filtering_ip_source_groups": [
+      {
+        "path": "creator_context",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "is_non_editable",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      }
+    ],
+    "zia_firewall_filtering_network_service": [
+      {
+        "path": "creator_context",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      }
+    ],
+    "zia_firewall_filtering_network_service_groups": [
+      {
+        "path": "creator_context",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "services[].description",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "services[].is_name_l10n_tag",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "services[].name",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      }
+    ],
+    "zia_firewall_filtering_rule": [
+      {
+        "path": "access_control",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "app_service_groups.name",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "capture_pcap",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "dest_ip_groups.name",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "device_groups.name",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "end_point_application_groups",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "end_point_applications",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "eun_template_id",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "exclude_context_shield_end_point",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "groups.name",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "is_eun_enabled",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "last_modified_by",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "last_modified_time",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "location_groups.name",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "locations.is_name_l10n_tag",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "locations.name",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "nw_service_groups.name",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "nw_services.is_name_l10n_tag",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "nw_services.name",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "src_ip_groups.name",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      }
+    ],
+    "zia_firewall_ips_rule": [
+      {
+        "path": "access_control",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "exclude_context_shield_end_point",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "last_modified_by",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "last_modified_time",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "src_ip_groups.name",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      }
+    ],
+    "zia_forwarding_control_rule": [
+      {
+        "path": "access_control",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "last_modified_by",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "last_modified_time",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "location_groups.name",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "locations.is_name_l10n_tag",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "locations.name",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "source_ip_group_exclusion",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "zpa_app_segments[].id",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      }
+    ],
+    "zia_forwarding_control_zpa_gateway": [
+      {
+        "path": "last_modified_by",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "last_modified_time",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "read_only",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "zpa_app_segments[].id",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "zpa_server_group.id",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      }
+    ],
+    "zia_nat_control_rules": [
+      {
+        "path": "access_control",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "action",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "dns_gateway",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "last_modified_time",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "nw_services.is_name_l10n_tag",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "nw_services.name",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "trusted_resolver_rule",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      }
+    ],
+    "zia_nss_server": [
+      {
+        "path": "state",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      }
+    ],
+    "zia_sandbox_rules": [
+      {
+        "path": "access_control",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "cbi_profile_id",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "default_rule",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "last_modified_by",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "last_modified_time",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "location_groups.name",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "users.name",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      }
+    ],
+    "zia_traffic_forwarding_gre_tunnel": [
+      {
+        "path": "last_modification_time",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "last_modified_by",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "primary_dest_vip[].city",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "primary_dest_vip[].country_code",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "primary_dest_vip[].latitude",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "primary_dest_vip[].longitude",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "primary_dest_vip[].region",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "secondary_dest_vip[].city",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "secondary_dest_vip[].country_code",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "secondary_dest_vip[].latitude",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "secondary_dest_vip[].longitude",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
+      },
+      {
+        "path": "secondary_dest_vip[].region",
+        "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
       }
     ],
     "zia_url_filtering_and_cloud_app_settings": [

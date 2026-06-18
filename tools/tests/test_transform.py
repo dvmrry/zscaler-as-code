@@ -961,6 +961,32 @@ class QuirkClosureTest(unittest.TestCase):
         _unescape_html_fields(zia, "zia_url_filtering_rules")
         self.assertEqual(zia["name"], "A &amp; B")
 
+    def test_policy_access_custom_msg_html_escaped(self):
+        # zpa_policy_access_rule.custom_msg is the opposite of the normal
+        # ZPA name/description path: provider read-back/state carries Go's
+        # HTML-escaped string, so config copied from raw API pulls must
+        # escape this field or import/bootstrap plans want to rewrite it.
+        from tools.transform import load_override, transform_items
+
+        raw = [
+            {
+                "id": "1",
+                "name": "Raw apostrophe",
+                "customMsg": "Contact your organization's admin & security",
+            },
+            {
+                "id": "2",
+                "name": "Already escaped",
+                "customMsg": "Contact your organization&#39;s admin &amp; security",
+            },
+        ]
+        ov = load_override("zpa_policy_access_rule")
+        items, _, drops = transform_items(raw, "zpa_policy_access_rule", ov)
+        expected = "Contact your organization&#39;s admin &amp; security"
+        self.assertEqual(items["raw_apostrophe"]["custom_msg"], expected)
+        self.assertEqual(items["already_escaped"]["custom_msg"], expected)
+        self.assertEqual(drops, [])
+
     def test_operand_drift_fields_dropped(self):
         # zpa#287: operands.name is Computed+Optional — the API rewrites it
         # to the referenced object's display name, so a config copy can
@@ -1383,7 +1409,7 @@ class DropsCheckGateTest(unittest.TestCase):
     """DROPS_CHECK=1 turns new API surface (unacknowledged drops) into a
     red run — the tripwire the signingCertId incident needed."""
 
-    def _run_main(self, raw, env_flag):
+    def _run_main(self, raw, env_flag, resource_type="zpa_segment_group"):
         import io, sys, tempfile, json as _json, shutil
         from tools.transform import main
         with tempfile.TemporaryDirectory() as td:
@@ -1394,7 +1420,7 @@ class DropsCheckGateTest(unittest.TestCase):
                 os.environ["DROPS_CHECK"] = "1"
             old_err, sys.stderr = sys.stderr, io.StringIO()
             try:
-                code = main(["zpa_segment_group", src, "tmpdropschk"])
+                code = main([resource_type, src, "tmpdropschk"])
                 err = sys.stderr.getvalue()
             finally:
                 sys.stderr = old_err
@@ -1426,6 +1452,30 @@ class DropsCheckGateTest(unittest.TestCase):
                                    env_flag=True)
         self.assertEqual(code, 0)
         self.assertNotIn("NEW API surface", err)
+
+    def test_known_holds_do_not_fail_drops_check(self):
+        raw = [{"id": 1, "name": "DLP", "order": 1, "ucTemplateId": 7}]
+        code, err = self._run_main(
+            raw, env_flag=True, resource_type="zia_dlp_web_rules")
+        self.assertEqual(code, 0)
+        self.assertIn("known-held zia_dlp_web_rules.uc_template_id", err)
+        self.assertNotIn("NEW API surface", err)
+
+    def test_known_holds_do_not_hide_new_surface(self):
+        raw = [{
+            "id": 1,
+            "name": "DLP",
+            "order": 1,
+            "ucTemplateId": 7,
+            "brandNewApiField": "x",
+        }]
+        code, err = self._run_main(
+            raw, env_flag=True, resource_type="zia_dlp_web_rules")
+        self.assertEqual(code, 4)
+        self.assertIn("known-held zia_dlp_web_rules.uc_template_id", err)
+        self.assertIn("dropped zia_dlp_web_rules.brand_new_api_field", err)
+        self.assertIn("NEW API surface", err)
+        self.assertIn('"brand_new_api_field"', err)
 
 
 
