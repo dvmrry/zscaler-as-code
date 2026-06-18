@@ -32,6 +32,15 @@
     "generate": true,
     "product": "zcc"
   },
+  "zia_bandwidth_control_rule": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "bandwidthControlRules",
+      "query": {}
+    },
+    "generate": true,
+    "product": "zia"
+  },
   "zia_cloud_app_control_rule": {
     "fetch": {
       "expand": {
@@ -54,6 +63,15 @@
       },
       "pagination": "zia",
       "path": "webApplicationRules/{rule_type}"
+    },
+    "generate": true,
+    "product": "zia"
+  },
+  "zia_dlp_web_rules": {
+    "fetch": {
+      "pagination": "zia",
+      "path": "webDlpRules",
+      "query": {}
     },
     "generate": true,
     "product": "zia"
@@ -121,6 +139,15 @@
     "fetch": {
       "pagination": "zpa",
       "path": "server"
+    },
+    "generate": true,
+    "product": "zpa"
+  },
+  "zpa_microtenant_controller": {
+    "fetch": {
+      "pagination": "zpa",
+      "path": "microtenants",
+      "query": {}
     },
     "generate": true,
     "product": "zpa"

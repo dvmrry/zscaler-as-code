@@ -1,0 +1,418 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "auditor": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "cloud_applications": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "departments": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
+            },
+            "type": "object"
+          },
+          "description": {
+            "type": "string"
+          },
+          "dlp_download_scan_enabled": {
+            "type": "boolean"
+          },
+          "dlp_engines": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
+            },
+            "type": "object"
+          },
+          "eun_template_id": {
+            "type": "number"
+          },
+          "excluded_departments": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
+            },
+            "type": "object"
+          },
+          "excluded_domain_profiles": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
+            },
+            "type": "object"
+          },
+          "excluded_groups": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
+            },
+            "type": "object"
+          },
+          "excluded_users": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
+            },
+            "type": "object"
+          },
+          "external_auditor_email": {
+            "type": "string"
+          },
+          "file_type_categories": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
+            },
+            "type": "object"
+          },
+          "file_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "groups": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
+            },
+            "type": "object"
+          },
+          "icap_server": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "included_domain_profiles": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
+            },
+            "type": "object"
+          },
+          "inspect_http_get_enabled": {
+            "type": "boolean"
+          },
+          "labels": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
+            },
+            "type": "object"
+          },
+          "location_groups": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
+            },
+            "type": "object"
+          },
+          "locations": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
+            },
+            "type": "object"
+          },
+          "match_only": {
+            "type": "boolean"
+          },
+          "min_size": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notification_template": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "order": {
+            "type": "number"
+          },
+          "parent_rule": {
+            "type": "number"
+          },
+          "protocols": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "rank": {
+            "type": "number"
+          },
+          "receiver": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "tenant": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "type": "object"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "source_ip_groups": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
+            },
+            "type": "object"
+          },
+          "state": {
+            "type": "string"
+          },
+          "sub_rules": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "time_windows": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
+            },
+            "type": "object"
+          },
+          "timeouts": {
+            "additionalProperties": false,
+            "properties": {
+              "create": {
+                "type": "string"
+              },
+              "update": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "url_categories": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
+            },
+            "type": "object"
+          },
+          "user_risk_score_levels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "users": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "uniqueItems": true
+              }
+            },
+            "type": "object"
+          },
+          "without_content_inspection": {
+            "type": "boolean"
+          },
+          "workload_groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "number"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "zcc_notifications_enabled": {
+            "type": "boolean"
+          },
+          "zscaler_incident_receiver": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "order"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "zia_dlp_web_rules tfvars",
+  "type": "object"
+}

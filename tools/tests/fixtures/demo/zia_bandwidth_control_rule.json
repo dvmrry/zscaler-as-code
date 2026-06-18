@@ -1,0 +1,27 @@
+[
+  {
+    "accessControl": "READ_WRITE",
+    "bandwidthClasses": [
+      {
+        "id": [
+          8001
+        ],
+        "isNameL10nTag": false,
+        "name": "Fictional Bandwidth Class"
+      }
+    ],
+    "defaultRule": false,
+    "description": "Fictional bandwidth control rule for demo coverage.",
+    "id": 9201,
+    "lastModifiedBy": {
+      "id": 1001,
+      "name": "Fictional Admin"
+    },
+    "lastModifiedTime": 1773372484,
+    "name": "Fictional Bandwidth Rule",
+    "order": 1,
+    "protocols": [
+      "ANY_RULE"
+    ]
+  }
+]

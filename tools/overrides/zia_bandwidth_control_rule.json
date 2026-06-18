@@ -1,4 +1,14 @@
 {
+  "acknowledged_drops": [
+    "access_control",
+    "bandwidth_classes.is_name_l10n_tag",
+    "bandwidth_classes.name",
+    "default_rule",
+    "id",
+    "last_modified_by",
+    "last_modified_time"
+  ],
+  "import_id": "{id}",
   "sample": {
     "protocols": [
       "ANY_RULE"
