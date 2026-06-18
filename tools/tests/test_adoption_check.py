@@ -47,6 +47,34 @@ class AdoptionCheckTest(unittest.TestCase):
             adoption_check.render_result(result),
             "KNOWN-HOLD zia_dlp_web_rules: uc_template_id (zia-70)")
 
+    def test_provider_gap_holds_are_accepted_without_issue(self):
+        _write_json(
+            os.path.join(
+                self.tmp, "zia_url_filtering_and_cloud_app_settings.json"),
+            [{
+                "id": "app_setting",
+                "enableGoogleAIPrompt": True,
+                "enableQuillbotAIPrompt": True,
+            }],
+        )
+        result = adoption_check.check_resource(
+            "zia_url_filtering_and_cloud_app_settings",
+            "tenant",
+            self.tmp,
+            self.status,
+            write=False,
+        )
+        self.assertEqual(result["state"], "known-hold")
+        self.assertEqual(
+            result["drops"],
+            ["enable_google_ai_prompt", "enable_quillbot_ai_prompt"],
+        )
+        self.assertEqual(result["unexpected"], [])
+        self.assertEqual(
+            adoption_check.render_result(result),
+            "KNOWN-HOLD zia_url_filtering_and_cloud_app_settings: "
+            "enable_google_ai_prompt, enable_quillbot_ai_prompt")
+
     def test_unexpected_drop_fails(self):
         _write_json(os.path.join(self.tmp, "zpa_segment_group.json"), [{
             "id": "1",

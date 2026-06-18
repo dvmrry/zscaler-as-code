@@ -686,6 +686,7 @@ class PipelineTest(unittest.TestCase):
             "enablePerplexityPrompt": True,
             "enableDeepseekPrompt": True,
             "enablePoEPrompt": True,
+            "enableUcaasLogMeIn": True,
         }]
         items, _, drops = transform_items(
             raw,
@@ -698,6 +699,7 @@ class PipelineTest(unittest.TestCase):
         self.assertTrue(item["enable_per_plexity_prompt"])
         self.assertTrue(item["enable_deep_seek_prompt"])
         self.assertTrue(item["enable_poe_prompt"])
+        self.assertTrue(item["enable_ucaas_logmein"])
         self.assertEqual(drops, [])
 
     def test_two_non_ascii_names_transform_without_empty_key(self):

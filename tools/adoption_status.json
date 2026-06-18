@@ -56,6 +56,16 @@
         "path": "uc_template_id",
         "reason": "Live reads return ucTemplateId, absent from the provider schema and held out of acknowledged_drops pending clarification."
       }
+    ],
+    "zia_url_filtering_and_cloud_app_settings": [
+      {
+        "path": "enable_google_ai_prompt",
+        "reason": "Live reads return enableGoogleAIPrompt, but the Terraform provider schema does not currently expose a matching setting; held out of acknowledged_drops pending provider/contract clarification."
+      },
+      {
+        "path": "enable_quillbot_ai_prompt",
+        "reason": "Live reads return enableQuillbotAIPrompt, but the Terraform provider schema does not currently expose a matching setting; held out of acknowledged_drops pending provider/contract clarification."
+      }
     ]
   }
 }
