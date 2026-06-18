@@ -23,7 +23,13 @@ import json
 import sys
 
 from tools.registry import derive_entry, generated_types
-from tools.tfschema import block_is_single, classify_attributes, load_resource
+from tools.tfschema import (
+    attr_type,
+    block_is_single,
+    classify_attributes,
+    input_block_types,
+    load_resource,
+)
 from tools.transform import snake
 
 
@@ -195,7 +201,19 @@ def _syn_by_encoding(enc, seed, ctr, field, csv_fields):
             return _syn_list_primitive(seed, ctr, field, inner, csv_fields)
         if kind in ("list", "set") and isinstance(inner, list) and inner and inner[0] == "object":
             return _syn_object_list_attr(seed, ctr, field, inner[1])
+        if kind == "map":
+            return {"example": _syn_by_encoding(inner, seed, ctr, field, csv_fields)}
+        if kind == "object" and isinstance(inner, dict):
+            return _syn_object_members(seed, ctr, field, inner)
     return "%s_value" % field
+
+
+def _syn_object_members(seed, ctr, field, members):
+    out = {}
+    for name in sorted(members):
+        out[camel(name)] = _syn_by_encoding(
+            members[name], seed, ctr, "%s_%s" % (field, name), set())
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -213,11 +231,11 @@ def _syn_block_object(block, seed, ctr, csv_fields, rename_targets):
     """
     cls = classify_attributes(block)
     attrs = block.get("attributes") or {}
-    block_types = block.get("block_types") or {}
+    block_types = input_block_types(block)
     out = {}
 
     for name in sorted(cls["required"] + cls["optional"]):
-        enc = attrs[name].get("type")
+        enc = attr_type(attrs[name])
         api_name = rename_targets.get(name, name)
         out[camel(api_name)] = _syn_by_encoding(enc, seed, ctr, name, csv_fields)
 

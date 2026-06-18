@@ -11,8 +11,10 @@ import sys
 
 from tools.registry import generated_types
 from tools.tfschema import (
+    attr_type,
     block_is_single,
     classify_attributes,
+    input_block_types,
     json_schema_type,
     load_resource,
     resource_input_attrs,
@@ -28,8 +30,8 @@ def _block_schema(block, top_level=False):
     props = {}
     required = list(cls["required"])
     for name in cls["required"] + cls["optional"]:
-        props[name] = json_schema_type(block["attributes"][name]["type"])
-    for name, bt in sorted((block.get("block_types") or {}).items()):
+        props[name] = json_schema_type(attr_type(block["attributes"][name]))
+    for name, bt in input_block_types(block).items():
         inner = _block_schema(bt["block"])
         min_items = bt.get("min_items") or 0
         if block_is_single(bt):

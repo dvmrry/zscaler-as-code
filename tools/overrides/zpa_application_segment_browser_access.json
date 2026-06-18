@@ -1,0 +1,11 @@
+{
+  "sample": {
+    "clientless_apps": [
+      {
+        "application_port": "443",
+        "application_protocol": "HTTPS",
+        "name": "example"
+      }
+    ]
+  }
+}

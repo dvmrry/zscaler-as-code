@@ -12,7 +12,13 @@ import re
 import sys
 
 from tools.registry import derive_entry
-from tools.tfschema import block_is_single, classify_attributes, load_resource
+from tools.tfschema import (
+    attr_type,
+    block_is_single,
+    classify_attributes,
+    input_block_types,
+    load_resource,
+)
 
 _SNAKE_1 = re.compile(r"(.)([A-Z][a-z]+)")
 _SNAKE_2 = re.compile(r"([a-z0-9])([A-Z])")
@@ -71,7 +77,7 @@ def filter_item(item, block, path, drops, merge_blocks=frozenset(),
     """
     cls = classify_attributes(block)
     keep_attrs = set(cls["required"] + cls["optional"])
-    block_types = block.get("block_types") or {}
+    block_types = input_block_types(block)
     out = {}
     for key in sorted(item):
         child_path = path + key if not path else path + "." + key
@@ -217,7 +223,7 @@ def _merge_block_elements(elems, block, path, drops):
             v = elem[k]
             if v is None:
                 continue
-            enc = attrs.get(k, {}).get("type")
+            enc = attr_type(attrs[k]) if k in attrs else None
             if isinstance(enc, list) and len(enc) == 2 and enc[0] in ("list", "set"):
                 bucket = merged.setdefault(k, [])
                 if v == "":
@@ -284,7 +290,7 @@ def coerce_item(item, block):
     first).
     """
     attrs = block.get("attributes") or {}
-    block_types = block.get("block_types") or {}
+    block_types = input_block_types(block)
     out = {}
     for key in sorted(item):
         value = item[key]
@@ -295,48 +301,40 @@ def coerce_item(item, block):
             else:
                 out[key] = [coerce_item(v, inner) for v in value] if isinstance(value, list) else value
             continue
-        enc = attrs.get(key, {}).get("type")
-        if isinstance(enc, str):
-            out[key] = _coerce_primitive(_unwrap_ref(value), enc)
-        elif isinstance(enc, list) and len(enc) == 2 and isinstance(enc[1], str):
-            if value == "":
-                out[key] = []
-            elif isinstance(value, list):
-                out[key] = [
-                    _coerce_primitive(_unwrap_ref(v), enc[1]) for v in value
-                ]
-            elif value is None:
-                out[key] = value
-            else:
-                out[key] = [_coerce_primitive(_unwrap_ref(value), enc[1])]
-            if enc[0] == "set" and isinstance(out[key], list):
-                # A set is unordered by definition: terraform compares its
-                # elements without order, but the API returns them UNSTABLY, so
-                # emitting API order makes a re-fetch reorder the committed
-                # config — a phantom git diff that fires a no-op drift/bootstrap
-                # commit-back every run. Canonicalize to sorted order (rule 7:
-                # byte-identical output). LIST-typed fields that are
-                # semantically sets (zia urls) stay opt-in via sort_lists.
-                out[key] = sorted(
-                    out[key], key=lambda v: ("" if v is None else str(v)))
-        elif (
-            isinstance(enc, list) and len(enc) == 2
-            and isinstance(enc[1], list) and len(enc[1]) == 2 and enc[1][0] == "object"
-        ):
-            # Object-typed list/set ATTRIBUTE (e.g. tcp_port_range:
-            # ["list", ["object", {"from": "string", "to": "string"}]]).
-            # Structurally identical to a list block from the API's view, so
-            # coerce each member by its declared type — same quirk-6 / ref
-            # unwrap treatment block members get (filter_item leaves these
-            # attribute values untouched, so coerce handles them here).
-            members = enc[1][1]
-            out[key] = [
-                _coerce_object_members(v, members) if isinstance(v, dict) else v
-                for v in value
-            ] if isinstance(value, list) else value
-        else:
-            out[key] = value
+        enc = attr_type(attrs[key])
+        out[key] = _coerce_by_encoding(value, enc)
     return out
+
+
+def _coerce_by_encoding(value, enc):
+    if isinstance(enc, str):
+        return _coerce_primitive(_unwrap_ref(value), enc)
+    if not (isinstance(enc, list) and len(enc) == 2):
+        return value
+    kind, inner = enc
+    if kind in ("list", "set"):
+        if value == "":
+            out = []
+        elif isinstance(value, list):
+            out = [_coerce_by_encoding(v, inner) for v in value]
+        elif value is None:
+            out = value
+        else:
+            out = [_coerce_by_encoding(value, inner)]
+        if kind == "set" and isinstance(out, list):
+            # A set is unordered by definition: canonicalize it for stable
+            # generated config. LIST-typed set semantics stay opt-in via
+            # sort_lists.
+            out = sorted(out, key=lambda v: ("" if v is None else str(v)))
+        return out
+    if kind == "map":
+        if not isinstance(value, dict):
+            return value
+        return dict((k, _coerce_by_encoding(v, inner))
+                    for k, v in sorted(value.items()))
+    if kind == "object" and isinstance(inner, dict):
+        return _coerce_object_members(value, inner) if isinstance(value, dict) else value
+    return value
 
 
 def _coerce_object_members(obj, members):
@@ -353,10 +351,8 @@ def _coerce_object_members(obj, members):
     out = {}
     for k in sorted(obj):
         enc = members.get(k)
-        if isinstance(enc, str):
-            out[k] = _coerce_primitive(_unwrap_ref(obj[k]), enc)
-        elif enc is not None:
-            out[k] = obj[k]
+        if enc is not None:
+            out[k] = _coerce_by_encoding(obj[k], enc)
     return out
 
 

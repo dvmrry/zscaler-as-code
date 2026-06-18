@@ -2,7 +2,9 @@
 import unittest
 
 from tools.tfschema import (
+    attr_type,
     classify_attributes,
+    input_block_types,
     load_resource,
     resource_input_attrs,
 )
@@ -86,6 +88,14 @@ class HclTypeTest(unittest.TestCase):
             "      to = optional(string)\n    }))",
         )
 
+    def test_object(self):
+        t = ["object", {"enabled": "bool", "name": "string"}]
+        self.assertEqual(
+            hcl_type(t),
+            "object({\n      enabled = optional(bool)\n"
+            "      name = optional(string)\n    })",
+        )
+
     def test_unknown_encoding_raises(self):
         with self.assertRaises(ValueError):
             hcl_type(["tuple", ["string"]])
@@ -130,6 +140,32 @@ class JsonSchemaTypeTest(unittest.TestCase):
                 },
             },
         )
+
+
+class NestedTypeTest(unittest.TestCase):
+    def test_nested_type_attribute_gets_object_encoding(self):
+        rs = load_resource("zcc_zia_posture")
+        attr = rs["block"]["attributes"]["high_trust_criteria"]
+        enc = attr_type(attr)
+        self.assertEqual(enc[0], "object")
+        self.assertIn("cs", enc[1])
+        self.assertEqual(enc[1]["cs"][0], "list")
+
+    def test_computed_only_block_is_not_an_input(self):
+        fake = {
+            "attributes": {"name": {"type": "string", "required": True}},
+            "block_types": {
+                "user": {
+                    "nesting_mode": "set",
+                    "block": {
+                        "attributes": {
+                            "username": {"type": "string", "computed": True}
+                        }
+                    },
+                }
+            },
+        }
+        self.assertNotIn("user", input_block_types(fake))
 
 
 if __name__ == "__main__":

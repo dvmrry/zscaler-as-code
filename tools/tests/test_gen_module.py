@@ -167,6 +167,77 @@ class RenderRestTest(unittest.TestCase):
         self.assertEqual(item["protocols"], ["ANY_RULE"])
         self.assertEqual(item["name"], "example")
 
+    def test_headroom_enum_samples_are_overridden(self):
+        from tools.transform import load_override
+        import json as _json
+
+        activation = render_sample(
+            "zia_activation_status",
+            load_resource("zia_activation_status"),
+            sample_override=load_override("zia_activation_status").get("sample"),
+        )
+        self.assertEqual(
+            _json.loads(activation)["items"]["example"]["status"], "ACTIVE")
+
+        bandwidth = render_sample(
+            "zia_bandwidth_control_rule",
+            load_resource("zia_bandwidth_control_rule"),
+            sample_override=load_override("zia_bandwidth_control_rule").get("sample"),
+        )
+        self.assertEqual(
+            _json.loads(bandwidth)["items"]["example"]["protocols"], ["ANY_RULE"])
+
+    def test_headroom_sample_override_files_are_applied(self):
+        from tools.transform import load_override
+        import json as _json
+
+        expected = {
+            "zcc_zia_posture": {"platform": "windows"},
+            "zia_file_type_control_rules": {"protocols": ["ANY_RULE"]},
+            "zia_forwarding_control_rule": {"forward_method": "DIRECT"},
+            "zia_sandbox_file_submission": {"submission_method": "submit"},
+            "zia_sandbox_rules": {"protocols": ["ANY_RULE"]},
+            "zia_traffic_forwarding_gre_tunnel": {"source_ip": "192.0.2.10"},
+            "zia_traffic_forwarding_static_ip": {"ip_address": "192.0.2.20"},
+            "zpa_application_segment_browser_access": {
+                "clientless_apps": [{
+                    "application_port": "443",
+                    "application_protocol": "HTTPS",
+                    "name": "example",
+                }],
+            },
+            "zpa_application_segment_multimatch_bulk": {"match_style": "EXCLUSIVE"},
+            "zpa_application_segment_weightedlb_config": {
+                "application_id": "example"
+            },
+            "zpa_browser_access": {
+                "clientless_apps": [{
+                    "application_port": "443",
+                    "application_protocol": "HTTPS",
+                    "name": "example",
+                }],
+            },
+            "zpa_inspection_custom_controls": {
+                "severity": "INFO",
+                "type": "REQUEST",
+            },
+            "zpa_policy_credential_rule": {
+                "credential": [{"id": "example"}],
+            },
+            "zpa_provisioning_key": {"association_type": "CONNECTOR_GRP"},
+            "zpa_zia_cloud_config": {"zia_cloud_domain": "zscaler"},
+        }
+
+        for resource_type, fields in sorted(expected.items()):
+            sample = render_sample(
+                resource_type,
+                load_resource(resource_type),
+                sample_override=load_override(resource_type).get("sample"),
+            )
+            item = _json.loads(sample)["items"]["example"]
+            for field, value in sorted(fields.items()):
+                self.assertEqual(item[field], value, resource_type)
+
     def test_test_skeleton_uses_mock_provider(self):
         rs = load_resource("zpa_segment_group")
         out = render_test("zpa_segment_group", rs)
@@ -323,15 +394,23 @@ class AllComputedBlockTest(unittest.TestCase):
         }
     }
 
-    def test_render_main_raises_on_all_computed_block(self):
+    def test_render_main_skips_all_computed_block(self):
         from tools.gen_module import render_main
-        with self.assertRaises(ValueError):
-            render_main("zpa_fake", self.FAKE)
+        out = render_main("zpa_fake", self.FAKE)
+        self.assertNotIn('dynamic "user"', out)
 
-    def test_render_variables_raises_on_all_computed_block(self):
+    def test_render_variables_skips_all_computed_block(self):
         from tools.gen_module import render_variables
-        with self.assertRaises(ValueError):
-            render_variables("zpa_fake", self.FAKE)
+        out = render_variables("zpa_fake", self.FAKE)
+        self.assertNotIn("user =", out)
+
+
+class NestedTypeRenderTest(unittest.TestCase):
+    def test_nested_type_attribute_renders_as_object_input(self):
+        rs = load_resource("zcc_zia_posture")
+        out = render_variables("zcc_zia_posture", rs)
+        self.assertIn("high_trust_criteria = optional(object({", out)
+        self.assertIn("cs = optional(list(object({", out)
 
 
 

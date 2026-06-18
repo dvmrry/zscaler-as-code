@@ -3,6 +3,7 @@
 
 output "items" {
   description = "All managed zia_location_management resources, keyed as in var.items."
+  sensitive   = true
   value       = zia_location_management.this
 }
 
