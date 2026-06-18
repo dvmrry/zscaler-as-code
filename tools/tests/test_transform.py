@@ -1360,6 +1360,8 @@ class DropsCheckGateTest(unittest.TestCase):
         self.assertIn("NEW API surface", err)
         self.assertIn("make triage", err)
         self.assertIn("signingCertId", err)
+        self.assertIn('"acknowledged_drops"', err)
+        self.assertIn('"brand_new_api_field"', err)
 
     def test_advisory_without_flag_but_loud(self):
         code, err = self._run_main(self.RAW, env_flag=False)

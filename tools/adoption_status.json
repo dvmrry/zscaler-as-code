@@ -1,0 +1,29 @@
+{
+  "dispositions": {
+    "zcc_notification_template": {
+      "reason": "ZCC v2 endpoint returned HTTP 404 on the tested gateway; parked on Zscaler gateway availability (zcc-80).",
+      "status": "gateway-parked"
+    },
+    "zcc_zia_posture": {
+      "reason": "ZCC v2 endpoint returned HTTP 404 on the tested gateway; parked on Zscaler gateway availability (zcc-80).",
+      "status": "gateway-parked"
+    },
+    "zia_activation_status": {
+      "reason": "Activation is an action/singleton status surface, not fetch-driven configuration.",
+      "status": "action-not-resource"
+    },
+    "zia_admin_users": {
+      "reason": "Admin users are an identity surface, not a bulk-managed configuration resource.",
+      "status": "identity-skip"
+    }
+  },
+  "known_holds": {
+    "zia_dlp_web_rules": [
+      {
+        "issue": "zia-70",
+        "path": "uc_template_id",
+        "reason": "Live reads return ucTemplateId, absent from the provider schema and held out of acknowledged_drops pending clarification."
+      }
+    ]
+  }
+}

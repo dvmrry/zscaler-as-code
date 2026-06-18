@@ -124,6 +124,17 @@ These are the operations to initiate; each maps to a `RUNBOOK.md` section
   (advisory lint + strict typecheck). Lint findings on fetched data are a
   console-cleanup worklist, not a blocker — do not "fix" them by editing
   config.
+- **Adoption headroom:** `make headroom-report RESOURCE=<type|product|glob>`
+  compares the provider schema surface with the committed registry and
+  `tools/adoption_status.json`. Use it to see what is managed, deliberately
+  held, or still needs fetch/import/live classification.
+- **Targeted live acceptance:** use `make adoption-check` with `TENANT=<t>`
+  and `RESOURCE="<type|product> ..."`. It fetches only the selected
+  fetch-managed resources, runs the transform drop gate allowing only
+  repo-declared known holds, writes the normal generated outputs, regenerates
+  env roots, and validates imports for the selected roots. It does not plan or
+  apply. `make gen-env` still refreshes all env roots for the tenant, so the
+  familiar stub-only notes for untouched resources are expected.
 - **Commit-back:** `bash pipelines/commitback.sh` via the pipeline step.
   Do not hand-roll the branch/commit/push/PR; the script is checkpointed
   and cannot hang, and the last `[commit-back N/5]` line names the failing

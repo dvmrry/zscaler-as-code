@@ -61,19 +61,18 @@ change — fix it as a separate concern or flag it; don't fold it into this one.
 
 ## Phase 0 — Select and scope
 
-Pick from the headroom — what the provider offers minus what's already managed:
+Pick from the headroom - what the provider offers minus what's already managed:
 
 ```bash
-python3 - <<'PY'
-import json
-from tools.registry import generated_types
-managed = set(generated_types())
-for p in ("zia", "zpa", "zcc"):
-    with open("schemas/provider/%s.json" % p, encoding="utf-8") as fh:
-        res = set(json.load(fh)["resource_schemas"])
-    print(p, "headroom:", sorted(res - managed))
-PY
+make headroom-report
+make headroom-report RESOURCE=zia
+make headroom-report RESOURCE=<type>
 ```
+
+The report labels provider resources as managed, deliberately held, or
+`module-ready` headroom that still needs fetch/import/live classification. Do
+not treat `module-ready` as "ready to merge"; it means the provider exposes a
+resource that this repo has not adopted or dispositioned yet.
 
 **Scope gate** (AGENTS.md scope discipline — provider-manageable surface only):
 skip `_v2` duplicates of a rule you already manage, account-wide
@@ -130,14 +129,17 @@ advisory fact sheet before writing the override:
 
 ```bash
 make contract-facts FILE=<product>-divergences.json RESOURCE=<type>
+make contract-facts FILE=rosetta.json RESOURCE=<type>
 ```
 
 This consumes the external reconciler's contract-vs-Terraform facts
-(required/readonly/enum/presence) and cross-checks them against current
-`tools/overrides/` drops. It does **not** write or bless anything, and it is not
-a build dependency on the skill/KB repo; pass the JSON file explicitly. Treat
-"not directly in report" as a review note, not a failure: `zac` also drops
-expanded GET decoration that a POST contract report may not model.
+(required/readonly/enum/presence) and, when given `rosetta.json`, the
+field-level contract/Go/Python/Terraform/Ansible/MCP matrix. It cross-checks
+those facts against current `tools/overrides/` drops. It does **not** write or
+bless anything, and it is not a build dependency on the skill/KB repo; pass the
+JSON file explicitly. Treat "not directly in report" as a review note, not a
+failure: `zac` also drops expanded GET decoration that a POST contract report
+may not model.
 
 ## Phase 2 — Register
 
@@ -295,9 +297,10 @@ down the wrong path before any gate can catch it.
 
 | Question | Source of truth |
 |---|---|
+| Is this provider resource already managed, held, or unclassified headroom? | `make headroom-report RESOURCE=<type|product>` |
 | Does this field exist? What type? | `schemas/provider/<product>.json` |
 | How does the API shape it (quirks)? | `make mine` / `make surface` + `tools/MINING.md` |
-| What does the live contract say about required/readonly/enum/presence? | `make contract-facts FILE=<product>-divergences.json RESOURCE=<type>` |
+| What does the live contract say about required/readonly/enum/presence? | `make contract-facts FILE=<product>-divergences.json RESOURCE=<type>` / `make contract-facts FILE=rosetta.json RESOURCE=<type>` |
 | Fetch path / pagination? | the SDK + `tools/FETCH.md` |
 
 If none of those answer it, that's a **blocking unknown** — surface it, don't

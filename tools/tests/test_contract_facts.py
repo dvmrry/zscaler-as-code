@@ -83,6 +83,63 @@ def _sample_report():
     }
 
 
+def _cell(present, markers=None):
+    return {
+        "cell": "x" if present else "-",
+        "markers": markers or [],
+        "present": present,
+    }
+
+
+def _rosetta_row(product, resource, field, contract=True, tf=True,
+                 description="", path="/path", markers=None):
+    return {
+        "product": product,
+        "resource": resource,
+        "field": field,
+        "description": description,
+        "method": "POST",
+        "path": path,
+        "cells": {
+            "contract": _cell(contract, (markers or {}).get("contract")),
+            "go": _cell(True, (markers or {}).get("go")),
+            "python": _cell(True, (markers or {}).get("python")),
+            "tf": _cell(tf, (markers or {}).get("tf")),
+            "ansible": _cell(False, (markers or {}).get("ansible")),
+            "mcp": _cell(True, (markers or {}).get("mcp")),
+        },
+    }
+
+
+def _sample_rosetta():
+    return {
+        "generator": "rosetta.py",
+        "rows": [
+            _rosetta_row(
+                "zia", "url_filtering_rule", "urlCategories2",
+                contract=True, tf=False,
+                description="List of URL categories for which rule is applied.",
+                path="/zia/api/v1/urlFilteringRules"),
+            _rosetta_row(
+                "zia", "url_filtering_rule", "cbiProfileId",
+                contract=False, tf=False,
+                path="/zia/api/v1/urlFilteringRules"),
+            _rosetta_row(
+                "zpa", "app_connector_group", "upgradePriority",
+                contract=True, tf=False,
+                description=(
+                    "Only applicable for a GET request. Ignored in "
+                    "PUT/POST/DELETE requests."),
+                path="/zpa/mgmtconfig/v1/admin/customers/:id/appConnectorGroup"),
+            _rosetta_row(
+                "zpa", "app_connector_group", "versionProfileId",
+                contract=True, tf=True,
+                markers={"go": ["type"]},
+                path="/zpa/mgmtconfig/v1/admin/customers/:id/appConnectorGroup"),
+        ],
+    }
+
+
 class ContractFactsTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
@@ -102,7 +159,18 @@ class ContractFactsTest(unittest.TestCase):
             "zpa_app_connector_group": {"generate": True, "product": "zpa"},
             "zpa_application_server": {"generate": True, "product": "zpa"},
             "zia_url_categories": {"generate": True, "product": "zia"},
+            "zia_url_filtering_rules": {
+                "generate": True,
+                "product": "zia",
+                "fetch": {"path": "urlFilteringRules"},
+            },
         }
+        _write_json(os.path.join(self.overrides, "zia_url_filtering_rules.json"), {
+            "acknowledged_drops": [
+                "id",
+                "url_categories2",
+            ],
+        })
 
     def test_snake_normalizes_contract_fields(self):
         self.assertEqual(contract_facts._snake("upgradePriority"),
@@ -165,6 +233,36 @@ class ContractFactsTest(unittest.TestCase):
         self.assertEqual(
             contract_facts.resource_type_for("cloud-connector", "traffic_rule"),
             "cloud_connector_traffic_rule")
+
+    def test_resource_type_for_uses_registry_plural_and_path(self):
+        self.assertEqual(
+            contract_facts.resource_type_for(
+                "zia", "url_filtering_rule", registry=self.registry,
+                path="/zia/api/v1/urlFilteringRules"),
+            "zia_url_filtering_rules")
+
+    def test_rosetta_report_flags_contract_only_drops(self):
+        text = contract_facts.render_report(
+            _sample_rosetta(), registry=self.registry,
+            overrides_dir=self.overrides,
+            selectors=["zia_url_filtering_rules"])
+        self.assertIn("# Contract rosetta facts", text)
+        self.assertIn("Managed resources in scope: 1", text)
+        self.assertIn("## zia_url_filtering_rules", text)
+        self.assertIn("url_categories2: List of URL categories", text)
+        self.assertIn(
+            "dropped contract fields absent from Terraform: url_categories2",
+            text)
+
+    def test_rosetta_report_separates_get_only_drops(self):
+        text = contract_facts.render_report(
+            _sample_rosetta(), registry=self.registry,
+            overrides_dir=self.overrides,
+            selectors=["zpa_app_connector_group"])
+        self.assertIn("upgrade_priority: Only applicable for a GET request", text)
+        self.assertIn(
+            "dropped GET-only/write-ignored fields: upgrade_priority", text)
+        self.assertIn("version_profile_id (go:type)", text)
 
 
 if __name__ == "__main__":
