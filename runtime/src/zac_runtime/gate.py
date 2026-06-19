@@ -24,6 +24,23 @@ from pathlib import Path
 # make-target identifiers so `zac-gate ../oops` cannot write outside artifact_dir.
 GATE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
 
+# Default-deny least-privilege: the gate runner only runs READ-ONLY validation
+# gates. It must never be a path to a state-mutating target (apply / import /
+# statefill / fetch / ...), so the workflow invariant "never apply, draft PR
+# only" cannot be bypassed via `make gate GATE=apply`. Add a target here only
+# if it is side-effect-free.
+GATE_ALLOW = frozenset({
+    "typecheck", "lint", "conformance", "check-imports",
+    "validate", "validate-config", "validate-imports", "assert-clean",
+    "refresh-gates", "test", "test-modules", "test-envs",
+})
+
+# Extra make args must be VAR=value assignments, never bare words: a bare word
+# is an additional `make` GOAL, so `zac-gate typecheck apply` would run apply as
+# a second target and bypass GATE_ALLOW. (`mine` is also kept OUT of the
+# allowlist -- `make mine UPDATE_BASELINE=1` can mutate committed baselines.)
+_VAR_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
+
 # runtime/src/zac_runtime/gate.py -> parents[0]=zac_runtime, [1]=src,
 # [2]=runtime, [3]=repo root. Confirmed correct (spec D3).
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -44,6 +61,17 @@ def run_gate(gate: str, make_vars: list[str], artifact_dir: Path) -> int:
         raise ValueError(
             "gate must match %s (a make-target identifier), got %r"
             % (GATE_RE.pattern, gate))
+    if gate not in GATE_ALLOW:
+        raise ValueError(
+            "%r is not an allowlisted read-only gate; the runner refuses "
+            "state-mutating targets (apply / import / fetch / ...). "
+            "Allowed: %s" % (gate, ", ".join(sorted(GATE_ALLOW))))
+    bad_vars = [v for v in make_vars if not _VAR_RE.match(v)]
+    if bad_vars:
+        raise ValueError(
+            "gate args must be VAR=value assignments, not make targets "
+            "(got %r); a bare word runs as an extra `make` goal and would "
+            "bypass the gate allowlist" % bad_vars)
     argv = ["make", gate, *make_vars]
     proc = subprocess.run(
         argv,

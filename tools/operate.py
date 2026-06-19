@@ -120,6 +120,9 @@ def resolve(tenant, resource_type, display_name, config_root="config"):
     if field is None:
         raise ValueError("no name field known for %s" % resource_type)
     items = _load_items(_config_path(config_root, tenant, resource_type))
+    if not isinstance(display_name, str):
+        raise ValueError(
+            "display_name must be a string, got %r" % (display_name,))
     needle = display_name.strip().lower()
     hits = []
     for key in sorted(items):

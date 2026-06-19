@@ -65,6 +65,27 @@ class RunGateTest(unittest.TestCase):
         self.assertEqual(
             text, json.dumps(record, indent=2, sort_keys=True) + "\n")
 
+    def test_non_allowlisted_gate_refused(self):
+        # Least-privilege: refuse state-mutating targets so `make gate
+        # GATE=apply` can never reach a live terraform apply. The refusal is
+        # raised before any subprocess call, so no make is shelled.
+        for bad in ("apply", "import-one", "statefill", "fetch", "commitback",
+                    "mine"):
+            with self.assertRaises(ValueError):
+                gate.run_gate(bad, [], self.dir)
+
+    def test_bare_target_in_make_vars_refused(self):
+        # A bare word in make_vars would run as an extra `make` goal
+        # (make typecheck apply), bypassing the allowlist -- refuse it.
+        for bad_vars in (["apply"], ["TENANT=demo", "apply"],
+                         ["apply", "ALLOW_NON_MAIN=1"]):
+            with self.assertRaises(ValueError):
+                gate.run_gate("typecheck", bad_vars, self.dir)
+
+    def test_traversal_gate_refused(self):
+        with self.assertRaises(ValueError):
+            gate.run_gate("../oops", [], self.dir)
+
     def test_two_runs_byte_identical(self):
         # Run the SAME gate twice into two dirs so the gate-derived parts match.
         dir_b = Path(tempfile.mkdtemp())

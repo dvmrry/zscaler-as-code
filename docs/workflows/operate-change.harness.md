@@ -38,9 +38,11 @@ P4 Validate   GATE G2      -> 03-validate.json   make op-validate ...
 P5 PR         GATE G3      -> 04-pr.json         commitback checkpoint, DRAFT PR
 ```
 
-Three gates only: **G1 Resolve**, **G2 Validate**, **G3 PR**. Intake and Apply
-are prose phases (no helper-enforced gate), but each still writes its artifact so
-`status` can resume.
+Two helper-enforced gates -- **G1 Resolve** and **G2 Validate** (op-resolve /
+op-validate write a `blocked` artifact and exit nonzero). **G3 PR** is an
+agent-performed checkpoint, NOT a tooling gate: the agent opens the DRAFT PR via
+commitback. Intake and Apply are prose phases (no helper-enforced gate); each
+still writes its artifact so `status` can resume.
 
 Each phase's input is the prior phase's `pass` artifact. Before starting any
 phase, confirm the prior artifact exists and is `pass`. If it is absent or
@@ -160,6 +162,8 @@ pipeline applies.
 - **Out-of-scope shape -> stop and route.** A refusal from the primitive, or a
   list-of-references / structural field, means hand-author with the operator --
   never work around it.
-- **Never apply, draft only.** No `terraform apply` at any phase. The DRAFT PR +
-  human merge is the sole safety for a `state`/`enabled` toggle that turns live
-  policy enforcement on or off.
+- **Never apply, draft only.** No `terraform apply` at any phase. This is a
+  POLICY, not a tooling lock -- nothing here intercepts a shell `make apply`;
+  the backstops are `make apply`'s own guards plus the DRAFT-PR + human-merge
+  boundary, which is the sole safety for a `state`/`enabled` toggle that turns
+  live policy enforcement on or off.
