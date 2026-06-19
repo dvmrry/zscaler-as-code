@@ -15,7 +15,7 @@ TF     ?= terraform
 # guarded, so fetch/transform (which DO take multi-token) are unaffected.
 SCOPE_GLOB = $(if $(word 2,$(RESOURCE)),$(error RESOURCE takes a SINGLE selector for per-root targets (plan/apply/stage-imports/assert-clean/...) — got "$(RESOURCE)". Use one resource type, one glob (zia_*), or one product token (zia|zpa|zcc); for a multi-type scope, loop the target once per type. Multi-token RESOURCE is fetch/drift-only.),$(if $(RESOURCE),$(if $(filter zia zpa zcc,$(RESOURCE)),$(RESOURCE)_*,$(RESOURCE)),*))
 
-.PHONY: help env install-tf bump-check mine issue-watch triage surface contract-facts headroom-report adoption-check plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports import-one statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag explain update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report plan-summary-line assert-clean apply drift check-envs validate-config demo check-demo lint lint-pipelines fmt-config typecheck refresh-gates conformance find-key url-add url-rm domain-add domain-rm keyword-add keyword-rm iprange-add iprange-rm locip-add locip-rm rule-enable rule-disable segment-enable segment-disable gate check-imports
+.PHONY: help env install-tf bump-check mine issue-watch triage surface contract-facts headroom-report adoption-check plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports import-one statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag explain update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report plan-summary-line assert-clean apply drift check-envs validate-config demo check-demo lint lint-pipelines fmt-config typecheck refresh-gates conformance find-key url-add url-rm domain-add domain-rm keyword-add keyword-rm iprange-add iprange-rm locip-add locip-rm rule-enable rule-disable segment-enable segment-disable op-intake op-resolve op-validate op-status gate check-imports
 
 # Company/deployment extensions: a private repo adds its own targets and
 # variable overrides in local.mk — NEVER by editing this file, which is
@@ -644,6 +644,22 @@ segment-disable: ## Disable a ZPA app segment or segment group (TENANT=<label> T
 	$(PYTHON) -m tools.operate set "$(TENANT)" "$(TYPE)" "$(SEGMENT)" enabled false
 
 ##@ Workflow & runtime gates
+
+op-intake: ## Workflow: write the intake artifact (SLUG=<yyyy-mm-dd-slug> TENANT=<label> INTAKE=<path>)
+	@test -n "$(SLUG)" -a -n "$(TENANT)" -a -n "$(INTAKE)" || { echo "usage: make op-intake SLUG=<slug> TENANT=<label> INTAKE=<path>"; exit 2; }
+	$(PYTHON) -m tools.opgate intake --slug "$(SLUG)" --tenant "$(TENANT)" --intake-json "$(INTAKE)"
+
+op-resolve: ## Workflow GATE G1: resolve targets to config keys, exactly-one-match or blocked (SLUG= TENANT= TARGETS=<path>)
+	@test -n "$(SLUG)" -a -n "$(TENANT)" -a -n "$(TARGETS)" || { echo "usage: make op-resolve SLUG=<slug> TENANT=<label> TARGETS=<path>"; exit 2; }
+	$(PYTHON) -m tools.opgate resolve --slug "$(SLUG)" --tenant "$(TENANT)" --target-json "$(TARGETS)"
+
+op-validate: ## Workflow GATE G2: run typecheck + lint, write pass|blocked (SLUG= TENANT=)
+	@test -n "$(SLUG)" -a -n "$(TENANT)" || { echo "usage: make op-validate SLUG=<slug> TENANT=<label>"; exit 2; }
+	$(PYTHON) -m tools.opgate validate --slug "$(SLUG)" --tenant "$(TENANT)"
+
+op-status: ## Workflow: print the latest phase/status/next_step for a ticket (SLUG=)
+	@test -n "$(SLUG)" || { echo "usage: make op-status SLUG=<slug>"; exit 2; }
+	$(PYTHON) -m tools.opgate status --slug "$(SLUG)"
 
 gate: ## Run a gate target via the runtime and write outputs/gates/<GATE>.status.json (GATE=<target> [ARGS="TENANT=<label> ..."])
 	@test -n "$(GATE)" || { echo "usage: make gate GATE=<target> [ARGS=\"TENANT=<label> ...\"]"; exit 2; }
