@@ -9,11 +9,13 @@ captures a failing tail otherwise; and every artifact is deterministic
 subprocess.run is monkeypatched for validate; resolve runs against a seeded tmp
 config (cwd is moved into the tmp tree so the default config_root resolves).
 """
+import io
 import json
 import os
 import shutil
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 
 from tools import opgate
 from tools.transform import render_tfvars
@@ -133,6 +135,64 @@ class ResolveTest(OpgateTestBase):
         self.assertIn("blocked_social", joined)
         self.assertIn("blocked_news", joined)
 
+    def test_resolve_empty_targets_blocked(self):
+        # An empty targets list must BLOCK -- G1 proves at least one target
+        # resolved before Apply; zero targets is not a vacuous pass.
+        tgt = _write_json(self.root, "targets.json", {"targets": []})
+        rc = opgate.main(["resolve", "--slug", SLUG, "--tenant", TENANT,
+                          "--target-json", tgt])
+        self.assertEqual(rc, 1)
+        record = json.loads(self._artifact("01-resolve.json"))
+        self.assertEqual(record["status"], "blocked")
+        self.assertTrue(
+            any("no targets" in b for b in record["blocking_issues"]))
+
+    def test_resolve_non_list_targets_blocked(self):
+        # A malformed (non-list) 'targets' must BLOCK, not coerce to [] + pass.
+        tgt = _write_json(self.root, "targets.json", {"targets": "nope"})
+        rc = opgate.main(["resolve", "--slug", SLUG, "--tenant", TENANT,
+                          "--target-json", tgt])
+        self.assertEqual(rc, 1)
+        record = json.loads(self._artifact("01-resolve.json"))
+        self.assertEqual(record["status"], "blocked")
+        self.assertTrue(
+            any("targets" in b for b in record["blocking_issues"]))
+
+    def test_resolve_missing_targets_key_blocked(self):
+        # No 'targets' key at all must BLOCK, never pass with an empty list.
+        tgt = _write_json(self.root, "targets.json", {})
+        rc = opgate.main(["resolve", "--slug", SLUG, "--tenant", TENANT,
+                          "--target-json", tgt])
+        self.assertEqual(rc, 1)
+        record = json.loads(self._artifact("01-resolve.json"))
+        self.assertEqual(record["status"], "blocked")
+
+    def test_resolve_bare_list_targets_blocked(self):
+        # A top-level JSON array (no 'targets' key) must BLOCK -- the contract
+        # is {"targets": [...]}, matching op-intake; a bare list bypassed it.
+        tgt = _write_json(self.root, "targets.json", [
+            {"area": "zia_url_categories", "field": "urls",
+             "display_name": "Blocked Social", "op": "add",
+             "values": ["x.example.test"]}])
+        rc = opgate.main(["resolve", "--slug", SLUG, "--tenant", TENANT,
+                          "--target-json", tgt])
+        self.assertEqual(rc, 1)
+        record = json.loads(self._artifact("01-resolve.json"))
+        self.assertEqual(record["status"], "blocked")
+
+    def test_resolve_target_missing_field_op_blocked(self):
+        # A target whose display_name resolves but that carries no field/op is
+        # not a complete edit -- G1 must block it, not pass with field=None.
+        tgt = _write_json(self.root, "targets.json", {"targets": [
+            {"area": "zia_url_categories", "display_name": "Blocked Social"}]})
+        rc = opgate.main(["resolve", "--slug", SLUG, "--tenant", TENANT,
+                          "--target-json", tgt])
+        self.assertEqual(rc, 1)
+        record = json.loads(self._artifact("01-resolve.json"))
+        self.assertEqual(record["status"], "blocked")
+        self.assertTrue(
+            any("field" in b and "op" in b for b in record["blocking_issues"]))
+
 
 class ValidateTest(OpgateTestBase):
     def _run(self, returns):
@@ -220,6 +280,31 @@ class StatusTest(OpgateTestBase):
         os.makedirs(d)
         rc = opgate.main(["status", "--slug", SLUG])
         self.assertEqual(rc, 1)
+
+    def test_status_skips_prose_apply_artifact(self):
+        # Resume must never read a status from a prose Apply/PR artifact: the bug
+        # was that the lexically-latest 02-apply.json (hand-written, no schema)
+        # made op-status print "status: None" and exit 0 -- a false all-clear.
+        # It must report the last real gate (resolve) and flag the prose phase.
+        intake = _write_json(self.root, "intake.json", {
+            "targets": [{"area": "zia_url_categories", "field": "urls",
+                         "display_name": "Blocked Social", "op": "add",
+                         "values": ["x.example.test"]}]})
+        opgate.main(["intake", "--slug", SLUG, "--tenant", TENANT,
+                     "--intake-json", intake])
+        opgate.main(["resolve", "--slug", SLUG, "--tenant", TENANT,
+                     "--target-json", self._targets("Blocked Social")])
+        d = os.path.join(self.root, "outputs", "operate", SLUG)
+        with open(os.path.join(d, "02-apply.json"), "w", encoding="utf-8") as f:
+            json.dump({"results": ["added x.example.test to blocked_social"]}, f)
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rc = opgate.main(["status", "--slug", SLUG])
+        out = buf.getvalue()
+        self.assertEqual(rc, 0)
+        self.assertIn("status: pass", out)       # the real resolve gate
+        self.assertNotIn("status: None", out)    # never the prose artifact
+        self.assertIn("02-apply.json", out)      # flags the prose phase
 
 
 class DeterminismTest(OpgateTestBase):
