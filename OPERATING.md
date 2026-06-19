@@ -70,10 +70,11 @@ they produce.
   `local.mk` (auto-included, not shipped by the template), never by
   editing the `Makefile`.
 - Deployment-specific DATA and config live in a private overlay
-  directory (`_local/` by default, or any name you ignore on your
-  side). It is the `local.mk` analogue for data; see
-  `docs/extending.md`. Never commit it to the template or edit
-  `.gitignore`.
+  directory you COMMIT in your fork (named in `deployment.json`,
+  copied from `deployment.example.json`); it is conflict-free on sync
+  because the template never has it -- the `local.mk` analogue for
+  data. See `docs/extending.md`. Genuinely sensitive data (real
+  pulls, secrets) stays in the gitignored `pulls/`, never the overlay.
 - Applies happen from `main` only, after a human merges.
 
 ## Prime directive: run targets, commit output, touch nothing else

@@ -23,14 +23,17 @@ SCOPE_GLOB = $(if $(word 2,$(RESOURCE)),$(error RESOURCE takes a SINGLE selector
 # shipped by the template and is yours to commit privately.
 -include local.mk
 
-# Deployment overlay directory: the local.mk analogue for DATA -- a private,
-# gitignored top-level dir for deployment-owned data/config. Defaults to
-# _local/ (gitignored). To use a different name (e.g. your org's), set OVERLAY
-# in local.mk AND add that name to .git/info/exclude; never edit this file or
-# .gitignore. Every template gate is path-scoped (modules/, config/, envs/,
-# schemas/), so any overlay dir is ignored and never conflicts on a template
-# update. See docs/extending.md.
-OVERLAY ?= _local
+# Deployment config: the deployment owns ONE committable root file --
+# deployment.json (copied from deployment.example.json) -- naming the private
+# overlay directory and any other pointers. The template ships only the example
+# and never overwrites deployment.json (it is absent upstream), so it is safe to
+# commit in a private fork and a template sync never conflicts.
+# tools/deployment_config.py is the single reader for both Make and Python.
+# Every template gate is path-scoped (modules/, config/, envs/, schemas/), so a
+# committable overlay dir never trips a gate. Sensitive data (real pulls,
+# secrets) stays in the gitignored areas (pulls/, ...), not the overlay.
+# See docs/extending.md.
+OVERLAY = $(shell $(PYTHON) -m tools.deployment_config overlay 2>/dev/null || echo _local)
 
 ##@ Toolchain & provider intel
 

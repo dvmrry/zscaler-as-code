@@ -51,13 +51,5 @@ class DeploymentOverlayToleranceTest(unittest.TestCase):
                 "an overlay dir leaked into a path-scoped gate (scope=%r); a "
                 "gate is no longer path-scoped to template dirs" % scope)
 
-    def test_default_overlay_dir_is_gitignored(self):
-        # _local/ (the OVERLAY default) is ignored by the template .gitignore.
-        rc = subprocess.call(
-            ["git", "check-ignore", "-q", "_local/x"], cwd=_REPO)
-        self.assertEqual(
-            rc, 0, "_local/ should be gitignored by the template .gitignore")
-
-
 if __name__ == "__main__":
     unittest.main()

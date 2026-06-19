@@ -8,66 +8,81 @@ template by editing those files -- the edits would be clobbered and would fork
 the deployment from the template.
 
 Instead, every deployment-specific customization lives in a **deployment-owned**
-file or directory the template does not ship and never touches.
+file or directory the template does not ship and never overwrites. The whole
+customization surface is small and **contained**: one config file, one overlay
+directory, plus `local.mk` for targets and the existing gitignored areas for
+secrets.
 
 ## The extension points
 
 | Need | Where it goes | Template-owned? |
 |------|---------------|-----------------|
 | Extra `make` targets / variable overrides | `local.mk` (auto-`-include`d) | No |
-| Deployment-private data and config | a **deployment overlay directory** (below) | No |
-| Operating notes for your environment | `OPERATING.local.md` (gitignored) | No |
-| Remote-state backend settings | `backend.conf` (gitignored) | No |
+| Deployment config (overlay name + pointers) | `deployment.json` (copy of `deployment.example.json`) | No -- you commit it |
+| Deployment-private data and config | the **overlay directory** (named in `deployment.json`) | No -- you commit it |
+| Sensitive / ephemeral data (real pulls, secrets) | the gitignored areas (`pulls/`, `backend.conf`, `OPERATING.local.md`) | Gitignored |
 
 The rule is the same for all of them: **never edit a template-owned file to
 customize a deployment.** If you want to, there is an extension point for it.
 
-## The deployment overlay directory
+## The two-piece deployment surface
 
-The overlay is the `local.mk` analogue for **data**: a private, top-level
-directory where a deployment keeps its own data and config -- tenant overlays,
-intake artifacts, deployment-specific inputs, anything produced or stored
-downstream -- without ever colliding with a template update.
+A deployment's customization is two **committable** things (versioned in your
+private fork), plus the existing gitignored areas for anything secret:
 
-It works because **every template gate is path-scoped** to the template's own
-directories:
+1. **`deployment.json`** -- one little root config file, copied from the
+   template's `deployment.example.json`. It names your overlay directory and
+   any other deployment pointers. It is the single source of truth, read by both
+   Make and Python through `tools/deployment_config.py`.
+2. **The overlay directory** -- named in `deployment.json`, this is where your
+   deployment-owned data and config live, versioned in your fork.
 
-- `make generate CHECK=1` checks `modules/`, `schemas/provider`, `schemas/tfvars`
-- `make check-demo` checks `config/<tenant>/` and `imports/<tenant>/`
-- `make check-envs` checks `envs/`
+### Why this is conflict-free on a template update
 
-Nothing scans the repository root, so a top-level overlay directory is
-invisible to every gate -- it can never make a check fail or show up as
-template drift. This guarantee is pinned by
-`tools/tests/test_deployment_overlay.py`; if a future change makes a gate scan
-the root, that test fails.
+- `deployment.json` and your overlay directory are **absent from the upstream
+  template** -- the template ships only `deployment.example.json` and has no
+  overlay dir. So a sync (a merge from upstream) sees them as "added by your
+  fork, untouched by upstream" and never collides. This is the same mechanism
+  that makes `local.mk` safe.
+- Every template gate is **path-scoped** to the template's own directories:
+  `generate CHECK=1` -> `modules/`, `schemas/`; `check-demo` ->
+  `config/<tenant>/`, `imports/<tenant>/`; `check-envs` -> `envs/`. Nothing
+  scans the repo root, so a committable overlay directory never trips a gate.
+  This guarantee is pinned by `tools/tests/test_deployment_overlay.py`.
 
 ### Using it
 
-**Default (zero config).** Put your data under `_local/`. It is gitignored by
-the template, and the `Makefile` variable `OVERLAY` defaults to `_local`, so
-`local.mk` targets can reference `$(OVERLAY)/...` with no setup.
+```sh
+cp deployment.example.json deployment.json     # your committable config
+$EDITOR deployment.json                         # set "overlay" to e.g. "acme-corp"
+mkdir acme-corp                                 # your committable overlay dir
+# ... put deployment data/config in acme-corp/ ...
+git add deployment.json acme-corp               # commit both in your fork
+```
 
-**A named overlay (clearer, recommended).** Many deployments prefer a directory
-named for the deployment (e.g. the org name) so its purpose is obvious. Two
-deployment-side steps, neither touching a template-owned file:
+`deployment.json`:
 
-1. Tell **git** to ignore it -- add the name to `.git/info/exclude`, a
-   per-clone ignore file that is never committed and never overwritten by a
-   template update. Do **not** add it to `.gitignore` (template-owned).
+```json
+{
+  "overlay": "acme-corp"
+}
+```
 
-   ```sh
-   echo '/acme-corp/' >> .git/info/exclude
-   ```
+That is the whole setup. `make`'s `OVERLAY` variable and any Python tool resolve
+the directory name through `tools/deployment_config.py`, so your `local.mk`
+targets and your own scripts can reference `$(OVERLAY)` / `overlay_dir()` with no
+hardcoding. The config is extensible -- add your own keys for future pointers
+(keys beginning with `$` are treated as comments).
 
-2. Tell **make** the name -- override `OVERLAY` in `local.mk`:
+### Sensitive data
 
-   ```make
-   OVERLAY = acme-corp
-   ```
-
-Now `$(OVERLAY)` resolves to your directory everywhere, your `local.mk` targets
-can read and write it, and template updates leave it untouched.
+The overlay is **committable** -- it is for data and config you *want* versioned
+in your private fork. Anything you must not commit *anywhere* (real tenant
+pulls, credentials, backend secrets) stays in the existing gitignored areas
+(`pulls/`, `backend.conf`, `OPERATING.local.md`), never the overlay. If you need
+a gitignored sub-area of your own, add it to your fork's `.git/info/exclude` (a
+per-clone ignore file that is never committed and never overwritten by a
+template update) -- never to `.gitignore`, which is template-owned.
 
 ### What does NOT belong in the overlay
 
