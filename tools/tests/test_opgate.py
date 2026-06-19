@@ -165,6 +165,32 @@ class ResolveTest(OpgateTestBase):
         record = json.loads(self._artifact("01-resolve.json"))
         self.assertEqual(record["status"], "blocked")
 
+    def test_resolve_bare_list_targets_blocked(self):
+        # A top-level JSON array (no 'targets' key) must BLOCK -- the contract
+        # is {"targets": [...]}, matching op-intake; a bare list bypassed it.
+        tgt = _write_json(self.root, "targets.json", [
+            {"area": "zia_url_categories", "field": "urls",
+             "display_name": "Blocked Social", "op": "add",
+             "values": ["x.example.test"]}])
+        rc = opgate.main(["resolve", "--slug", SLUG, "--tenant", TENANT,
+                          "--target-json", tgt])
+        self.assertEqual(rc, 1)
+        record = json.loads(self._artifact("01-resolve.json"))
+        self.assertEqual(record["status"], "blocked")
+
+    def test_resolve_target_missing_field_op_blocked(self):
+        # A target whose display_name resolves but that carries no field/op is
+        # not a complete edit -- G1 must block it, not pass with field=None.
+        tgt = _write_json(self.root, "targets.json", {"targets": [
+            {"area": "zia_url_categories", "display_name": "Blocked Social"}]})
+        rc = opgate.main(["resolve", "--slug", SLUG, "--tenant", TENANT,
+                          "--target-json", tgt])
+        self.assertEqual(rc, 1)
+        record = json.loads(self._artifact("01-resolve.json"))
+        self.assertEqual(record["status"], "blocked")
+        self.assertTrue(
+            any("field" in b and "op" in b for b in record["blocking_issues"]))
+
 
 class ValidateTest(OpgateTestBase):
     def _run(self, returns):

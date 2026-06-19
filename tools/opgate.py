@@ -117,7 +117,7 @@ def cmd_resolve(slug, tenant, target_json):
     _check_slug(slug)
     _check_tenant(tenant)
     parsed = _load_json(target_json)
-    raw_targets = parsed.get("targets") if isinstance(parsed, dict) else parsed
+    raw_targets = parsed.get("targets") if isinstance(parsed, dict) else None
 
     out_targets = []
     blocking = []
@@ -145,6 +145,13 @@ def cmd_resolve(slug, tenant, target_json):
             blocking.append(
                 "%s / %r: values must be a list, got %r"
                 % (area, display, values))
+            continue
+        if not (isinstance(field, str) and field.strip()
+                and isinstance(op, str) and op.strip()):
+            blocking.append(
+                "%s / %r: target needs a non-empty 'field' and 'op' (got "
+                "field=%r, op=%r); a resolvable name is not a complete edit"
+                % (area, display, field, op))
             continue
         entry = {
             "area": area,
