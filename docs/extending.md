@@ -32,8 +32,8 @@ private fork), plus the existing gitignored areas for anything secret:
 
 1. **`deployment.json`** -- one little root config file, copied from the
    template's `deployment.example.json`. It names your overlay directory and
-   any other deployment pointers. It is the single source of truth, read by both
-   Make and Python through `tools/deployment_config.py`.
+   any other deployment pointers. It is plain JSON -- your scripts and make
+   targets read it directly; the template ships no reader for it.
 2. **The overlay directory** -- named in `deployment.json`, this is where your
    deployment-owned data and config live, versioned in your fork.
 
@@ -68,11 +68,11 @@ git add deployment.json acme-corp               # commit both in your fork
 }
 ```
 
-That is the whole setup. `make`'s `OVERLAY` variable and any Python tool resolve
-the directory name through `tools/deployment_config.py`, so your `local.mk`
-targets and your own scripts can reference `$(OVERLAY)` / `overlay_dir()` with no
-hardcoding. The config is extensible -- add your own keys for future pointers
-(keys beginning with `$` are treated as comments).
+That is the whole setup. `deployment.json` is plain JSON, so your scripts read it
+with a one-line `json.load`, and a `local.mk` target that needs the name can read
+it the same way -- the template ships no reader because nothing in the template
+consumes the overlay. The config is extensible -- add your own keys for future
+pointers (keys beginning with `$` are treated as comments).
 
 ### Sensitive data
 
