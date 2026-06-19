@@ -15,7 +15,7 @@ TF     ?= terraform
 # guarded, so fetch/transform (which DO take multi-token) are unaffected.
 SCOPE_GLOB = $(if $(word 2,$(RESOURCE)),$(error RESOURCE takes a SINGLE selector for per-root targets (plan/apply/stage-imports/assert-clean/...) — got "$(RESOURCE)". Use one resource type, one glob (zia_*), or one product token (zia|zpa|zcc); for a multi-type scope, loop the target once per type. Multi-token RESOURCE is fetch/drift-only.),$(if $(RESOURCE),$(if $(filter zia zpa zcc,$(RESOURCE)),$(RESOURCE)_*,$(RESOURCE)),*))
 
-.PHONY: help env install-tf bump-check mine issue-watch triage surface contract-facts headroom-report adoption-check plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports import-one statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag explain update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report plan-summary-line assert-clean apply drift check-envs validate-config demo check-demo lint lint-pipelines fmt-config typecheck refresh-gates conformance find-key url-add url-rm domain-add domain-rm keyword-add keyword-rm iprange-add iprange-rm locip-add locip-rm rule-enable rule-disable segment-enable segment-disable
+.PHONY: help env install-tf bump-check mine issue-watch triage surface contract-facts headroom-report adoption-check plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports import-one statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag explain update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report plan-summary-line assert-clean apply drift check-envs validate-config demo check-demo lint lint-pipelines fmt-config typecheck refresh-gates conformance find-key url-add url-rm domain-add domain-rm keyword-add keyword-rm iprange-add iprange-rm locip-add locip-rm rule-enable rule-disable segment-enable segment-disable gate check-imports
 
 # Company/deployment extensions: a private repo adds its own targets and
 # variable overrides in local.mk — NEVER by editing this file, which is
@@ -642,6 +642,18 @@ segment-disable: ## Disable a ZPA app segment or segment group (TENANT=<label> T
 	@test -n "$(TENANT)" -a -n "$(TYPE)" -a -n "$(SEGMENT)" || { echo "usage: make segment-disable TENANT=<label> TYPE=<resource_type> SEGMENT=<config-key>"; exit 2; }
 	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+"; exit 2; }
 	$(PYTHON) -m tools.operate set "$(TENANT)" "$(TYPE)" "$(SEGMENT)" enabled false
+
+##@ Workflow & runtime gates
+
+gate: ## Run a gate target via the runtime and write outputs/gates/<GATE>.status.json (GATE=<target> [ARGS="TENANT=<label> ..."])
+	@test -n "$(GATE)" || { echo "usage: make gate GATE=<target> [ARGS=\"TENANT=<label> ...\"]"; exit 2; }
+	@test "$(GATE)" != "gate" || { echo "error: GATE=gate would recurse"; exit 2; }
+	uv run --project runtime zac-gate "$(GATE)" $(ARGS)
+
+check-imports: ## Enforce the one-way rule: nothing under tools/ imports runtime/
+	@! grep -rnE '^[[:space:]]*(import|from)[[:space:]]+zac_runtime\b' tools/ \
+		&& echo "ok: tools/ does not import runtime/" \
+		|| { echo "VIOLATION: tools/ imports runtime/"; exit 1; }
 
 ##@ Template authoring (dev)
 

@@ -38,6 +38,10 @@ bin/
 # Rendered drift/plan reports — pipeline artifacts, never committed
 reports/
 
+# Workflow gate + operate artifacts (make gate / op-*) -- pipeline scratch,
+# may echo tenant-derived values; never committed
+outputs/
+
 # Python
 __pycache__/
 *.py[cod]
