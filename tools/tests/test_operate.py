@@ -274,6 +274,16 @@ class ScalarSetTest(unittest.TestCase):
         self.assertIn("ENABLED", str(cm.exception))
         self.assertIn("DISABLED", str(cm.exception))
 
+    def test_state_enum_refuses_bool_tokens(self):
+        # The enum `state` allowlist (_STATE) has no 'true'/'false' keys, so the
+        # bool vocabulary stays provably separate from the enum vocabulary.
+        for bad in ("true", "false"):
+            with self.assertRaises(ValueError) as cm:
+                operate.scalar_set("t", "zia_url_filtering_rules", "rule_one",
+                                   "state", bad, config_root=self.root)
+            self.assertIn("ENABLED", str(cm.exception))
+            self.assertIn("DISABLED", str(cm.exception))
+
     def test_nonallowlisted_field_refused(self):
         with self.assertRaises(ValueError) as cm:
             operate.scalar_set("t", "zia_url_filtering_rules", "rule_one",

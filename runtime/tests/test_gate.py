@@ -66,10 +66,7 @@ class RunGateTest(unittest.TestCase):
             text, json.dumps(record, indent=2, sort_keys=True) + "\n")
 
     def test_two_runs_byte_identical(self):
-        _, path_a = self._run(2, gate_name="g_a", stdout="same\n")
-        _, path_b = self._run(2, gate_name="g_b", stdout="same\n")
-        # rename-normalize the gate field by comparing all but the gate-derived
-        # parts: easier to just run the SAME gate twice into two dirs.
+        # Run the SAME gate twice into two dirs so the gate-derived parts match.
         dir_b = Path(tempfile.mkdtemp())
         with mock.patch.object(
             gate.subprocess, "run",

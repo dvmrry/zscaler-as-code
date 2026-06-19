@@ -15,9 +15,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
+
+# Gate names become a make target AND the artifact filename stem; bound them to
+# make-target identifiers so `zac-gate ../oops` cannot write outside artifact_dir.
+GATE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
 
 # runtime/src/zac_runtime/gate.py -> parents[0]=zac_runtime, [1]=src,
 # [2]=runtime, [3]=repo root. Confirmed correct (spec D3).
@@ -35,6 +40,10 @@ def run_gate(gate: str, make_vars: list[str], artifact_dir: Path) -> int:
     """Run `make <gate> <make_vars...>` from REPO_ROOT, write a status artifact
     under artifact_dir, print `Status: <status>`, and return 0 (pass) or 1
     (blocked)."""
+    if not GATE_RE.match(gate):
+        raise ValueError(
+            "gate must match %s (a make-target identifier), got %r"
+            % (GATE_RE.pattern, gate))
     argv = ["make", gate, *make_vars]
     proc = subprocess.run(
         argv,

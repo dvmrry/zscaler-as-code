@@ -124,11 +124,21 @@ def cmd_resolve(slug, tenant, target_json):
     out_targets = []
     blocking = []
     for t in raw_targets:
+        if not isinstance(t, dict):
+            blocking.append("malformed target (not an object): %r" % (t,))
+            continue
         area = t.get("area")
         field = t.get("field")
         display = t.get("display_name")
         op = t.get("op")
-        values = t.get("values") or []
+        values = t.get("values")
+        if values is None:
+            values = []
+        if not isinstance(values, list):
+            blocking.append(
+                "%s / %r: values must be a list, got %r"
+                % (area, display, values))
+            continue
         entry = {
             "area": area,
             "config_key": None,
@@ -155,7 +165,11 @@ def cmd_resolve(slug, tenant, target_json):
 
     status = "pass" if not blocking else "blocked"
     if status == "pass":
-        next_step = "make op-validate SLUG=%s TENANT=%s" % (slug, tenant)
+        next_step = (
+            "resolve passed -- P3 Apply (prose loop): run one allowlisted "
+            "make primitive per resolved target (url-add / rule-disable / "
+            "...), record each one-line result into 02-apply.json, THEN "
+            "make op-validate SLUG=%s TENANT=%s" % (slug, tenant))
     else:
         next_step = ("resolve blocked -- clarify the display name(s), then "
                      "re-run make op-resolve SLUG=%s TENANT=%s TARGETS=<path>"
@@ -178,7 +192,8 @@ def cmd_validate(slug, tenant, runner=None):
     _check_slug(slug)
     _check_tenant(tenant)
     if runner is None:
-        runner = subprocess.run
+        def runner(argv):
+            return subprocess.run(argv, capture_output=True, text=True)
 
     checks = []
     blocking = []

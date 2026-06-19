@@ -163,6 +163,64 @@ class ValidateTest(OpgateTestBase):
         joined = " ".join(record["blocking_issues"])
         self.assertIn("lint boom on line 9", joined)
 
+    def test_validate_typecheck_fail_blocked(self):
+        rc = self._run([(2, "typecheck boom on line 3\n"), (0, "")])
+        self.assertEqual(rc, 1)
+        record = json.loads(self._artifact("03-validate.json"))
+        self.assertEqual(record["status"], "blocked")
+        self.assertEqual([c["exit"] for c in record["checks"]], [2, 0])
+        joined = " ".join(record["blocking_issues"])
+        self.assertIn("typecheck boom on line 3", joined)
+        self.assertEqual(len(record["blocking_issues"]), 1)
+
+    def test_validate_both_fail_blocked(self):
+        rc = self._run([(2, "typecheck boom\n"), (3, "lint boom\n")])
+        self.assertEqual(rc, 1)
+        record = json.loads(self._artifact("03-validate.json"))
+        self.assertEqual(record["status"], "blocked")
+        self.assertEqual([c["exit"] for c in record["checks"]], [2, 3])
+        self.assertEqual(len(record["blocking_issues"]), 2)
+        joined = " ".join(record["blocking_issues"])
+        self.assertIn("typecheck boom", joined)
+        self.assertIn("lint boom", joined)
+
+
+class StatusTest(OpgateTestBase):
+    def _targets(self, display):
+        return _write_json(self.root, "targets.json", {
+            "targets": [{"area": "zia_url_categories", "field": "urls",
+                         "display_name": display, "op": "add",
+                         "values": ["x.example.test"]}],
+        })
+
+    def test_status_reads_highest_numbered_artifact(self):
+        intake = _write_json(self.root, "intake.json", {
+            "targets": [{"area": "zia_url_categories", "field": "urls",
+                         "display_name": "Blocked Social", "op": "add",
+                         "values": ["x.example.test"]}],
+        })
+        opgate.main(["intake", "--slug", SLUG, "--tenant", TENANT,
+                     "--intake-json", intake])
+        tgt = self._targets("Blocked Social")
+        opgate.main(["resolve", "--slug", SLUG, "--tenant", TENANT,
+                     "--target-json", tgt])
+        rc = opgate.main(["status", "--slug", SLUG])
+        # status is read-only and always returns 0 when artifacts exist.
+        self.assertEqual(rc, 0)
+        # The latest artifact is 01-resolve.json, not 00-intake.json.
+        record = json.loads(self._artifact("01-resolve.json"))
+        self.assertEqual(record["phase"], "resolve")
+
+    def test_status_missing_slug_dir_clean_message(self):
+        rc = opgate.main(["status", "--slug", SLUG])
+        self.assertEqual(rc, 1)
+
+    def test_status_empty_slug_dir_clean_message(self):
+        d = os.path.join(self.root, "outputs", "operate", SLUG)
+        os.makedirs(d)
+        rc = opgate.main(["status", "--slug", SLUG])
+        self.assertEqual(rc, 1)
+
 
 class DeterminismTest(OpgateTestBase):
     def test_artifact_is_deterministic(self):
