@@ -193,7 +193,11 @@ def cmd_validate(slug, tenant, runner=None):
     _check_tenant(tenant)
     if runner is None:
         def runner(argv):
-            return subprocess.run(argv, capture_output=True, text=True)
+            # 3.6 floor: capture_output/text= are 3.7+; use PIPE +
+            # universal_newlines for the same captured-text behavior.
+            return subprocess.run(
+                argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                universal_newlines=True)
 
     checks = []
     blocking = []
