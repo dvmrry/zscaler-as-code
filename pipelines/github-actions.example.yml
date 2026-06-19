@@ -30,6 +30,39 @@ jobs:
       - run: make test-envs TENANT=FILL-tenant-label
       - run: make validate-imports TENANT=FILL-tenant-label
 
+  # ---- 1b. Floor tests (PR gate) -- tools/ under Python 3.6.8 ----
+  # Everything under tools/ must run on the 3.6.8 floor (bare stdlib,
+  # %-formatting, no f-strings). Mirrors `make test-floor` (dev-side
+  # docker) but as a container job so CI enforces it too. Discovery root
+  # is tools/tests with top-level dir `.` so the interpreter never reaches
+  # runtime/ (which is 3.10+).
+  test-floor:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    container: python:3.6.8-slim
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -m unittest discover -s tools/tests -t . -v
+
+  # ---- 1c. Runtime tests (PR gate) -- runtime/ under uv + Python 3.10 ----
+  # runtime/ is the modern (3.10+) tree, uv-managed. `--locked` fails the
+  # job on a drifted uv.lock. Discovery root is runtime/tests with
+  # top-level dir runtime, disjoint from the floor job's `-s tools/tests
+  # -t .`, so the two interpreters never cross. The import guard enforces
+  # the one-way wall: nothing under tools/ imports runtime/.
+  test-runtime:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.10"
+      - run: uv sync --project runtime --locked
+      - run: uv run --project runtime python -m unittest discover -s runtime/tests -t runtime -v
+      - name: tools/ must not import runtime/
+        run: make check-imports
+
   # ---- 2. Plan -> Apply (delivery) — needs real creds + state auth ----
   plan:
     if: github.event_name == 'push'
