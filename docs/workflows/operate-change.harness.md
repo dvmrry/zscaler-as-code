@@ -74,6 +74,12 @@ make op-intake SLUG=<yyyy-mm-dd-symptom> TENANT=<t> INTAKE=<path-to-intake.json>
 targets. Status is always `pass` (this is structured capture, not a gate). If the
 slug or tenant is rejected, fix it and rerun -- do not advance.
 
+Producing the intake artifact -- turning a request into a structured
+`INTAKE=<path>.json` with shaped `targets[]` (`area`/`field`/`op`/`display_name`/
+`values`) -- is a deployment concern. This flow starts at a structured intake;
+the template does not own request parsing or intake authoring. A downstream
+deployment supplies that producer.
+
 ## P2 Resolve -- GATE G1 -> 01-resolve.json
 
 First resolve each display name to a config key:
@@ -121,6 +127,13 @@ key, non-allowlisted field/type, out-of-scope shape), HALT: this is an
 out-of-scope edit. Stop and route it to the operator. Do NOT work around the
 refusal.
 
+A mid-loop refusal leaves the edits already applied in place. They are
+config-only and pre-PR, so nothing is live -- do NOT roll them back yourself (a
+blunt file revert can discard unrelated edits). Record exactly what applied in
+`02-apply.json` and route the remaining targets to the operator, who reverses the
+specific primitive(s) or revises the reviewed diff. Never auto-continue past a
+refusal.
+
 ## P4 Validate -- GATE G2 -> 03-validate.json
 
 ```bash
@@ -131,6 +144,15 @@ This runs `make typecheck` then `make lint`. Both exit 0 -> `pass`. Any non-zero
 -> `blocked`, with the failing command's tail in the blocking issues. HALT on
 `blocked`: read the tail, fix the cause, rerun. Do not proceed to PR on a
 `blocked` validate.
+
+G2 is static analysis only (`typecheck` + `lint`). It is **necessary but not
+sufficient**: a pass proves the change is type-valid and lint-clean, NOT that it
+is operationally safe. Downstream, the example pipelines produce a real plan and
+render it for human approval (`plan-changed` + `plan-report`), and `make apply`'s
+own guards still apply. An automated plan gate is also available -- `make
+plan-checks` (URL category shadowing / SSL-bypass, location IP overlap) -- which
+a deployment wires into its own pipeline (see the bootstrap example); it is NOT
+in the default flow. Read a G2 pass as "proceed to PR," never as "safe to apply."
 
 ## P5 PR -- GATE G3 -> 04-pr.json
 
