@@ -211,7 +211,9 @@ def check_dns_labels(entry, rt, where, report):
                     "did you mean .%s?" % _COMMON_TLD_TYPOS[tld])
 
 
-def check_ip_entry(entry, rt, where, report):
+def is_ip_entry(entry):
+    """True if entry is a bare IP, a CIDR, or a dash range of two IPs.
+    Pure predicate (no Report). Reused by tools/operate.py add-time validation."""
     import ipaddress
 
     def _ok(text):
@@ -227,8 +229,12 @@ def check_ip_entry(entry, rt, where, report):
 
     parts = entry.split("-")
     if len(parts) == 2 and all(_ok(p) for p in parts):
-        return
-    if not _ok(entry):
+        return True
+    return _ok(entry)
+
+
+def check_ip_entry(entry, rt, where, report):
+    if not is_ip_entry(entry):
         report.error(rt, where, "not an IP / CIDR / address range: %r" % entry,
                      "fix the value (e.g. 10.0.0.0/24 or 10.0.0.1-10.0.0.9)")
 

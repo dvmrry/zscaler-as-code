@@ -26,14 +26,44 @@ CONFIG_SUFFIX = ".auto.tfvars.json"
 
 # (resource_type, field) pairs safe to add/remove a string element on: each is
 # a list of plain strings, order-insensitive, canonically sorted on write. The
-# set is intentionally minimal — exactly the high-churn fields that have BOTH a
+# set is intentionally minimal -- exactly the high-churn fields that have BOTH a
 # make target and a test, so the workflow never claims a path it can't run.
-# Widening it (e.g. url-category keywords / db_categorized_urls) is a deliberate
-# add: one entry here + a thin target + a test. Structured fields (paired
-# tcp_port_ranges, {id} refs, nested blocks) are refused.
+# Structured fields (paired tcp_port_ranges, {id} refs, nested blocks) are
+# refused.
 EDITABLE = {
     ("zia_url_categories", "urls"),
+    ("zia_url_categories", "keywords"),           # NEW  optional(set(string))
+    ("zia_url_categories", "ip_ranges"),          # NEW  optional(set(string))
+    ("zia_location_management", "ip_addresses"),  # NEW  optional(set(string))
     ("zpa_application_segment", "domain_names"),
+}
+
+# Scalar enable/disable toggles. A SECOND allowlist, keyed by (resource_type,
+# field) so the location-address free-text `state` ("British Columbia") can NEVER
+# be flipped here. Bool tokens map to REAL Python bools so render_tfvars emits
+# JSON true/false, never the string "True". Enum tokens are case-SENSITIVE
+# because the matched token is the byte content written to config.
+_STATE = ("enum", {"ENABLED": "ENABLED", "DISABLED": "DISABLED"})
+_ENABLED = ("bool", {"true": True, "false": False,
+                     "ENABLED": True, "DISABLED": False})
+
+SCALAR_EDITABLE = {
+    ("zia_url_filtering_rules", "state"): _STATE,
+    ("zia_ssl_inspection_rules", "state"): _STATE,
+    ("zia_cloud_app_control_rule", "state"): _STATE,
+    ("zpa_application_segment", "enabled"): _ENABLED,
+    ("zpa_segment_group", "enabled"): _ENABLED,
+}
+
+
+def _valid_ip_value(value):
+    from tools.lint import is_ip_entry   # pure predicate, see tools/lint.py change
+    return is_ip_entry(value)
+
+# Add-time sanity per (resource_type, field). Add-only; remove is never gated.
+ADD_VALIDATORS = {
+    ("zia_url_categories", "ip_ranges"): _valid_ip_value,
+    ("zia_location_management", "ip_addresses"): _valid_ip_value,
 }
 
 # Tenant becomes a path component (config/<tenant>/...); validate it the same way
@@ -50,7 +80,12 @@ def _check_tenant(tenant):
 # The human-facing name field per resource type, for resolve().
 NAME_FIELD = {
     "zia_url_categories": "configured_name",
+    "zia_location_management": "name",             # NEW (verified: variables.tf:7 name=string)
+    "zia_url_filtering_rules": "name",             # NEW
+    "zia_ssl_inspection_rules": "name",            # NEW
+    "zia_cloud_app_control_rule": "name",          # NEW (optional in schema; resolve() skips items lacking a str name)
     "zpa_application_segment": "name",
+    "zpa_segment_group": "name",                   # NEW
 }
 
 
@@ -123,6 +158,13 @@ def operate(op, tenant, resource_type, key, field, value, config_root="config"):
     if op == "remove" and not present:
         return "no-op: %s not in %s.%s" % (value, key, field)
     if op == "add":
+        validate = ADD_VALIDATORS.get((resource_type, field))
+        if validate and not validate(value):
+            raise ValueError(
+                "%r is not a valid IP / CIDR / address range for %s.%s "
+                "(e.g. 10.0.0.0/24 or 10.0.0.1-10.0.0.9)"
+                % (value, resource_type, field))
+    if op == "add":
         items[key][field] = _canonical(cur + [value])
     else:
         items[key][field] = _canonical([v for v in cur if v != value])
@@ -133,11 +175,50 @@ def operate(op, tenant, resource_type, key, field, value, config_root="config"):
         key, field, len(items[key][field]))
 
 
+def scalar_set(tenant, resource_type, key, field, value, config_root="config"):
+    """Set items[key][field] to an allowlisted scalar (enable/disable toggle).
+    Idempotent; refuses a non-allowlisted (type,field), a value outside the
+    field's domain, a missing key, or a field whose current value is a LIST
+    (the inverse of operate()'s list guard). Nothing written on refusal/no-op."""
+    _check_tenant(tenant)
+    spec = SCALAR_EDITABLE.get((resource_type, field))
+    if spec is None:
+        raise ValueError(
+            "refusing to set %s.%s -- not an allowlisted scalar field. "
+            "Settable: %s" % (resource_type, field,
+                ", ".join("%s.%s" % p for p in sorted(SCALAR_EDITABLE))))
+    kind, allowed = spec
+    if value not in allowed:
+        raise ValueError(
+            "%r is not a valid value for %s.%s -- allowed: %s"
+            % (value, resource_type, field, ", ".join(sorted(allowed))))
+    target = allowed[value]
+    path = _config_path(config_root, tenant, resource_type)
+    items = _load_items(path)
+    if key not in items:
+        cand = ", ".join(sorted(items)[:8]) or "(none)"
+        raise ValueError(
+            "%r is not a config key in %s (this is the key, not the display "
+            "name -- use `resolve` first). Candidates: %s"
+            % (key, resource_type, cand))
+    cur = items[key].get(field)
+    if isinstance(cur, list):
+        raise ValueError(
+            "%s.%s is a list in %s -- use add/remove, not set" % (key, field, path))
+    if cur == target:
+        return "no-op: %s.%s already %s" % (key, field, json.dumps(target))
+    items[key][field] = target
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(render_tfvars(items))
+    return "set %s.%s = %s" % (key, field, json.dumps(target))
+
+
 _USAGE = (
     "usage:\n"
     "  python -m tools.operate <add|remove> <tenant> <resource_type> <key> "
     "<field> <value>\n"
     "  python -m tools.operate resolve <tenant> <resource_type> <display_name>\n"
+    "  python -m tools.operate set <tenant> <resource_type> <key> <field> <value>\n"
 )
 
 
@@ -156,6 +237,17 @@ def main(argv=None):
             sys.stdout.write("%s\t%s\n" % (key, name))
         if not hits:
             sys.stderr.write("no match for %r in %s\n" % (argv[3], argv[2]))
+        return 0
+    if argv and argv[0] == "set":
+        if len(argv) != 6:
+            sys.stderr.write(_USAGE)
+            return 2
+        try:
+            msg = scalar_set(argv[1], argv[2], argv[3], argv[4], argv[5])
+        except ValueError as exc:
+            sys.stderr.write("error: %s\n" % exc)
+            return 1
+        sys.stdout.write(msg + "\n")
         return 0
     if len(argv) != 6:
         sys.stderr.write(_USAGE)

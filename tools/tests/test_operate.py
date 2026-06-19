@@ -30,10 +30,15 @@ class OperateTest(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.root)
         _write(self.root, "t", "zia_url_categories", {
             "blocked_social": {"configured_name": "Blocked Social",
-                               "urls": ["reddit.com"]},
+                               "urls": ["reddit.com"],
+                               "keywords": ["malware"],
+                               "ip_ranges": ["10.1.0.0/24"]},
         })
         _write(self.root, "t", "zpa_application_segment", {
             "redhat_seg": {"name": "Red Hat", "domain_names": ["rh.example.test"]},
+        })
+        _write(self.root, "t", "zia_location_management", {
+            "hq_office": {"name": "HQ Office", "ip_addresses": ["10.0.0.0/24"]},
         })
 
     def _path(self, resource_type):
@@ -84,12 +89,69 @@ class OperateTest(unittest.TestCase):
             operate.operate("add", "t", "zpa_application_segment", "redhat_seg",
                             "tcp_port_ranges", "443", config_root=self.root)
 
-    def test_keyword_field_out_of_scope(self):
-        # keywords is a real url-category field but intentionally not allowlisted
-        # (no target/test yet) — operate refuses it rather than edit it.
+    def test_keyword_field_now_editable(self):
+        # keywords is now allowlisted (free text, no validator) -- the add succeeds.
+        msg = operate.operate("add", "t", "zia_url_categories", "blocked_social",
+                              "keywords", "phish", config_root=self.root)
+        self.assertIn("add phish", msg)
+        self.assertEqual(
+            self._items("zia_url_categories")["blocked_social"]["keywords"],
+            ["malware", "phish"])
+
+    def test_add_keyword_appends_and_sorts(self):
+        operate.operate("add", "t", "zia_url_categories", "blocked_social",
+                        "keywords", "phish", config_root=self.root)
+        self.assertEqual(
+            self._items("zia_url_categories")["blocked_social"]["keywords"],
+            ["malware", "phish"])
+
+    def test_add_ip_range_valid(self):
+        operate.operate("add", "t", "zia_url_categories", "blocked_social",
+                        "ip_ranges", "10.2.0.0/24", config_root=self.root)
+        self.assertEqual(
+            self._items("zia_url_categories")["blocked_social"]["ip_ranges"],
+            ["10.1.0.0/24", "10.2.0.0/24"])
+
+    def test_add_ip_range_dash_range_valid(self):
+        operate.operate("add", "t", "zia_url_categories", "blocked_social",
+                        "ip_ranges", "10.0.0.1-10.0.0.9", config_root=self.root)
+        self.assertIn(
+            "10.0.0.1-10.0.0.9",
+            self._items("zia_url_categories")["blocked_social"]["ip_ranges"])
+
+    def test_add_ip_range_invalid_refused(self):
+        for bad in ("10.0.0.300", "10.0.0.0/33"):
+            before = self._read("zia_url_categories")
+            with self.assertRaises(ValueError):
+                operate.operate("add", "t", "zia_url_categories", "blocked_social",
+                                "ip_ranges", bad, config_root=self.root)
+            self.assertEqual(before, self._read("zia_url_categories"))
+
+    def test_remove_invalid_ip_still_works(self):
+        _write(self.root, "t", "zia_url_categories", {
+            "blocked_social": {"configured_name": "Blocked Social",
+                               "urls": ["reddit.com"],
+                               "keywords": ["malware"],
+                               "ip_ranges": ["10.1.0.0/24", "10.0.0.300"]},
+        })
+        msg = operate.operate("remove", "t", "zia_url_categories", "blocked_social",
+                              "ip_ranges", "10.0.0.300", config_root=self.root)
+        self.assertIn("remove 10.0.0.300", msg)
+        self.assertEqual(
+            self._items("zia_url_categories")["blocked_social"]["ip_ranges"],
+            ["10.1.0.0/24"])
+
+    def test_add_location_ip(self):
+        operate.operate("add", "t", "zia_location_management", "hq_office",
+                        "ip_addresses", "10.5.0.0/24", config_root=self.root)
+        self.assertEqual(
+            self._items("zia_location_management")["hq_office"]["ip_addresses"],
+            ["10.0.0.0/24", "10.5.0.0/24"])
+
+    def test_add_location_ip_invalid_refused(self):
         with self.assertRaises(ValueError):
-            operate.operate("add", "t", "zia_url_categories", "blocked_social",
-                            "keywords", "phish", config_root=self.root)
+            operate.operate("add", "t", "zia_location_management", "hq_office",
+                            "ip_addresses", "10.0.0.300", config_root=self.root)
 
     def test_invalid_tenant_refused(self):
         for bad in ("../etc", "..", ".", "a/b"):
@@ -143,6 +205,116 @@ class ResolveTest(unittest.TestCase):
     def test_resolve_invalid_tenant_refused(self):
         with self.assertRaises(ValueError):
             operate.resolve("../etc", "zia_url_categories", "x", config_root=self.root)
+
+    def test_resolve_location_by_name(self):
+        _write(self.root, "t", "zia_location_management", {
+            "hq_office": {"name": "HQ Office", "ip_addresses": []},
+            "branch_office": {"name": "Branch Office", "ip_addresses": []},
+        })
+        hits = operate.resolve("t", "zia_location_management", "office",
+                               config_root=self.root)
+        self.assertEqual(sorted(k for k, _ in hits),
+                         ["branch_office", "hq_office"])
+
+
+class ScalarSetTest(unittest.TestCase):
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.root)
+        _write(self.root, "t", "zia_url_filtering_rules", {
+            "rule_one": {"name": "Rule One", "state": "ENABLED"},
+        })
+        _write(self.root, "t", "zpa_segment_group", {
+            "grp_one": {"name": "Group One", "enabled": True},
+        })
+
+    def _path(self, resource_type):
+        return os.path.join(self.root, "t", resource_type + operate.CONFIG_SUFFIX)
+
+    def _read(self, resource_type):
+        with open(self._path(resource_type), encoding="utf-8") as f:
+            return f.read()
+
+    def _items(self, resource_type):
+        return json.loads(self._read(resource_type))["items"]
+
+    def test_disable_rule_sets_state(self):
+        msg = operate.scalar_set("t", "zia_url_filtering_rules", "rule_one",
+                                 "state", "DISABLED", config_root=self.root)
+        self.assertTrue(msg.startswith("set"))
+        self.assertEqual(
+            self._items("zia_url_filtering_rules")["rule_one"]["state"], "DISABLED")
+
+    def test_enable_rule_idempotent(self):
+        before = self._read("zia_url_filtering_rules")
+        msg = operate.scalar_set("t", "zia_url_filtering_rules", "rule_one",
+                                 "state", "ENABLED", config_root=self.root)
+        self.assertTrue(msg.startswith("no-op"))
+        self.assertEqual(before, self._read("zia_url_filtering_rules"))
+
+    def test_disable_segment_writes_json_false(self):
+        operate.scalar_set("t", "zpa_segment_group", "grp_one",
+                           "enabled", "false", config_root=self.root)
+        self.assertIs(
+            self._items("zpa_segment_group")["grp_one"]["enabled"], False)
+        self.assertIn('"enabled": false', self._read("zpa_segment_group"))
+
+    def test_enable_segment_via_ENABLED_token(self):
+        operate.scalar_set("t", "zpa_segment_group", "grp_one",
+                           "enabled", "false", config_root=self.root)
+        operate.scalar_set("t", "zpa_segment_group", "grp_one",
+                           "enabled", "ENABLED", config_root=self.root)
+        self.assertIs(
+            self._items("zpa_segment_group")["grp_one"]["enabled"], True)
+
+    def test_bad_value_refused_lists_allowed(self):
+        with self.assertRaises(ValueError) as cm:
+            operate.scalar_set("t", "zia_url_filtering_rules", "rule_one",
+                               "state", "ENABLE", config_root=self.root)
+        self.assertIn("ENABLED", str(cm.exception))
+        self.assertIn("DISABLED", str(cm.exception))
+
+    def test_nonallowlisted_field_refused(self):
+        with self.assertRaises(ValueError) as cm:
+            operate.scalar_set("t", "zia_url_filtering_rules", "rule_one",
+                               "action", "BLOCK", config_root=self.root)
+        self.assertIn("state", str(cm.exception))
+
+    def test_nonallowlisted_type_refused(self):
+        _write(self.root, "t", "zia_location_management", {
+            "hq_office": {"name": "HQ Office", "state": "British Columbia"},
+        })
+        with self.assertRaises(ValueError):
+            operate.scalar_set("t", "zia_location_management", "hq_office",
+                               "state", "DISABLED", config_root=self.root)
+
+    def test_set_list_field_refused(self):
+        _write(self.root, "t", "zpa_application_segment", {
+            "seg_one": {"name": "Seg One", "enabled": ["a"]},
+        })
+        with self.assertRaises(ValueError) as cm:
+            operate.scalar_set("t", "zpa_application_segment", "seg_one",
+                               "enabled", "false", config_root=self.root)
+        self.assertIn("use add/remove, not set", str(cm.exception))
+
+    def test_unknown_key_refused_with_candidates(self):
+        with self.assertRaises(ValueError) as cm:
+            operate.scalar_set("t", "zia_url_filtering_rules", "Rule One",
+                               "state", "DISABLED", config_root=self.root)
+        self.assertIn("rule_one", str(cm.exception))
+
+    def test_invalid_tenant_refused(self):
+        for bad in ("../etc", "..", ".", "a/b"):
+            with self.assertRaises(ValueError):
+                operate.scalar_set(bad, "zia_url_filtering_rules", "rule_one",
+                                   "state", "DISABLED", config_root=self.root)
+
+    def test_scalar_write_is_canonical(self):
+        operate.scalar_set("t", "zia_url_filtering_rules", "rule_one",
+                           "state", "DISABLED", config_root=self.root)
+        text = self._read("zia_url_filtering_rules")
+        self.assertEqual(text, render_tfvars(json.loads(text)["items"]))
+        self.assertTrue(text.endswith("\n"))
 
 
 if __name__ == "__main__":
