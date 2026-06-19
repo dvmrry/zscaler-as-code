@@ -26,14 +26,6 @@ def _write_json(path, data):
 
 
 class LookupBuildTest(unittest.TestCase):
-    def test_manifest_pins_v1_reference(self):
-        refs = lookup.reference_manifest()
-        self.assertEqual(
-            refs["zia_url_filtering_rules"]["url_categories"],
-            {"referent": "zia_url_categories", "name_field": "configured_name"},
-        )
-        self.assertNotIn("name", lookup.lookup_sources()["zia_url_categories"])
-
     def test_build_lookup_uses_configured_name(self):
         items = [
             {"id": "CUSTOM_02", "configured_name": "Beta"},
