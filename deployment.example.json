@@ -1,0 +1,4 @@
+{
+  "$note": "Deployment config. Copy this file to deployment.json and commit THAT in your private fork. The template ships only this example and never overwrites deployment.json (it is absent upstream), so your copy is sync-safe. It is plain JSON -- your scripts read it directly; the template ships no reader. Keys beginning with '$' are comments. See docs/extending.md.",
+  "overlay": "_local"
+}

@@ -69,6 +69,12 @@ they produce.
 - Deployment-specific `make` targets or variable overrides go in
   `local.mk` (auto-included, not shipped by the template), never by
   editing the `Makefile`.
+- Deployment-specific DATA and config live in a private overlay
+  directory you COMMIT in your fork (named in `deployment.json`,
+  copied from `deployment.example.json`); it is conflict-free on sync
+  because the template never has it -- the `local.mk` analogue for
+  data. See `docs/extending.md`. Genuinely sensitive data (real
+  pulls, secrets) stays in the gitignored `pulls/`, never the overlay.
 - Applies happen from `main` only, after a human merges.
 
 ## Prime directive: run targets, commit output, touch nothing else

@@ -23,6 +23,15 @@ SCOPE_GLOB = $(if $(word 2,$(RESOURCE)),$(error RESOURCE takes a SINGLE selector
 # shipped by the template and is yours to commit privately.
 -include local.mk
 
+# Deployment data/config: a deployment commits its own config (deployment.json,
+# copied from deployment.example.json) plus a private overlay directory it names.
+# Both are absent from the template upstream, so a sync never conflicts; the
+# gates are path-scoped (modules/, config/, envs/, schemas/) so a committable
+# overlay never trips one. deployment.json is plain JSON -- read it directly
+# where you need it, and wire any overlay-reading make targets in local.mk.
+# Sensitive data (real pulls, secrets) stays in the gitignored pulls/.
+# See docs/extending.md.
+
 ##@ Toolchain & provider intel
 
 help: ## List available targets, grouped (annotated local.mk targets appear too)
