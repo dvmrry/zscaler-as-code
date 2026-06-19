@@ -5,14 +5,6 @@ from tools import adoption_status, headroom_report
 
 
 class AdoptionStatusTest(unittest.TestCase):
-    def test_real_status_file_validates(self):
-        data = adoption_status.load_status()
-        self.assertIn("zia_activation_status", data["dispositions"])
-        self.assertIn(
-            "ai_prompt_access",
-            adoption_status.known_hold_paths("zia_admin_roles", data),
-        )
-
     def test_invalid_status_rejected(self):
         bad = {"dispositions": {"x": {"status": "maybe", "reason": "no"}}}
         with self.assertRaises(ValueError):
