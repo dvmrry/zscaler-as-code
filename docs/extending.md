@@ -48,7 +48,6 @@ private fork), plus the existing gitignored areas for anything secret:
   `generate CHECK=1` -> `modules/`, `schemas/`; `check-demo` ->
   `config/<tenant>/`, `imports/<tenant>/`; `check-envs` -> `envs/`. Nothing
   scans the repo root, so a committable overlay directory never trips a gate.
-  This guarantee is pinned by `tools/tests/test_deployment_overlay.py`.
 
 ### Using it
 
