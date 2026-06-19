@@ -23,6 +23,15 @@ SCOPE_GLOB = $(if $(word 2,$(RESOURCE)),$(error RESOURCE takes a SINGLE selector
 # shipped by the template and is yours to commit privately.
 -include local.mk
 
+# Deployment overlay directory: the local.mk analogue for DATA -- a private,
+# gitignored top-level dir for deployment-owned data/config. Defaults to
+# _local/ (gitignored). To use a different name (e.g. your org's), set OVERLAY
+# in local.mk AND add that name to .git/info/exclude; never edit this file or
+# .gitignore. Every template gate is path-scoped (modules/, config/, envs/,
+# schemas/), so any overlay dir is ignored and never conflicts on a template
+# update. See docs/extending.md.
+OVERLAY ?= _local
+
 ##@ Toolchain & provider intel
 
 help: ## List available targets, grouped (annotated local.mk targets appear too)

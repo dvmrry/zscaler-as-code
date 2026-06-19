@@ -69,6 +69,11 @@ they produce.
 - Deployment-specific `make` targets or variable overrides go in
   `local.mk` (auto-included, not shipped by the template), never by
   editing the `Makefile`.
+- Deployment-specific DATA and config live in a private overlay
+  directory (`_local/` by default, or any name you ignore on your
+  side). It is the `local.mk` analogue for data; see
+  `docs/extending.md`. Never commit it to the template or edit
+  `.gitignore`.
 - Applies happen from `main` only, after a human merges.
 
 ## Prime directive: run targets, commit output, touch nothing else

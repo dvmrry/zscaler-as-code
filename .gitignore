@@ -55,3 +55,9 @@ pulls/*
 
 # Operating manual — private environment layer stays out of the public repo
 OPERATING.local.md
+
+# Deployment overlay (the local.mk analogue for data): a private top-level dir
+# for deployment-owned data/config, kept out of the template. _local/ is the
+# default (Makefile OVERLAY var); use any other name via .git/info/exclude.
+# See docs/extending.md.
+/_local/
