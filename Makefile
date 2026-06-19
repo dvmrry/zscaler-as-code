@@ -15,7 +15,7 @@ TF     ?= terraform
 # guarded, so fetch/transform (which DO take multi-token) are unaffected.
 SCOPE_GLOB = $(if $(word 2,$(RESOURCE)),$(error RESOURCE takes a SINGLE selector for per-root targets (plan/apply/stage-imports/assert-clean/...) — got "$(RESOURCE)". Use one resource type, one glob (zia_*), or one product token (zia|zpa|zcc); for a multi-type scope, loop the target once per type. Multi-token RESOURCE is fetch/drift-only.),$(if $(RESOURCE),$(if $(filter zia zpa zcc,$(RESOURCE)),$(RESOURCE)_*,$(RESOURCE)),*))
 
-.PHONY: help env install-tf bump-check mine issue-watch triage surface contract-facts headroom-report adoption-check plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports import-one statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag explain update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report plan-summary-line assert-clean apply drift check-envs validate-config demo check-demo lint lint-pipelines fmt-config typecheck refresh-gates conformance find-key url-add url-rm domain-add domain-rm
+.PHONY: help env install-tf bump-check mine issue-watch triage surface contract-facts headroom-report adoption-check plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports import-one statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag explain update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report plan-summary-line assert-clean apply drift check-envs validate-config demo check-demo lint lint-pipelines fmt-config typecheck refresh-gates conformance find-key url-add url-rm domain-add domain-rm keyword-add keyword-rm iprange-add iprange-rm locip-add locip-rm rule-enable rule-disable segment-enable segment-disable op-intake op-resolve op-validate op-status gate check-imports
 
 # Company/deployment extensions: a private repo adds its own targets and
 # variable overrides in local.mk — NEVER by editing this file, which is
@@ -592,6 +592,84 @@ domain-rm: ## Remove a domain from a ZPA app segment (TENANT=<label> SEGMENT=<co
 	@test -n "$(TENANT)" -a -n "$(SEGMENT)" -a -n "$(DOMAIN)" || { echo "usage: make domain-rm TENANT=<label> SEGMENT=<config-key> DOMAIN=<domain>"; exit 2; }
 	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+"; exit 2; }
 	$(PYTHON) -m tools.operate remove "$(TENANT)" zpa_application_segment "$(SEGMENT)" domain_names "$(DOMAIN)"
+
+keyword-add: ## Add a keyword to a custom URL category (TENANT=<label> CATEGORY=<config-key> KEYWORD=<keyword>)
+	@test -n "$(TENANT)" -a -n "$(CATEGORY)" -a -n "$(KEYWORD)" || { echo "usage: make keyword-add TENANT=<label> CATEGORY=<config-key> KEYWORD=<keyword>"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+"; exit 2; }
+	$(PYTHON) -m tools.operate add "$(TENANT)" zia_url_categories "$(CATEGORY)" keywords "$(KEYWORD)"
+
+keyword-rm: ## Remove a keyword from a custom URL category (TENANT=<label> CATEGORY=<config-key> KEYWORD=<keyword>)
+	@test -n "$(TENANT)" -a -n "$(CATEGORY)" -a -n "$(KEYWORD)" || { echo "usage: make keyword-rm TENANT=<label> CATEGORY=<config-key> KEYWORD=<keyword>"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+"; exit 2; }
+	$(PYTHON) -m tools.operate remove "$(TENANT)" zia_url_categories "$(CATEGORY)" keywords "$(KEYWORD)"
+
+iprange-add: ## Add an IP/CIDR/range to a custom URL category (TENANT=<label> CATEGORY=<config-key> IPRANGE=<ip|cidr|a-b>)
+	@test -n "$(TENANT)" -a -n "$(CATEGORY)" -a -n "$(IPRANGE)" || { echo "usage: make iprange-add TENANT=<label> CATEGORY=<config-key> IPRANGE=<ip|cidr|a-b>"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+"; exit 2; }
+	$(PYTHON) -m tools.operate add "$(TENANT)" zia_url_categories "$(CATEGORY)" ip_ranges "$(IPRANGE)"
+
+iprange-rm: ## Remove an IP/CIDR/range from a custom URL category (TENANT=<label> CATEGORY=<config-key> IPRANGE=<ip|cidr|a-b>)
+	@test -n "$(TENANT)" -a -n "$(CATEGORY)" -a -n "$(IPRANGE)" || { echo "usage: make iprange-rm TENANT=<label> CATEGORY=<config-key> IPRANGE=<ip|cidr|a-b>"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+"; exit 2; }
+	$(PYTHON) -m tools.operate remove "$(TENANT)" zia_url_categories "$(CATEGORY)" ip_ranges "$(IPRANGE)"
+
+locip-add: ## Add an IP/CIDR/range to a location's IP addresses (TENANT=<label> LOCATION=<config-key> IPADDR=<ip|cidr|a-b>)
+	@test -n "$(TENANT)" -a -n "$(LOCATION)" -a -n "$(IPADDR)" || { echo "usage: make locip-add TENANT=<label> LOCATION=<config-key> IPADDR=<ip|cidr|a-b>"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+"; exit 2; }
+	$(PYTHON) -m tools.operate add "$(TENANT)" zia_location_management "$(LOCATION)" ip_addresses "$(IPADDR)"
+
+locip-rm: ## Remove an IP/CIDR/range from a location's IP addresses (TENANT=<label> LOCATION=<config-key> IPADDR=<ip|cidr|a-b>)
+	@test -n "$(TENANT)" -a -n "$(LOCATION)" -a -n "$(IPADDR)" || { echo "usage: make locip-rm TENANT=<label> LOCATION=<config-key> IPADDR=<ip|cidr|a-b>"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+"; exit 2; }
+	$(PYTHON) -m tools.operate remove "$(TENANT)" zia_location_management "$(LOCATION)" ip_addresses "$(IPADDR)"
+
+rule-enable: ## Enable a ZIA rule (TENANT=<label> TYPE=<zia_url_filtering_rules|zia_ssl_inspection_rules|zia_cloud_app_control_rule> RULE=<config-key>)
+	@test -n "$(TENANT)" -a -n "$(TYPE)" -a -n "$(RULE)" || { echo "usage: make rule-enable TENANT=<label> TYPE=<resource_type> RULE=<config-key>"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+"; exit 2; }
+	$(PYTHON) -m tools.operate set "$(TENANT)" "$(TYPE)" "$(RULE)" state ENABLED
+
+rule-disable: ## Disable a ZIA rule (TENANT=<label> TYPE=<...> RULE=<config-key>)
+	@test -n "$(TENANT)" -a -n "$(TYPE)" -a -n "$(RULE)" || { echo "usage: make rule-disable TENANT=<label> TYPE=<resource_type> RULE=<config-key>"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+"; exit 2; }
+	$(PYTHON) -m tools.operate set "$(TENANT)" "$(TYPE)" "$(RULE)" state DISABLED
+
+segment-enable: ## Enable a ZPA app segment or segment group (TENANT=<label> TYPE=<zpa_application_segment|zpa_segment_group> SEGMENT=<config-key>)
+	@test -n "$(TENANT)" -a -n "$(TYPE)" -a -n "$(SEGMENT)" || { echo "usage: make segment-enable TENANT=<label> TYPE=<resource_type> SEGMENT=<config-key>"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+"; exit 2; }
+	$(PYTHON) -m tools.operate set "$(TENANT)" "$(TYPE)" "$(SEGMENT)" enabled true
+
+segment-disable: ## Disable a ZPA app segment or segment group (TENANT=<label> TYPE=<...> SEGMENT=<config-key>)
+	@test -n "$(TENANT)" -a -n "$(TYPE)" -a -n "$(SEGMENT)" || { echo "usage: make segment-disable TENANT=<label> TYPE=<resource_type> SEGMENT=<config-key>"; exit 2; }
+	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+"; exit 2; }
+	$(PYTHON) -m tools.operate set "$(TENANT)" "$(TYPE)" "$(SEGMENT)" enabled false
+
+##@ Workflow & runtime gates
+
+op-intake: ## Workflow: write the intake artifact (SLUG=<yyyy-mm-dd-slug> TENANT=<label> INTAKE=<path>)
+	@test -n "$(SLUG)" -a -n "$(TENANT)" -a -n "$(INTAKE)" || { echo "usage: make op-intake SLUG=<slug> TENANT=<label> INTAKE=<path>"; exit 2; }
+	$(PYTHON) -m tools.opgate intake --slug "$(SLUG)" --tenant "$(TENANT)" --intake-json "$(INTAKE)"
+
+op-resolve: ## Workflow GATE G1: resolve targets to config keys, exactly-one-match or blocked (SLUG= TENANT= TARGETS=<path>)
+	@test -n "$(SLUG)" -a -n "$(TENANT)" -a -n "$(TARGETS)" || { echo "usage: make op-resolve SLUG=<slug> TENANT=<label> TARGETS=<path>"; exit 2; }
+	$(PYTHON) -m tools.opgate resolve --slug "$(SLUG)" --tenant "$(TENANT)" --target-json "$(TARGETS)"
+
+op-validate: ## Workflow GATE G2: run typecheck + lint, write pass|blocked (SLUG= TENANT=)
+	@test -n "$(SLUG)" -a -n "$(TENANT)" || { echo "usage: make op-validate SLUG=<slug> TENANT=<label>"; exit 2; }
+	$(PYTHON) -m tools.opgate validate --slug "$(SLUG)" --tenant "$(TENANT)"
+
+op-status: ## Workflow: print the latest phase/status/next_step for a ticket (SLUG=)
+	@test -n "$(SLUG)" || { echo "usage: make op-status SLUG=<slug>"; exit 2; }
+	$(PYTHON) -m tools.opgate status --slug "$(SLUG)"
+
+gate: ## Run a gate target via the runtime and write outputs/gates/<GATE>.status.json (GATE=<target> [ARGS="TENANT=<label> ..."])
+	@test -n "$(GATE)" || { echo "usage: make gate GATE=<target> [ARGS=\"TENANT=<label> ...\"]"; exit 2; }
+	@test "$(GATE)" != "gate" || { echo "error: GATE=gate would recurse"; exit 2; }
+	uv run --project runtime zac-gate "$(GATE)" $(ARGS)
+
+check-imports: ## Enforce the one-way rule: nothing under tools/ imports runtime/
+	@! grep -rnE '^[[:space:]]*(import|from)[[:space:]]+zac_runtime\b' tools/ \
+		&& echo "ok: tools/ does not import runtime/" \
+		|| { echo "VIOLATION: tools/ imports runtime/"; exit 1; }
 
 ##@ Template authoring (dev)
 
