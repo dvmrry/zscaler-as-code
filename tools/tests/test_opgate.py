@@ -9,11 +9,13 @@ captures a failing tail otherwise; and every artifact is deterministic
 subprocess.run is monkeypatched for validate; resolve runs against a seeded tmp
 config (cwd is moved into the tmp tree so the default config_root resolves).
 """
+import io
 import json
 import os
 import shutil
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 
 from tools import opgate
 from tools.transform import render_tfvars
@@ -278,6 +280,31 @@ class StatusTest(OpgateTestBase):
         os.makedirs(d)
         rc = opgate.main(["status", "--slug", SLUG])
         self.assertEqual(rc, 1)
+
+    def test_status_skips_prose_apply_artifact(self):
+        # Resume must never read a status from a prose Apply/PR artifact: the bug
+        # was that the lexically-latest 02-apply.json (hand-written, no schema)
+        # made op-status print "status: None" and exit 0 -- a false all-clear.
+        # It must report the last real gate (resolve) and flag the prose phase.
+        intake = _write_json(self.root, "intake.json", {
+            "targets": [{"area": "zia_url_categories", "field": "urls",
+                         "display_name": "Blocked Social", "op": "add",
+                         "values": ["x.example.test"]}]})
+        opgate.main(["intake", "--slug", SLUG, "--tenant", TENANT,
+                     "--intake-json", intake])
+        opgate.main(["resolve", "--slug", SLUG, "--tenant", TENANT,
+                     "--target-json", self._targets("Blocked Social")])
+        d = os.path.join(self.root, "outputs", "operate", SLUG)
+        with open(os.path.join(d, "02-apply.json"), "w", encoding="utf-8") as f:
+            json.dump({"results": ["added x.example.test to blocked_social"]}, f)
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rc = opgate.main(["status", "--slug", SLUG])
+        out = buf.getvalue()
+        self.assertEqual(rc, 0)
+        self.assertIn("status: pass", out)       # the real resolve gate
+        self.assertNotIn("status: None", out)    # never the prose artifact
+        self.assertIn("02-apply.json", out)      # flags the prose phase
 
 
 class DeterminismTest(OpgateTestBase):

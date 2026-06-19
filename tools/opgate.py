@@ -245,7 +245,9 @@ def cmd_validate(slug, tenant, runner=None):
 
 
 def cmd_status(slug):
-    """Read-only: print phase/status/next_step of the highest-numbered artifact."""
+    """Read-only: print phase/status/next_step of the highest-numbered STATUS
+    artifact -- skips prose Apply/PR and corrupt files so resume never reads a
+    fabricated None status as a pass."""
     d = _slug_dir(slug)
     if not os.path.isdir(d):
         sys.stderr.write("no artifacts for slug %s (run make op-intake first)\n"
@@ -255,10 +257,35 @@ def cmd_status(slug):
     if not files:
         sys.stderr.write("no artifacts for slug %s\n" % slug)
         return 1
-    record = _load_json(os.path.join(d, files[-1]))
+    # The helper writes status-schema artifacts (00/01/03); Apply and PR (02/04)
+    # are prose the agent hand-writes. Report the latest artifact that actually
+    # carries the status schema, never fabricating a None status from a prose or
+    # corrupt file -- that would print on resume as a false "all clear".
+    record = None
+    latest_status = None
+    for name in reversed(files):
+        try:
+            candidate = _load_json(os.path.join(d, name))
+        except ValueError:
+            continue
+        if isinstance(candidate, dict) and all(
+                k in candidate for k in ("phase", "status", "next_step")):
+            record, latest_status = candidate, name
+            break
+    if record is None:
+        sys.stderr.write(
+            "no status artifact for slug %s (latest file %s carries no "
+            "phase/status/next_step -- a prose Apply/PR or corrupt artifact); "
+            "re-run the last gate\n" % (slug, files[-1]))
+        return 1
+    extra = ""
+    if files[-1] != latest_status:
+        extra = ("\nin_progress: %s (prose phase after the last gate)"
+                 % files[-1])
     sys.stdout.write(
-        "phase: %s\nstatus: %s\nnext_step: %s\n"
-        % (record.get("phase"), record.get("status"), record.get("next_step")))
+        "phase: %s\nstatus: %s\nnext_step: %s%s\n"
+        % (record.get("phase"), record.get("status"),
+           record.get("next_step"), extra))
     return 0
 
 
