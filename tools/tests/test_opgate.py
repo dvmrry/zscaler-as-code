@@ -133,6 +133,38 @@ class ResolveTest(OpgateTestBase):
         self.assertIn("blocked_social", joined)
         self.assertIn("blocked_news", joined)
 
+    def test_resolve_empty_targets_blocked(self):
+        # An empty targets list must BLOCK -- G1 proves at least one target
+        # resolved before Apply; zero targets is not a vacuous pass.
+        tgt = _write_json(self.root, "targets.json", {"targets": []})
+        rc = opgate.main(["resolve", "--slug", SLUG, "--tenant", TENANT,
+                          "--target-json", tgt])
+        self.assertEqual(rc, 1)
+        record = json.loads(self._artifact("01-resolve.json"))
+        self.assertEqual(record["status"], "blocked")
+        self.assertTrue(
+            any("no targets" in b for b in record["blocking_issues"]))
+
+    def test_resolve_non_list_targets_blocked(self):
+        # A malformed (non-list) 'targets' must BLOCK, not coerce to [] + pass.
+        tgt = _write_json(self.root, "targets.json", {"targets": "nope"})
+        rc = opgate.main(["resolve", "--slug", SLUG, "--tenant", TENANT,
+                          "--target-json", tgt])
+        self.assertEqual(rc, 1)
+        record = json.loads(self._artifact("01-resolve.json"))
+        self.assertEqual(record["status"], "blocked")
+        self.assertTrue(
+            any("targets" in b for b in record["blocking_issues"]))
+
+    def test_resolve_missing_targets_key_blocked(self):
+        # No 'targets' key at all must BLOCK, never pass with an empty list.
+        tgt = _write_json(self.root, "targets.json", {})
+        rc = opgate.main(["resolve", "--slug", SLUG, "--tenant", TENANT,
+                          "--target-json", tgt])
+        self.assertEqual(rc, 1)
+        record = json.loads(self._artifact("01-resolve.json"))
+        self.assertEqual(record["status"], "blocked")
+
 
 class ValidateTest(OpgateTestBase):
     def _run(self, returns):

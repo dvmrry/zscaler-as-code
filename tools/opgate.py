@@ -118,11 +118,18 @@ def cmd_resolve(slug, tenant, target_json):
     _check_tenant(tenant)
     parsed = _load_json(target_json)
     raw_targets = parsed.get("targets") if isinstance(parsed, dict) else parsed
-    if not isinstance(raw_targets, list):
-        raw_targets = []
 
     out_targets = []
     blocking = []
+    if not isinstance(raw_targets, list):
+        blocking.append(
+            "target file has no 'targets' list (got %s); G1 needs a non-empty "
+            "list of targets" % type(raw_targets).__name__)
+        raw_targets = []
+    elif not raw_targets:
+        blocking.append(
+            "no targets to resolve; G1 must resolve at least one target "
+            "before Apply")
     for t in raw_targets:
         if not isinstance(t, dict):
             blocking.append("malformed target (not an object): %r" % (t,))
