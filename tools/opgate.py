@@ -227,8 +227,10 @@ def cmd_validate(slug, tenant, runner=None):
 
     status = "pass" if not blocking else "blocked"
     if status == "pass":
-        next_step = ("validate passed -- proceed to PR (G3): commitback "
-                     "checkpoint + DRAFT PR; never terraform apply")
+        next_step = ("validate passed (static checks only -- plan-level checks "
+                     "run downstream and can still block) -- proceed to PR "
+                     "(G3): commitback checkpoint + DRAFT PR; never terraform "
+                     "apply")
     else:
         next_step = ("validate blocked -- fix the reported typecheck/lint "
                      "findings, then re-run make op-validate SLUG=%s TENANT=%s"

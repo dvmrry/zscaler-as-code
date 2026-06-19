@@ -74,6 +74,12 @@ make op-intake SLUG=<yyyy-mm-dd-symptom> TENANT=<t> INTAKE=<path-to-intake.json>
 targets. Status is always `pass` (this is structured capture, not a gate). If the
 slug or tenant is rejected, fix it and rerun -- do not advance.
 
+Producing the intake artifact -- turning a request into a structured
+`INTAKE=<path>.json` with shaped `targets[]` (`area`/`field`/`op`/`display_name`/
+`values`) -- is a deployment concern. This flow starts at a structured intake;
+the template does not own request parsing or intake authoring. A downstream
+deployment supplies that producer.
+
 ## P2 Resolve -- GATE G1 -> 01-resolve.json
 
 First resolve each display name to a config key:
@@ -121,6 +127,11 @@ key, non-allowlisted field/type, out-of-scope shape), HALT: this is an
 out-of-scope edit. Stop and route it to the operator. Do NOT work around the
 refusal.
 
+A mid-loop refusal leaves the edits already applied in place (config-only,
+pre-PR, reversible with `git checkout -- <file>`). Record what was applied in
+`02-apply.json`, then route the remaining targets to the operator -- never
+auto-continue past a refusal.
+
 ## P4 Validate -- GATE G2 -> 03-validate.json
 
 ```bash
@@ -131,6 +142,13 @@ This runs `make typecheck` then `make lint`. Both exit 0 -> `pass`. Any non-zero
 -> `blocked`, with the failing command's tail in the blocking issues. HALT on
 `blocked`: read the tail, fix the cause, rerun. Do not proceed to PR on a
 `blocked` validate.
+
+G2 is static analysis only (`typecheck` + `lint`). It is **necessary but not
+sufficient**: a pass proves the change is type-valid and lint-clean, NOT that it
+is operationally safe. Plan-level checks (`plan_checks.py` -- SSL-bypass
+re-categorization, subdomain redundancy, location IP overlap) run downstream in
+the delivery pipeline against a real plan and can still block a change that
+passed G2. Read a G2 pass as "proceed to PR," never as "safe to apply."
 
 ## P5 PR -- GATE G3 -> 04-pr.json
 
