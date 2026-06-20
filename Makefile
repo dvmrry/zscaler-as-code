@@ -21,7 +21,7 @@ SCOPE_GLOB = $(if $(word 2,$(RESOURCE)),$(error RESOURCE takes a SINGLE selector
 # root instead (see envs-dir).
 ENV_ROOTS = envs $(if $(filter-out .,$(OVERLAY)),$(OVERLAY)/envs)
 
-.PHONY: help env print-overlay install-tf bump-check mine issue-watch triage surface contract-facts headroom-report adoption-check plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports import-one statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag explain update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report plan-summary-line assert-clean apply drift check-envs validate-config demo check-demo lint lint-pipelines fmt-config typecheck refresh-gates conformance find-key url-add url-rm domain-add domain-rm keyword-add keyword-rm iprange-add iprange-rm locip-add locip-rm rule-enable rule-disable segment-enable segment-disable op-intake op-resolve op-validate op-status gate check-imports
+.PHONY: help env print-overlay install-tf bump-check mine issue-watch triage surface contract-facts headroom-report adoption-check plan-checks shape plan-report clean clean-plans save-plans restore-plans unlock forget stage-imports unstage-imports import-one statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag explain update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report plan-summary-line assert-clean apply drift check-envs validate-config demo check-demo lint lint-pipelines fmt-config typecheck refresh-gates conformance find-key url-add url-rm domain-add domain-rm keyword-add keyword-rm iprange-add iprange-rm locip-add locip-rm rule-enable rule-disable segment-enable segment-disable op-intake op-resolve op-validate op-status gate check-imports
 
 # Company/deployment extensions: a private repo adds its own targets and
 # variable overrides in local.mk — NEVER by editing this file, which is
@@ -304,6 +304,18 @@ clean-plans: ## Delete saved tfplan artifacts ([TENANT=<label>] [RESOURCE=<type>
 		rm -f "$$d/tfplan"; echo "removed $$d""tfplan"; removed=$$((removed+1)); \
 	done; done; \
 	echo "$$removed stale plan(s) removed"
+
+save-plans: ## Copy every saved tfplan into reports/tfplans/<tenant>/<rt>/ for artifact publish
+	@set -e; n=0; for base in $(ENV_ROOTS); do for d in $$base/*/*/; do \
+		test -f "$$d/tfplan" || continue; rt=$$(basename "$$d"); t=$$(basename "$$(dirname "$$d")"); \
+		mkdir -p "reports/tfplans/$$t/$$rt"; cp "$$d/tfplan" "reports/tfplans/$$t/$$rt/tfplan"; n=$$((n+1)); \
+	done; done; echo "saved $$n plan(s) to reports/tfplans/"
+
+restore-plans: ## Copy tfplans from reports/tfplans/<tenant>/<rt>/ back into the resolved env roots
+	@set -e; n=0; for f in reports/tfplans/*/*/tfplan; do \
+		test -f "$$f" || continue; rt=$$(basename "$$(dirname "$$f")"); t=$$(basename "$$(dirname "$$(dirname "$$f")")"); \
+		ED="$$($(PYTHON) -m tools.deployment envs-dir $$t)"; mkdir -p "$$ED/$$rt"; cp "$$f" "$$ED/$$rt/tfplan"; n=$$((n+1)); \
+	done; echo "restored $$n plan(s)"
 
 plan-changed: ## Plan only the (tenant, resource) pairs changed vs BASE (default origin/main; [TENANT=<label>] scopes to one tenant); SAVE/BACKEND_CONFIG pass through
 	@$(MAKE) clean-plans > /dev/null

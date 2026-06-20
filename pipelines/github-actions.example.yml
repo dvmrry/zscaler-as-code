@@ -81,10 +81,15 @@ jobs:
         with:
           terraform_version: "1.15.4"
       - run: make plan-changed BASE=origin/main~1 SAVE=1 BACKEND_CONFIG=backend.conf
+      # save-plans collects every saved tfplan under a stable archive root
+      # (reports/tfplans/<tenant>/<rt>/) regardless of overlay; the artifact
+      # never hardcodes envs/, so it survives a deployment relocating its
+      # tenants under $(OVERLAY)/envs.
+      - run: make save-plans
       - uses: actions/upload-artifact@v4
         with:
           name: tfplans
-          path: envs/**/tfplan
+          path: reports/tfplans/**
           retention-days: 3 # plans can contain sensitive values
 
   apply:
@@ -107,7 +112,11 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: tfplans
-          path: envs/
+          path: reports/tfplans/
+      # restore-plans copies each tfplan from the archive back into the
+      # resolved env root where `apply` reads it ($(OVERLAY)/envs/<t>/<rt>/);
+      # the archive root is overlay-stable, the restore destination is not.
+      - run: make restore-plans
       # Applies ONLY the saved plans; refuses destroys without ALLOW_DESTROY=1
       - run: make apply BACKEND_CONFIG=backend.conf
 

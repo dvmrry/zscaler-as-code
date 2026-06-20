@@ -34,13 +34,21 @@ pipelines:
           name: Plan changed roots
           script:
             - make plan-changed BASE=origin/main~1 SAVE=1 BACKEND_CONFIG=backend.conf
+            # save-plans collects every saved tfplan under a stable archive root
+            # (reports/tfplans/<tenant>/<rt>/) regardless of overlay, so the
+            # artifact never hardcodes envs/ — restore-plans (apply step) returns
+            # them to the resolved env root where apply reads them.
+            - make save-plans
           artifacts:
-            - envs/**/tfplan # plans can contain sensitive values
+            - reports/tfplans/** # plans can contain sensitive values
       - step:
           name: Apply saved plans
           deployment: FILL-deployment-environment # approval gate lives here
           trigger: manual
           script:
+            # restore-plans copies each plan from the archive back into the
+            # resolved env root ($(OVERLAY)/envs/<t>/<rt>/) where apply reads it.
+            - make restore-plans
             # Applies ONLY the saved plans; refuses destroys without ALLOW_DESTROY=1
             - make apply BACKEND_CONFIG=backend.conf
 
