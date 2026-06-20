@@ -302,6 +302,116 @@ Push to your private repo. Do not push to this template repo.
 
 ---
 
+## Migrating a Deployment to an Overlay
+
+A one-time relocation in a **deployment fork only** — the template repo has no
+real tenants to move (only `demo`, which always stays at root). This moves a
+fork's real tenants' `config/`, `imports/`, `envs/`, `local.mk`, and *operative*
+pipeline YAML under one overlay directory named in `deployment.json`, giving a
+clean engine/overlay split. See `docs/extending.md` for the why.
+
+After migration, every per-tenant `make` target resolves the overlay path for
+you (the resolver `tools/deployment.py` is the single source of truth), so the
+day-to-day flow above is unchanged — only the on-disk layout moves.
+
+**Load-bearing precondition — set + commit `deployment.json` FIRST, then verify
+the overlay resolves BEFORE any `gen-env`.** If you regenerate while `OVERLAY` is
+still unset or stale, `gen-env` writes a *second* env tree at root `envs/<t>` with
+the wrong module-source relpath while your real tree sits unregenerated under the
+overlay. A freshly-created root `envs/<t>` is the tell — back out (`git checkout
+-- envs && git clean -fd envs`) and re-run from step 2.
+
+### 1. Point `deployment.json` at the overlay
+
+```sh
+cp deployment.example.json deployment.json   # if you have not already
+$EDITOR deployment.json                        # set "overlay" to e.g. "_local"
+git add deployment.json
+git commit -m "Set deployment overlay"
+```
+
+Verify the resolver now echoes the overlay — this gate is load-bearing; do **not**
+proceed past it:
+
+```sh
+make print-overlay     # must print your overlay (e.g. _local), NOT "."
+```
+
+If it prints `.`, the resolver is not reading `deployment.json` (absent, empty, or
+malformed) — fix that before continuing. Migrating with `OVERLAY="."` would no-op
+the moves and leave you half-relocated.
+
+### 2. `git mv` each real tenant under the overlay (preserves history)
+
+Per real tenant, **skipping `demo`** (set `T` to the tenant label, then run the
+block — `git mv` keeps file history across the move):
+
+```sh
+T=<label>
+OV=$(python -m tools.deployment overlay)   # capture the resolved name (see note)
+mkdir -p "$OV/config" "$OV/imports" "$OV/envs"
+git mv "config/$T"  "$OV/config/$T"
+git mv "imports/$T" "$OV/imports/$T"
+git mv "envs/$T"    "$OV/envs/$T"
+```
+
+Move `local.mk` under the overlay **in the same migration** — at `overlay != "."`
+the root `local.mk` is no longer `-include`d, so its targets vanish until it moves:
+
+```sh
+OV=$(python -m tools.deployment overlay)
+git mv local.mk "$OV/local.mk"
+```
+
+Move only your **operative** (adapted) pipeline YAML under the overlay. Do **not**
+move `pipelines/commitback.sh`, `pipelines/steps/`, or the `*.example.yml` files —
+those are engine-owned and overwritten on the next template pull:
+
+```sh
+OV=$(python -m tools.deployment overlay)
+mkdir -p "$OV/pipelines"
+git mv pipelines/<your-adapted-pipeline>.yml "$OV/pipelines/"
+```
+
+> The `OV=$(...)` capture above is deliberate: a copy-paste command must never
+> contain a literal `$(OVERLAY)` — in a terminal that runs as a command
+> substitution (executing a program named `OVERLAY`), not a make variable. Always
+> shell-capture the resolved value first, or route through a `make` target.
+
+### 3. Regenerate each moved tenant's env roots in place
+
+`gen-env` resolves the overlay internally and rewrites the module `source` relpath
+for the new directory depth. Run it per moved tenant (the `make` target resolves
+the overlay for you — no path argument needed):
+
+```sh
+make gen-env TENANT=<label>
+```
+
+Confirm the regeneration landed under the overlay (and that no stray root tree
+was created):
+
+```sh
+ED=$(python -m tools.deployment envs-dir <label>)
+ls "$ED"                       # the regenerated roots, under the overlay
+test ! -e "envs/<label>" && echo "OK: no stray root envs/<label>"
+```
+
+### 4. Commit, then prove the wiring with a clean plan
+
+```sh
+git add -A
+git commit -m "Relocate <label> under overlay"
+make plan TENANT=<label>
+```
+
+A clean **0-change** plan confirms the resolver is wired through end to end and
+Terraform state is intact — the backend state key is derived from the tenant +
+resource type, never the filesystem path, so relocation preserves it exactly
+(no re-import). Repeat steps 2–4 for each remaining real tenant.
+
+---
+
 ## Drift Detection — Steady State
 
 ```

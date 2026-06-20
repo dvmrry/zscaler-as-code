@@ -101,11 +101,18 @@ def render_env_main(resource_type, tenant, env_dir, backend=None):
 
 
 def render_env_readme(resource_type, tenant):
+    # The config path is phrased RELATIVE TO THIS ENV ROOT, not root-anchored:
+    # the root is <envs>/<tenant>/<resource>/ at a fixed depth of 3, so the
+    # config sits at ../../../config/<tenant>/<resource>.auto.tfvars.json whether
+    # <envs> is root envs/ (demo) or $(OVERLAY)/envs/ (a real tenant). One
+    # phrasing is correct at both depths — see render_env_test, which references
+    # the same relative path because Terraform reads it as a file path.
     return (
         "# %s / %s (generated env root)\n\n"
         "Isolated Terraform root for `%s` on tenant `%s`. GENERATED — do not\n"
         "edit (AGENTS.md rule 6); regenerate with `make gen-env TENANT=%s`.\n"
-        "Config is loaded from `config/%s/%s.auto.tfvars.json` at plan time.\n"
+        "Config is loaded at plan time from the tenant's config dir, relative to\n"
+        "this root: `../../../config/%s/%s.auto.tfvars.json`.\n"
         % (tenant, resource_type, resource_type, tenant, tenant, tenant, resource_type)
     )
 

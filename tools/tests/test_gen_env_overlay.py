@@ -25,6 +25,16 @@ class GenEnvOverlayTest(unittest.TestCase):
         val = line.split('"')[1]
         self.assertTrue(val.startswith(("./", "../", "/")), "registry-form source: %r" % val)
 
+    def test_readme_config_path_is_overlay_agnostic(self):
+        # The README is regenerated into $(OVERLAY)/envs/<t>/<rt>/ for real
+        # tenants but is byte-identical for demo. It must phrase the config path
+        # RELATIVE TO THE ENV ROOT (../../../config/...), which is identical at
+        # both depths — never the root-anchored "config/<tenant>/..." form that
+        # is wrong for an overlay tenant.
+        text = gen_env.render_env_readme("zia_url_filtering_rules", "acme")
+        self.assertNotIn("`config/acme/", text)
+        self.assertIn("../../../config/acme/zia_url_filtering_rules.auto.tfvars.json", text)
+
 
 if __name__ == "__main__":
     unittest.main()
