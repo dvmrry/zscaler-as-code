@@ -32,20 +32,35 @@ import os
 import subprocess
 import sys
 
+from tools import deployment
 from tools.registry import derive_entry, derived_types, generated_types
 
 CONFIG_SUFFIX = ".auto.tfvars.json"
 IMPORTS_SUFFIX = "_imports.tf"
 MOVES_SUFFIX = "_moves.tf"
-GLOBAL_PREFIXES = ("tools/", "schemas/", "Makefile")
+# Shared machinery whose change invalidates every plannable pair. deployment.json
+# repoints the overlay root, so a change to it (like a Makefile/tools change) must
+# fan out to everything — under-planning an overlay repoint is the unsafe direction.
+# A `local.mk` change is handled by basename match in pairs_from_paths (it can live
+# at root OR under the overlay, which a startswith-prefix can't express).
+GLOBAL_PREFIXES = ("tools/", "schemas/", "Makefile", "deployment.json")
 
 
-def discover_config_pairs(config_root="config"):
-    """All (tenant, resource_type) pairs with a committed config file."""
-    pairs = set()
+def _overlay_roots(kind):
+    """Roots to scan for `kind` (config|envs): the template root always, plus
+    the overlay's `<overlay>/<kind>` when an overlay is set. At overlay="."
+    this is just the root (no double-scan). Dedup is implicit — at default the
+    two collapse to one path."""
+    roots = [kind]
+    ov = deployment.overlay()
+    if ov != ".":
+        roots.append(os.path.join(ov, kind))
+    return roots
+
+
+def _scan_config_root(config_root, types, pairs):
     if not os.path.isdir(config_root):
-        return pairs
-    types = set(generated_types())
+        return
     for tenant in sorted(os.listdir(config_root)):
         tdir = os.path.join(config_root, tenant)
         if not os.path.isdir(tdir):
@@ -55,20 +70,21 @@ def discover_config_pairs(config_root="config"):
                 rt = fname[: -len(CONFIG_SUFFIX)]
                 if rt in types:
                     pairs.add((tenant, rt))
+
+
+def discover_config_pairs():
+    """All (tenant, resource_type) pairs with a committed config file, unioned
+    over the template root and the overlay root (deduped)."""
+    pairs = set()
+    types = set(generated_types())
+    for root in _overlay_roots("config"):
+        _scan_config_root(root, types, pairs)
     return pairs
 
 
-def discover_env_root_pairs(envs_root="envs"):
-    """All (tenant, resource_type) pairs that have a generated env ROOT —
-    what `make plan` actually operates on. A pair can have a root but no
-    config (its config was DELETED upstream to remove the resource): planning
-    it shows the destroy, which is exactly what a deletion must surface. So
-    this is unioned with the config pairs to bound plan-changed expansion —
-    without it a delete-only commit plans nothing and the removal is lost."""
-    pairs = set()
+def _scan_env_root(envs_root, types, pairs):
     if not os.path.isdir(envs_root):
-        return pairs
-    types = set(generated_types())
+        return
     for tenant in sorted(os.listdir(envs_root)):
         tdir = os.path.join(envs_root, tenant)
         if not os.path.isdir(tdir):
@@ -76,45 +92,91 @@ def discover_env_root_pairs(envs_root="envs"):
         for rt in sorted(os.listdir(tdir)):
             if rt in types and os.path.isdir(os.path.join(tdir, rt)):
                 pairs.add((tenant, rt))
+
+
+def discover_env_root_pairs():
+    """All (tenant, resource_type) pairs that have a generated env ROOT —
+    what `make plan` actually operates on — unioned over the template root and
+    the overlay root (deduped). A pair can have a root but no config (its config
+    was DELETED upstream to remove the resource): planning it shows the destroy,
+    which is exactly what a deletion must surface. So this is unioned with the
+    config pairs to bound plan-changed expansion — without it a delete-only commit
+    plans nothing and the removal is lost."""
+    pairs = set()
+    types = set(generated_types())
+    for root in _overlay_roots("envs"):
+        _scan_env_root(root, types, pairs)
     return pairs
 
 
-def pairs_from_paths(paths, plannable):
+def _strip_overlay(path, overlay):
+    """Drop a leading `<overlay>/` so an overlay-resident diff path (e.g.
+    `_local/config/<t>/…`) splits on the same `config/|imports/|envs/` prefixes
+    as a root path. No-op at overlay="." (root is the only root)."""
+    if overlay and overlay != ".":
+        prefix = overlay + "/"
+        if path.startswith(prefix):
+            return path[len(prefix):]
+    return path
+
+
+def pairs_from_paths(paths, plannable=None, overlay=None):
     """Map changed file paths to the (tenant, type) pairs they affect.
 
     `plannable` bounds every expansion: a pair is only ever emitted if it has
     a committed config OR an existing env root, so renames/typos can't fan out
     into nonexistent roots — while a DELETED config (root still present) and a
     `_moves.tf`-only rename still plan, instead of being silently dropped.
+    `plannable=None` means unbounded (accept every syntactically valid pair) —
+    callers that need the safety bound pass the discovery union explicitly
+    (main() does); the global-machinery fan-out then uses that same union.
+
+    `overlay` (default `deployment.overlay()`) lets an overlay-resident diff
+    path strip its leading `<overlay>/` and match the same prefixes as a root
+    path — a real tenant's config lives at `$(OVERLAY)/config/<t>/…`, which a
+    bare `config/` startswith would otherwise miss.
     """
+    if overlay is None:
+        overlay = deployment.overlay()
+    bound = plannable  # None => unbounded
+    # The "everything" set for shared-machinery fan-out: the explicit bound when
+    # given, else the live discovery union (never None — set(None) would raise).
+    everything = bound if bound is not None else (
+        discover_config_pairs() | discover_env_root_pairs())
+
+    def _ok(pair):
+        return bound is None or pair in bound
+
     pairs = set()
-    for path in paths:
+    for raw in paths:
+        path = _strip_overlay(raw, overlay)
         parts = path.split("/")
         if path.startswith("config/") and len(parts) == 3 and parts[2].endswith(CONFIG_SUFFIX):
             pair = (parts[1], parts[2][: -len(CONFIG_SUFFIX)])
-            if pair in plannable:
+            if _ok(pair):
                 pairs.add(pair)
         elif path.startswith("imports/") and len(parts) == 3 and (
                 parts[2].endswith(IMPORTS_SUFFIX) or parts[2].endswith(MOVES_SUFFIX)):
             suffix = (IMPORTS_SUFFIX if parts[2].endswith(IMPORTS_SUFFIX)
                       else MOVES_SUFFIX)
             pair = (parts[1], parts[2][: -len(suffix)])
-            if pair in plannable:
+            if _ok(pair):
                 pairs.add(pair)
         elif path.startswith("envs/") and len(parts) >= 3:
             pair = (parts[1], parts[2])
-            if pair in plannable:
+            if _ok(pair):
                 pairs.add(pair)
         elif path.startswith("modules/") and len(parts) >= 2:
             rt = parts[1]
-            for tenant, pair_rt in plannable:
+            for tenant, pair_rt in everything:
                 if pair_rt == rt:
                     pairs.add((tenant, rt))
-        elif path.startswith(GLOBAL_PREFIXES):
-            # Shared machinery: every plannable pair (derived included) is
-            # already in scope, so no separate derived expansion is needed.
-            return set(plannable)
-    return expand_derived(pairs, plannable)
+        elif path.startswith(GLOBAL_PREFIXES) or os.path.basename(path) == "local.mk":
+            # Shared machinery (incl. deployment.json repointing the overlay, and
+            # local.mk at root OR under the overlay): every plannable pair (derived
+            # included) is in scope, so no separate derived expansion is needed.
+            return set(everything)
+    return expand_derived(pairs, everything)
 
 
 def _derived_by_source():
