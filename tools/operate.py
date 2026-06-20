@@ -20,6 +20,7 @@ import os
 import re
 import sys
 
+from tools import deployment
 from tools.transform import render_tfvars
 
 CONFIG_SUFFIX = ".auto.tfvars.json"
@@ -90,6 +91,11 @@ NAME_FIELD = {
 
 
 def _config_path(config_root, tenant, resource_type):
+    # Default (config_root is None) resolves the tenant's config dir through the
+    # overlay-aware reader (demo -> root, real tenant -> $(OVERLAY)/config). An
+    # explicit config_root (tests passing a tmp tree) keeps the literal join.
+    if config_root is None:
+        return os.path.join(deployment.config_dir(tenant), resource_type + CONFIG_SUFFIX)
     return os.path.join(config_root, tenant, resource_type + CONFIG_SUFFIX)
 
 
@@ -111,7 +117,7 @@ def _canonical(values):
     return sorted(out, key=lambda v: "" if v is None else str(v))
 
 
-def resolve(tenant, resource_type, display_name, config_root="config"):
+def resolve(tenant, resource_type, display_name, config_root=None):
     """[(config_key, display_name)] whose NAME_FIELD matches display_name
     (case-insensitive substring). Zero or many is a signal to the caller to
     clarify — never to guess."""
@@ -132,7 +138,7 @@ def resolve(tenant, resource_type, display_name, config_root="config"):
     return hits
 
 
-def operate(op, tenant, resource_type, key, field, value, config_root="config"):
+def operate(op, tenant, resource_type, key, field, value, config_root=None):
     """add|remove `value` to/from items[key][field]. Returns a one-line status.
     Raises ValueError on a refusal (unsafe field, missing file/item); nothing is
     written on a refusal or a no-op."""
@@ -178,7 +184,7 @@ def operate(op, tenant, resource_type, key, field, value, config_root="config"):
         key, field, len(items[key][field]))
 
 
-def scalar_set(tenant, resource_type, key, field, value, config_root="config"):
+def scalar_set(tenant, resource_type, key, field, value, config_root=None):
     """Set items[key][field] to an allowlisted scalar (enable/disable toggle).
     Idempotent; refuses a non-allowlisted (type,field), a value outside the
     field's domain, a missing key, or a field whose current value is a LIST

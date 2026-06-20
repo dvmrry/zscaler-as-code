@@ -19,6 +19,7 @@ import os
 import re
 import sys
 
+from tools import deployment
 from tools.registry import generated_types
 from tools.tfschema import load_resource
 from tools.transform import load_override, render_tfvars
@@ -528,7 +529,7 @@ def main(argv=None):
         sys.stderr.write("usage: python -m tools.lint <tenant>\n")
         return 2
     tenant = argv[0]
-    config_dir = os.path.join("config", tenant)
+    config_dir = deployment.config_dir(tenant)
 
     report = Report()
     checked = 0

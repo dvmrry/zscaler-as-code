@@ -40,6 +40,8 @@ import os
 import sys
 import ipaddress
 
+from tools import deployment
+
 URL_FIELDS = ("urls", "db_categorized_urls")
 
 
@@ -123,7 +125,7 @@ def added_location_ranges(plan):
 
 
 def load_items(tenant, resource_type):
-    path = os.path.join("config", tenant, resource_type + ".auto.tfvars.json")
+    path = os.path.join(deployment.config_dir(tenant), resource_type + ".auto.tfvars.json")
     if not os.path.exists(path):
         return {}
     with open(path, encoding="utf-8") as f:

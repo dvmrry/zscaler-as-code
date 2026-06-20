@@ -122,7 +122,14 @@ stages:
           - script: echo "##vso[task.uploadsummary]$(System.DefaultWorkingDirectory)/reports/plan.md"
             displayName: Plan in the run Summary tab
             condition: eq(variables['detect.hasPlans'], 'true')
-          - publish: envs
+          # save-plans collects every saved tfplan under a stable archive root
+          # (reports/tfplans/<tenant>/<rt>/) regardless of overlay, so the
+          # artifact never hardcodes envs/ — restore-plans returns them to the
+          # resolved env root on the apply side.
+          - script: make save-plans
+            displayName: Collect saved plans into reports/tfplans/
+            condition: eq(variables['detect.hasPlans'], 'true')
+          - publish: reports/tfplans
             artifact: tfplans   # plans can contain sensitive values; restrict retention
             condition: eq(variables['detect.hasPlans'], 'true')
           - publish: reports
@@ -201,7 +208,14 @@ stages:
                 #   displayName: Refuse aged plan (main advanced)
                 - download: current
                   artifact: tfplans
-                - script: cp -R "$(Pipeline.Workspace)/tfplans/"* envs/
+                # The tfplans artifact is the reports/tfplans/ archive; stage it
+                # back there, then restore-plans copies each plan into the
+                # resolved env root ($(OVERLAY)/envs/<t>/<rt>/) where apply reads
+                # it. The archive root is overlay-stable; the destination is not.
+                - script: |
+                    mkdir -p reports/tfplans
+                    cp -R "$(Pipeline.Workspace)/tfplans/"* reports/tfplans/
+                    make restore-plans
                   displayName: Restore saved plans
                 - template: steps/zscaler-auth.yml
                   parameters:

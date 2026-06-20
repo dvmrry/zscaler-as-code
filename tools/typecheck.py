@@ -9,6 +9,7 @@ import json
 import os
 import sys
 
+from tools import deployment
 from tools.registry import generated_types
 from tools.tfschema import (
     attr_type,
@@ -248,7 +249,7 @@ def main(argv=None):
         return 2
 
     tenant = argv[0]
-    config_dir = os.path.join("config", tenant)
+    config_dir = deployment.config_dir(tenant)
 
     all_mismatches = []
     resource_types_checked = []

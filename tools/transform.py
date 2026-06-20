@@ -11,6 +11,7 @@ import os
 import re
 import sys
 
+from tools import deployment
 from tools import lookup
 from tools.registry import derive_entry
 from tools.adoption_status import known_hold_paths
@@ -843,7 +844,7 @@ def main(argv=None):
             "fetcher wrote an envelope instead of the item list\n"
             % (input_path, type(raw_items).__name__, tenant, resource_type))
         return 2
-    config_dir = os.path.join("config", tenant)
+    config_dir = deployment.config_dir(tenant)
     # Derived resource (no fetch, no import): build its config from the SOURCE
     # pull passed as input_path, write config only, and stop. It is created on
     # apply (the provider gives no way to import its state) — order-preserving
@@ -861,7 +862,7 @@ def main(argv=None):
         return 0
     _warn_if_slim(raw_items, load_resource(resource_type)["block"], resource_type)
     items, originals, drops = transform_items(raw_items, resource_type, override)
-    imports_dir = os.path.join("imports", tenant)
+    imports_dir = deployment.imports_dir(tenant)
     os.makedirs(config_dir, exist_ok=True)
     os.makedirs(imports_dir, exist_ok=True)
     if resource_type in lookup.lookup_sources():

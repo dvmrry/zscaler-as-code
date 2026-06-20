@@ -64,8 +64,16 @@ for v in TENANT BRANCH_PREFIX; do
   esac
 done
 TARGET_BRANCH="${TARGET_BRANCH:-main}"
-CONFIG_DIR="config/$TENANT"
-IMPORTS_DIR="imports/$TENANT"
+# Overlay-aware, repo-relative tenant dirs from the single resolver. At the
+# zero-change default (no deployment.json / overlay ".") these are exactly
+# config/$TENANT + imports/$TENANT; under an overlay they become
+# <overlay>/config/$TENANT etc. The resolver fails loud (exit !=0) on a
+# malformed deployment.json, and `set -e` aborts here rather than degrading to
+# a wrong root. Every downstream use (change detection, the snapshot `git add`,
+# per-type path checkout) flows from these two vars, so resolving them once
+# makes the whole script follow the tenant's real location.
+CONFIG_DIR="$(python3 -m tools.deployment config-prefix "$TENANT")"
+IMPORTS_DIR="$(python3 -m tools.deployment imports-prefix "$TENANT")"
 
 # --- which resource types changed? --------------------------------------
 say 1/5 "change detection in $CONFIG_DIR + $IMPORTS_DIR"
@@ -74,9 +82,15 @@ say 1/5 "change detection in $CONFIG_DIR + $IMPORTS_DIR"
 # (git would then SIGPIPE into a dead reader).
 types="$(git status --porcelain --untracked-files=all -- "$CONFIG_DIR" "$IMPORTS_DIR" | python3 -c '
 import re, sys
-t = re.escape(sys.argv[1])
-cfg = re.compile(r"^config/%s/(.+?)(?:\.auto\.tfvars|\.lookup)\.json$" % t)
-imp = re.compile(r"^imports/%s/(.+?)_(?:imports|moves)\.tf$" % t)
+# Anchor on the RESOLVED, repo-relative prefixes (overlay-aware). The porcelain
+# output is repo-root-relative, so these prefixes match it directly. re.escape
+# the whole prefix - an overlay dir or a tenant like "client.one" carries
+# regex-special chars (the dot), and an unescaped "." would wildcard-match
+# "client_one" too.
+cfg_pfx = re.escape(sys.argv[1])
+imp_pfx = re.escape(sys.argv[2])
+cfg = re.compile(r"^%s/(.+?)(?:\.auto\.tfvars|\.lookup)\.json$" % cfg_pfx)
+imp = re.compile(r"^%s/(.+?)_(?:imports|moves)\.tf$" % imp_pfx)
 out = set()
 for line in sys.stdin:
     line = line.rstrip("\n")
@@ -90,7 +104,7 @@ for line in sys.stdin:
         out.add(m.group(1))
 for name in sorted(out):
     print(name)
-' "$TENANT")"
+' "$CONFIG_DIR" "$IMPORTS_DIR")"
 if [ -z "$types" ]; then
   say 1/5 "nothing to commit - clean exit"
   exit 0

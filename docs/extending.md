@@ -33,7 +33,10 @@ private fork), plus the existing gitignored areas for anything secret:
 1. **`deployment.json`** -- one little root config file, copied from the
    template's `deployment.example.json`. It names your overlay directory and
    any other deployment pointers. It is plain JSON -- your scripts and make
-   targets read it directly; the template ships no reader for it.
+   targets read it directly, and the template ships a path **resolver**
+   (`tools/deployment.py`) that reads it to **locate** overlay data when you
+   operate on it. The resolver only locates; its **self-tests still never scan
+   the overlay**.
 2. **The overlay directory** -- named in `deployment.json`, this is where your
    deployment-owned data and config live, versioned in your fork.
 
@@ -45,9 +48,15 @@ private fork), plus the existing gitignored areas for anything secret:
   fork, untouched by upstream" and never collides. This is the same mechanism
   that makes `local.mk` safe.
 - Every template gate is **path-scoped** to the template's own directories:
-  `generate CHECK=1` -> `modules/`, `schemas/`; `check-demo` ->
-  `config/<tenant>/`, `imports/<tenant>/`; `check-envs` -> `envs/`. Nothing
-  scans the repo root, so a committable overlay directory never trips a gate.
+  - `generate CHECK=1` -> `modules/`, `schemas/`
+  - `check-demo` -> `config/demo/`, `imports/demo/`
+  - `check-envs` -> `envs/` (root; self-scopes to `demo` once real tenants
+    relocate under the overlay)
+  - `validate` -> `modules envs/demo imports/demo tools/tests tools/schema-extract`
+  - `validate-config` -> root `config/`
+
+  Every gate is pinned to template dirs (no bare repo-root recursion), so a
+  committable overlay directory never trips a gate.
 
 ### Using it
 
@@ -69,9 +78,12 @@ git add deployment.json acme-corp               # commit both in your fork
 
 That is the whole setup. `deployment.json` is plain JSON, so your scripts read it
 with a one-line `json.load`, and a `local.mk` target that needs the name can read
-it the same way -- the template ships no reader because nothing in the template
-consumes the overlay. The config is extensible -- add your own keys for future
-pointers (keys beginning with `$` are treated as comments).
+it the same way -- or call the template's resolver (`python -m tools.deployment
+overlay`, and the per-tenant `config-dir`/`envs-dir`/`imports-dir` verbs) so the
+path logic lives in one place. The resolver **locates** overlay data for
+operational targets; the template's **self-test** gates still never scan the
+overlay. The config is extensible -- add your own keys for future pointers (keys
+beginning with `$` are treated as comments).
 
 ### Sensitive data
 
@@ -85,8 +97,10 @@ template update) -- never to `.gitignore`, which is template-owned.
 
 ### What does NOT belong in the overlay
 
-The overlay is deployment-private and the template cannot see it. Do not put
-anything in it that the template itself must build or test. If the template
-needs to consume a downstream input, that flows through an explicit, sanitized
-**artifact the template reads by an exact path** (the same decoupling used for
-contract facts and pulls) -- never by the template reaching into the overlay.
+The overlay is deployment-private. The resolver *locates* it for operational
+targets, but the template's **self-test and build gates never read its
+contents**. Do not put anything in it that the template itself must build or
+test. If the template needs to consume a downstream input, that flows through an
+explicit, sanitized **artifact the template reads by an exact path** (the same
+decoupling used for contract facts and pulls) -- never by a self-test gate
+reaching into the overlay.

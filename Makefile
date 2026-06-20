@@ -15,13 +15,27 @@ TF     ?= terraform
 # guarded, so fetch/transform (which DO take multi-token) are unaffected.
 SCOPE_GLOB = $(if $(word 2,$(RESOURCE)),$(error RESOURCE takes a SINGLE selector for per-root targets (plan/apply/stage-imports/assert-clean/...) — got "$(RESOURCE)". Use one resource type, one glob (zia_*), or one product token (zia|zpa|zcc); for a multi-type scope, loop the target once per type. Multi-token RESOURCE is fetch/drift-only.),$(if $(RESOURCE),$(if $(filter zia zpa zcc,$(RESOURCE)),$(RESOURCE)_*,$(RESOURCE)),*))
 
-.PHONY: help env install-tf bump-check mine issue-watch triage surface contract-facts headroom-report adoption-check plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports import-one statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag explain update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report plan-summary-line assert-clean apply drift check-envs validate-config demo check-demo lint lint-pipelines fmt-config typecheck refresh-gates conformance find-key url-add url-rm domain-add domain-rm keyword-add keyword-rm iprange-add iprange-rm locip-add locip-rm rule-enable rule-disable segment-enable segment-disable op-intake op-resolve op-validate op-status gate check-imports
+# Roots the all-tenant sweeps walk: template envs/ always, plus $(OVERLAY)/envs
+# only when an overlay is set. At overlay="." filter-out collapses to one token
+# (no double-scan). When TENANT is given, targets resolve that tenant's single
+# root instead (see envs-dir).
+ENV_ROOTS = envs $(if $(filter-out .,$(OVERLAY)),$(OVERLAY)/envs)
+
+.PHONY: help env print-overlay install-tf bump-check mine issue-watch triage surface contract-facts headroom-report adoption-check plan-checks shape plan-report clean clean-plans save-plans restore-plans unlock forget stage-imports unstage-imports import-one statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag explain update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report plan-summary-line assert-clean apply drift check-envs validate-config demo check-demo lint lint-pipelines fmt-config typecheck refresh-gates conformance find-key url-add url-rm domain-add domain-rm keyword-add keyword-rm iprange-add iprange-rm locip-add locip-rm rule-enable rule-disable segment-enable segment-disable op-intake op-resolve op-validate op-status gate check-imports
 
 # Company/deployment extensions: a private repo adds its own targets and
 # variable overrides in local.mk — NEVER by editing this file, which is
 # template-owned and overwritten on template updates. local.mk is not
 # shipped by the template and is yours to commit privately.
--include local.mk
+#
+# Overlay root from deployment.json (default "." => everything at repo root, the
+# zero-change default). A PRESENT-but-malformed deployment.json yields empty
+# output + a non-zero resolver exit; we fail loud rather than silently degrade.
+OVERLAY := $(shell $(PYTHON) -m tools.deployment overlay 2>/dev/null)
+ifeq ($(strip $(OVERLAY)),)
+$(error deployment.json is present but malformed — the overlay resolver could not read it. Fix or remove deployment.json.)
+endif
+-include $(OVERLAY)/local.mk
 
 # Deployment data/config: a deployment commits its own config (deployment.json,
 # copied from deployment.example.json) plus a private overlay directory it names.
@@ -43,6 +57,9 @@ env: ## Print toolchain versions (diagnostic)
 	@$(MAKE) --version 2>/dev/null | head -1
 	@$(TF) version 2>/dev/null | head -1 || echo "terraform: not found"
 	@docker --version 2>/dev/null || echo "docker: not found"
+
+print-overlay: ## Echo the resolved overlay root (".", or the deployment.json overlay dir)
+	@echo "$(OVERLAY)"
 
 install-tf: ## Download+checksum-verify a pinned terraform (VERSION=<v> [DEST=bin]); then PATH it or pass TF=bin/terraform
 	@test -n "$(VERSION)" || { echo "usage: make install-tf VERSION=1.15.4 [DEST=bin]"; exit 2; }
@@ -99,7 +116,7 @@ test-floor: ## Run unit tests under Python 3.6 in Docker (optional dev check; ne
 		python -m unittest discover -s tools/tests -t . -v
 
 validate: ## Terraform formatting checks
-	$(TF) fmt -check -recursive
+	$(TF) fmt -check -recursive modules envs/demo imports/demo tools/tests tools/schema-extract
 
 ##@ Generation chain
 
@@ -196,19 +213,19 @@ test-modules: ## Run mock-provider terraform tests across generated modules ([RE
 test-envs: ## Run mock-provider smoke tests across a tenant's env roots (TENANT=<label> [RESOURCE=<type>] scopes to one)
 	@test -n "$(TENANT)" || { echo "usage: make test-envs TENANT=<label> [RESOURCE=<type>]"; exit 2; }
 	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
-	@set -e; matched=0; for d in envs/$(TENANT)/$(SCOPE_GLOB)/; do \
+	@ED="$$($(PYTHON) -m tools.deployment envs-dir $(TENANT))"; set -e; matched=0; for d in $$ED/$(SCOPE_GLOB)/; do \
 		[ -d "$$d" ] || continue; \
 		matched=$$((matched+1)); \
 		echo "== $$d"; \
 		$(TF) -chdir=$$d init -backend=false -input=false > /dev/null; \
 		$(TF) -chdir=$$d test; \
 	done; \
-	test $$matched -gt 0 || { echo "error: no env root matched RESOURCE='$(RESOURCE)' under envs/$(TENANT)/ — typo, wrong product token, or run make gen-env TENANT=$(TENANT) first"; exit 1; }
+	test $$matched -gt 0 || { echo "error: no env root matched RESOURCE='$(RESOURCE)' under $$ED/ — typo, wrong product token, or run make gen-env TENANT=$(TENANT) first"; exit 1; }
 
 validate-imports: ## Validate fixture import addresses against a tenant's roots (TENANT=<label> [RESOURCE=<type>] scopes to one)
 	@test -n "$(TENANT)" || { echo "usage: make validate-imports TENANT=<label> [RESOURCE=<type>]"; exit 2; }
 	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
-	@set -e; matched=0; for d in envs/$(TENANT)/$(SCOPE_GLOB)/; do \
+	@ED="$$($(PYTHON) -m tools.deployment envs-dir $(TENANT))"; set -e; matched=0; for d in $$ED/$(SCOPE_GLOB)/; do \
 		[ -d "$$d" ] || continue; \
 		matched=$$((matched+1)); \
 		rt=$$(basename $$d); \
@@ -225,7 +242,7 @@ validate-imports: ## Validate fixture import addresses against a tenant's roots 
 			echo "skip $$rt (no fixture imports)"; \
 		fi; \
 	done; \
-	test $$matched -gt 0 || { echo "error: no env root matched RESOURCE='$(RESOURCE)' under envs/$(TENANT)/ — typo, wrong product token, or run make gen-env TENANT=$(TENANT) first"; exit 1; }
+	test $$matched -gt 0 || { echo "error: no env root matched RESOURCE='$(RESOURCE)' under $$ED/ — typo, wrong product token, or run make gen-env TENANT=$(TENANT) first"; exit 1; }
 
 ##@ Plan / apply / state ops
 
@@ -273,19 +290,32 @@ plan: ## Terraform plan for a tenant's roots (TENANT=<label> [RESOURCE=<type>] [
 
 clean: ## Remove run artifacts: saved plans, staged import/move copies, reports/, temp files (committed files, pulls/, caches untouched)
 	@$(MAKE) clean-plans > /dev/null 2>&1 || true
-	@removed=0; for f in envs/*/*/*_imports.tf envs/*/*/*_moves.tf envs/*/*/.state-list.tmp; do \
+	@removed=0; for base in $(ENV_ROOTS); do for f in $$base/*/*/*_imports.tf $$base/*/*/*_moves.tf $$base/*/*/.state-list.tmp; do \
 		test -f "$$f" || continue; \
 		rm -f "$$f"; removed=$$((removed+1)); \
-	done; \
+	done; done; \
 	rm -rf reports .plan-changed.tmp; \
 	echo "clean: removed staged copies ($$removed), saved plans, reports/, temp files"
 
 clean-plans: ## Delete saved tfplan artifacts ([TENANT=<label>] [RESOURCE=<type>]) — run before any fresh plan set; stale plans from a failed/cancelled run otherwise ride into the next apply
-	@removed=0; for d in envs/$(or $(TENANT),*)/$(SCOPE_GLOB)/; do \
+	@removed=0; roots="$(if $(TENANT),$(shell $(PYTHON) -m tools.deployment envs-dir $(TENANT)),$(ENV_ROOTS))"; \
+	for base in $$roots; do for d in $$base/$(if $(TENANT),,*/)$(SCOPE_GLOB)/; do \
 		test -f "$$d/tfplan" || continue; \
 		rm -f "$$d/tfplan"; echo "removed $$d""tfplan"; removed=$$((removed+1)); \
-	done; \
+	done; done; \
 	echo "$$removed stale plan(s) removed"
+
+save-plans: ## Copy every saved tfplan into reports/tfplans/<tenant>/<rt>/ for artifact publish
+	@set -e; n=0; for base in $(ENV_ROOTS); do for d in $$base/*/*/; do \
+		test -f "$$d/tfplan" || continue; rt=$$(basename "$$d"); t=$$(basename "$$(dirname "$$d")"); \
+		mkdir -p "reports/tfplans/$$t/$$rt"; cp "$$d/tfplan" "reports/tfplans/$$t/$$rt/tfplan"; n=$$((n+1)); \
+	done; done; echo "saved $$n plan(s) to reports/tfplans/"
+
+restore-plans: ## Copy tfplans from reports/tfplans/<tenant>/<rt>/ back into the resolved env roots
+	@set -e; n=0; for f in reports/tfplans/*/*/tfplan; do \
+		test -f "$$f" || continue; rt=$$(basename "$$(dirname "$$f")"); t=$$(basename "$$(dirname "$$(dirname "$$f")")"); \
+		ED="$$($(PYTHON) -m tools.deployment envs-dir $$t)"; mkdir -p "$$ED/$$rt"; cp "$$f" "$$ED/$$rt/tfplan"; n=$$((n+1)); \
+	done; echo "restored $$n plan(s)"
 
 plan-changed: ## Plan only the (tenant, resource) pairs changed vs BASE (default origin/main; [TENANT=<label>] scopes to one tenant); SAVE/BACKEND_CONFIG pass through
 	@$(MAKE) clean-plans > /dev/null
@@ -348,7 +378,8 @@ unstage-imports: ## Remove staged import/moved blocks from env roots after apply
 plan-report: ## Render saved plans to reports/plan.md — counts-first summary table for the approval reviewer, full plan text below ([TENANT=<label>] [RESOURCE=<type>])
 	@set -e; mkdir -p reports; out="reports/plan.md"; body="reports/.body.tmp"; rows="reports/.rows.tmp"; \
 	: > "$$body"; : > "$$rows"; found=0; destroys_total=0; \
-	for d in envs/$(or $(TENANT),*)/$(SCOPE_GLOB)/; do \
+	roots="$(if $(TENANT),$(shell $(PYTHON) -m tools.deployment envs-dir $(TENANT)),$(ENV_ROOTS))"; \
+	for base in $$roots; do for d in $$base/$(if $(TENANT),,*/)$(SCOPE_GLOB)/; do \
 		test -f "$$d/tfplan" || continue; \
 		rt=$$(basename "$$d"); t=$$(basename "$$(dirname "$$d")"); \
 		found=$$((found+1)); \
@@ -360,7 +391,7 @@ plan-report: ## Render saved plans to reports/plan.md — counts-first summary t
 		printf '### %s/%s\n\n```\n' "$$t" "$$rt" >> "$$body"; \
 		$(TF) -chdir="$$d" show -no-color tfplan >> "$$body"; \
 		printf '\n```\n\n' >> "$$body"; \
-	done; \
+	done; done; \
 	test $$found -gt 0 || { rm -f "$$body" "$$rows"; echo "error: no saved plans — run make plan-changed SAVE=1 (or make plan SAVE=1) first"; exit 1; }; \
 	{ printf '## Terraform plan\n\n'; \
 	  if [ "$$destroys_total" -gt 0 ]; then \
@@ -373,18 +404,21 @@ plan-report: ## Render saved plans to reports/plan.md — counts-first summary t
 
 plan-summary-line: ## Print ONE compact line (roots + add/change/destroy totals) across saved plans — feed it into an approval prompt variable ([TENANT=<label>] [RESOURCE=<type>])
 	@set -e; roots=0; sa=0; sc=0; sd=0; \
-	for d in envs/$(or $(TENANT),*)/$(SCOPE_GLOB)/; do \
+	bases="$(if $(TENANT),$(shell $(PYTHON) -m tools.deployment envs-dir $(TENANT)),$(ENV_ROOTS))"; \
+	for base in $$bases; do for d in $$base/$(if $(TENANT),,*/)$(SCOPE_GLOB)/; do \
 		test -f "$$d/tfplan" || continue; \
 		roots=$$((roots+1)); \
 		c=$$($(TF) -chdir="$$d" show -json tfplan | $(PYTHON) -m tools.plan_summary --counts); \
 		set -- $$c; sa=$$((sa+$$2)); sc=$$((sc+$$3)); sd=$$((sd+$$4)); \
-	done; \
+	done; done; \
 	test $$roots -gt 0 || { echo "no changed roots"; exit 0; }; \
 	if [ "$$sd" -gt 0 ]; then dsfx=" | $$sd DESTROY"; else dsfx=""; fi; \
 	printf '%d root(s): +%d ~%d -%d%s\n' "$$roots" "$$sa" "$$sc" "$$sd" "$$dsfx"
 
 assert-clean: ## Exit 0 only when every saved plan is no-op (imports allowed) — the drift-PR merge-readiness check ([TENANT=<label>] [RESOURCE=<type>])
-	@set -e; checked=0; dirty=0; for d in envs/$(or $(TENANT),*)/$(SCOPE_GLOB)/; do \
+	@set -e; checked=0; dirty=0; \
+	roots="$(if $(TENANT),$(shell $(PYTHON) -m tools.deployment envs-dir $(TENANT)),$(ENV_ROOTS))"; \
+	for base in $$roots; do for d in $$base/$(if $(TENANT),,*/)$(SCOPE_GLOB)/; do \
 		test -f "$$d/tfplan" || continue; \
 		rt=$$(basename $$d); t=$$(basename $$(dirname $$d)); \
 		checked=$$((checked+1)); \
@@ -395,7 +429,7 @@ assert-clean: ## Exit 0 only when every saved plan is no-op (imports allowed) �
 		if [ "$$changes" != "0" ]; then \
 			echo "NOT CLEAN: $$t/$$rt plan contains $$changes change(s) beyond imports"; \
 			dirty=$$((dirty+1)); fi; \
-	done; \
+	done; done; \
 	test $$checked -gt 0 || { echo "error: no saved plans to check — run make plan-changed SAVE=1 first"; exit 1; }; \
 	test $$dirty -eq 0 || { echo ""; echo "tenant moved since fetch (or transform disagrees) — do NOT auto-merge; re-run drift"; exit 1; }; \
 	echo "all $$checked saved plan(s) clean (no-op/imports only)"
@@ -458,7 +492,9 @@ apply: ## Apply ONLY saved plans from 'make plan SAVE=1' ([TENANT=<label>] [RESO
 		echo "error: apply refused from '$$branch' — only merged $(or $(MAIN_BRANCH),main) config gets applied."; \
 		echo "(deliberate exception, e.g. testing: re-run with ALLOW_NON_MAIN=1; different default branch: MAIN_BRANCH=<name>)"; \
 		exit 1; fi
-	@set -e; applied=0; for d in envs/$(or $(TENANT),*)/$(SCOPE_GLOB)/; do \
+	@set -e; applied=0; \
+	roots="$(if $(TENANT),$(shell $(PYTHON) -m tools.deployment envs-dir $(TENANT)),$(ENV_ROOTS))"; \
+	for base in $$roots; do for d in $$base/$(if $(TENANT),,*/)$(SCOPE_GLOB)/; do \
 		test -f "$$d/tfplan" || continue; \
 		rt=$$(basename $$d); t=$$(basename $$(dirname $$d)); \
 		echo "== apply $$t/$$rt"; \
@@ -478,7 +514,7 @@ apply: ## Apply ONLY saved plans from 'make plan SAVE=1' ([TENANT=<label>] [RESO
 		$(TF) -chdir=$$d apply -input=false tfplan; \
 		rm -f "$$d/tfplan"; \
 		applied=$$((applied+1)); \
-	done; \
+	done; done; \
 	test $$applied -gt 0 || { echo "error: no saved plans found — run 'make plan SAVE=1 ...' (or plan-changed SAVE=1) first; apply's scope IS the saved plans"; exit 1; }
 
 drift: ## Fetch + transform + report config diff (TENANT=<label> [RESOURCE="<type|product> ..."]; real creds via env)
@@ -486,14 +522,14 @@ drift: ## Fetch + transform + report config diff (TENANT=<label> [RESOURCE="<typ
 	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
 	$(MAKE) fetch TENANT=$(TENANT) $(if $(RESOURCE),RESOURCE="$(RESOURCE)")
 	$(MAKE) transform IN=pulls/$(TENANT) TENANT=$(TENANT) $(if $(RESOURCE),RESOURCE="$(RESOURCE)")
-	@if [ -n "$$(git status --porcelain config/$(TENANT) imports/$(TENANT) 2>/dev/null)" ]; then \
+	@CFG="$$($(PYTHON) -m tools.deployment config-dir $(TENANT))"; \
+	IMP="$$($(PYTHON) -m tools.deployment imports-dir $(TENANT))"; \
+	if [ -n "$$(git status --porcelain "$$CFG" "$$IMP" 2>/dev/null)" ]; then \
 		echo ""; echo "DRIFT DETECTED (tenant differs from committed config):"; \
-		git status --porcelain config/$(TENANT) imports/$(TENANT); \
-		git --no-pager diff --stat config/$(TENANT) 2>/dev/null; \
+		git status --porcelain "$$CFG" "$$IMP"; \
+		git --no-pager diff --stat "$$CFG" 2>/dev/null; \
 		exit 3; \
-	else \
-		echo "no drift: tenant matches committed config"; \
-	fi
+	else echo "no drift: tenant matches committed config"; fi
 
 ##@ Consistency & demo
 

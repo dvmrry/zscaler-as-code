@@ -28,6 +28,7 @@ import json
 import os
 import sys
 
+from tools import deployment
 from tools.tfschema import load_resource
 
 _EMPTY = (None, [], {}, "")
@@ -137,7 +138,7 @@ def main(argv=None):
         return 2
     state_path, resource_type, key, field, tenant = argv
     config_path = os.path.join(
-        "config", tenant, resource_type + ".auto.tfvars.json")
+        deployment.config_dir(tenant), resource_type + ".auto.tfvars.json")
     try:
         with open(state_path, encoding="utf-8") as f:
             state_doc = json.load(f)
