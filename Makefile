@@ -15,13 +15,21 @@ TF     ?= terraform
 # guarded, so fetch/transform (which DO take multi-token) are unaffected.
 SCOPE_GLOB = $(if $(word 2,$(RESOURCE)),$(error RESOURCE takes a SINGLE selector for per-root targets (plan/apply/stage-imports/assert-clean/...) — got "$(RESOURCE)". Use one resource type, one glob (zia_*), or one product token (zia|zpa|zcc); for a multi-type scope, loop the target once per type. Multi-token RESOURCE is fetch/drift-only.),$(if $(RESOURCE),$(if $(filter zia zpa zcc,$(RESOURCE)),$(RESOURCE)_*,$(RESOURCE)),*))
 
-.PHONY: help env install-tf bump-check mine issue-watch triage surface contract-facts headroom-report adoption-check plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports import-one statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag explain update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report plan-summary-line assert-clean apply drift check-envs validate-config demo check-demo lint lint-pipelines fmt-config typecheck refresh-gates conformance find-key url-add url-rm domain-add domain-rm keyword-add keyword-rm iprange-add iprange-rm locip-add locip-rm rule-enable rule-disable segment-enable segment-disable op-intake op-resolve op-validate op-status gate check-imports
+.PHONY: help env print-overlay install-tf bump-check mine issue-watch triage surface contract-facts headroom-report adoption-check plan-checks shape plan-report clean clean-plans unlock forget stage-imports unstage-imports import-one statefill lock test test-floor validate schemas generate gen-env transform fetch fetch-diag explain update-goldens update-demo-goldens test-modules test-envs validate-imports plan plan-changed drift-report plan-summary-line assert-clean apply drift check-envs validate-config demo check-demo lint lint-pipelines fmt-config typecheck refresh-gates conformance find-key url-add url-rm domain-add domain-rm keyword-add keyword-rm iprange-add iprange-rm locip-add locip-rm rule-enable rule-disable segment-enable segment-disable op-intake op-resolve op-validate op-status gate check-imports
 
 # Company/deployment extensions: a private repo adds its own targets and
 # variable overrides in local.mk — NEVER by editing this file, which is
 # template-owned and overwritten on template updates. local.mk is not
 # shipped by the template and is yours to commit privately.
--include local.mk
+#
+# Overlay root from deployment.json (default "." => everything at repo root, the
+# zero-change default). A PRESENT-but-malformed deployment.json yields empty
+# output + a non-zero resolver exit; we fail loud rather than silently degrade.
+OVERLAY := $(shell $(PYTHON) -m tools.deployment overlay 2>/dev/null)
+ifeq ($(strip $(OVERLAY)),)
+$(error deployment.json is present but malformed — the overlay resolver could not read it. Fix or remove deployment.json.)
+endif
+-include $(OVERLAY)/local.mk
 
 # Deployment data/config: a deployment commits its own config (deployment.json,
 # copied from deployment.example.json) plus a private overlay directory it names.
@@ -43,6 +51,9 @@ env: ## Print toolchain versions (diagnostic)
 	@$(MAKE) --version 2>/dev/null | head -1
 	@$(TF) version 2>/dev/null | head -1 || echo "terraform: not found"
 	@docker --version 2>/dev/null || echo "docker: not found"
+
+print-overlay: ## Echo the resolved overlay root (".", or the deployment.json overlay dir)
+	@echo "$(OVERLAY)"
 
 install-tf: ## Download+checksum-verify a pinned terraform (VERSION=<v> [DEST=bin]); then PATH it or pass TF=bin/terraform
 	@test -n "$(VERSION)" || { echo "usage: make install-tf VERSION=1.15.4 [DEST=bin]"; exit 2; }
