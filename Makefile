@@ -213,19 +213,19 @@ test-modules: ## Run mock-provider terraform tests across generated modules ([RE
 test-envs: ## Run mock-provider smoke tests across a tenant's env roots (TENANT=<label> [RESOURCE=<type>] scopes to one)
 	@test -n "$(TENANT)" || { echo "usage: make test-envs TENANT=<label> [RESOURCE=<type>]"; exit 2; }
 	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
-	@set -e; matched=0; for d in envs/$(TENANT)/$(SCOPE_GLOB)/; do \
+	@ED="$$($(PYTHON) -m tools.deployment envs-dir $(TENANT))"; set -e; matched=0; for d in $$ED/$(SCOPE_GLOB)/; do \
 		[ -d "$$d" ] || continue; \
 		matched=$$((matched+1)); \
 		echo "== $$d"; \
 		$(TF) -chdir=$$d init -backend=false -input=false > /dev/null; \
 		$(TF) -chdir=$$d test; \
 	done; \
-	test $$matched -gt 0 || { echo "error: no env root matched RESOURCE='$(RESOURCE)' under envs/$(TENANT)/ — typo, wrong product token, or run make gen-env TENANT=$(TENANT) first"; exit 1; }
+	test $$matched -gt 0 || { echo "error: no env root matched RESOURCE='$(RESOURCE)' under $$ED/ — typo, wrong product token, or run make gen-env TENANT=$(TENANT) first"; exit 1; }
 
 validate-imports: ## Validate fixture import addresses against a tenant's roots (TENANT=<label> [RESOURCE=<type>] scopes to one)
 	@test -n "$(TENANT)" || { echo "usage: make validate-imports TENANT=<label> [RESOURCE=<type>]"; exit 2; }
 	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
-	@set -e; matched=0; for d in envs/$(TENANT)/$(SCOPE_GLOB)/; do \
+	@ED="$$($(PYTHON) -m tools.deployment envs-dir $(TENANT))"; set -e; matched=0; for d in $$ED/$(SCOPE_GLOB)/; do \
 		[ -d "$$d" ] || continue; \
 		matched=$$((matched+1)); \
 		rt=$$(basename $$d); \
@@ -242,7 +242,7 @@ validate-imports: ## Validate fixture import addresses against a tenant's roots 
 			echo "skip $$rt (no fixture imports)"; \
 		fi; \
 	done; \
-	test $$matched -gt 0 || { echo "error: no env root matched RESOURCE='$(RESOURCE)' under envs/$(TENANT)/ — typo, wrong product token, or run make gen-env TENANT=$(TENANT) first"; exit 1; }
+	test $$matched -gt 0 || { echo "error: no env root matched RESOURCE='$(RESOURCE)' under $$ED/ — typo, wrong product token, or run make gen-env TENANT=$(TENANT) first"; exit 1; }
 
 ##@ Plan / apply / state ops
 
