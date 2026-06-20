@@ -15,6 +15,7 @@ import os
 import subprocess
 import sys
 
+from tools import deployment
 from tools.registry import generated_types
 
 CONFIG_SUFFIX = ".auto.tfvars.json"
@@ -143,7 +144,7 @@ def main(argv=None):
     tenant = argv[0]
     per_resource = {}
     for rt in generated_types():
-        path = os.path.join("config", tenant, rt + CONFIG_SUFFIX)
+        path = os.path.join(deployment.config_dir(tenant), rt + CONFIG_SUFFIX)
         old = committed_items(path)
         new = worktree_items(path)
         if old or new:
