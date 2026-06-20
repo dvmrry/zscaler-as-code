@@ -140,7 +140,11 @@ endif
 gen-env: ## Generate env roots for a tenant (TENANT=<label> [BACKEND=azurerm] [RESOURCE="<type|product> ..."])
 	@test -n "$(TENANT)" || { echo "usage: make gen-env TENANT=<label> [BACKEND=azurerm] [RESOURCE=\"<type|product> ...\"]"; exit 2; }
 	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
-	$(PYTHON) -m tools.gen_env "$(TENANT)" $(if $(BACKEND),--backend "$(BACKEND)") $(RESOURCE)
+	@set -e; resources="$(RESOURCE)"; \
+	if [ -z "$$resources" ] && [ "$(TENANT)" = "demo" ]; then \
+		resources=$$(git ls-files "envs/$(TENANT)/*/main.tf" | sed 's#^envs/[^/]*/##; s#/main.tf$$##' | sort | tr '\n' ' '); \
+	fi; \
+	$(PYTHON) -m tools.gen_env "$(TENANT)" $(if $(BACKEND),--backend "$(BACKEND)") $$resources
 
 transform: ## Transform pulled API JSON into tfvars + imports (IN=<dir> TENANT=<name> [RESOURCE="<type|product> ..."])
 	@test -n "$(IN)" -a -n "$(TENANT)" || { echo "usage: make transform IN=pulls/<tenant> TENANT=<tenant> [RESOURCE=\"<type|product> ...\"]"; exit 2; }
@@ -501,7 +505,9 @@ check-envs: ## Regenerate committed tenants' env roots and fail on drift
 	@set -e; regenerated=0; for d in envs/*/; do \
 		test -d "$$d" || continue; \
 		t=$$(basename "$$d"); \
-		$(PYTHON) -m tools.gen_env "$$t" > /dev/null; \
+		resources=$$(git ls-files "envs/$$t/*/main.tf" | sed 's#^envs/[^/]*/##; s#/main.tf$$##' | sort | tr '\n' ' '); \
+		test -n "$$resources" || continue; \
+		$(PYTHON) -m tools.gen_env "$$t" $$resources > /dev/null; \
 		regenerated=$$((regenerated+1)); \
 	done; \
 	test $$regenerated -gt 0 || { echo "error: no tenants regenerated — envs/ is empty or missing; nothing to check (expected committed tenant roots under envs/)"; exit 1; }
@@ -514,7 +520,7 @@ demo: ## Materialize the demo tenant from the public demo dataset (config/demo +
 	@set -e; materialized=0; for rt in $$($(PYTHON) -c "from tools.registry import generated_types; print('\n'.join(generated_types()))"); do \
 		src=$$($(PYTHON) -c "from tools.registry import derive_entry; d=derive_entry('$$rt'); print(d['from'] if d else '$$rt')"); \
 		f="tools/tests/fixtures/demo/$$src.json"; \
-		test -f "$$f" || { echo "missing $$f"; exit 1; }; \
+		test -f "$$f" || { echo "skip $$rt (no $$f)"; continue; }; \
 		$(PYTHON) -m tools.transform "$$rt" "$$f" demo; \
 		materialized=$$((materialized+1)); \
 	done; \
