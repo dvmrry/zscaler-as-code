@@ -7,8 +7,14 @@ from tools.gen_env import expand_resources, render_env_main, render_env_test
 
 
 class RenderEnvMainTest(unittest.TestCase):
+    def _root_env_dir(self, resource_type, tenant):
+        # Historical root depth (envs/<tenant>/<rt>/): relpath to modules/
+        # is ../../../modules/<rt>, the byte-identical pre-overlay string.
+        return os.path.join("envs", tenant, resource_type)
+
     def test_zpa_segment_group_root(self):
-        out = render_env_main("zpa_segment_group", "zs2")
+        out = render_env_main("zpa_segment_group", "zs2",
+                              self._root_env_dir("zpa_segment_group", "zs2"))
         self.assertIn("# GENERATED", out)
         self.assertIn('source = "../../../modules/zpa_segment_group"', out)
         self.assertIn("items = var.items", out)
@@ -17,25 +23,30 @@ class RenderEnvMainTest(unittest.TestCase):
         self.assertIn("zscaler/zpa", out)
 
     def test_zia_provider(self):
-        out = render_env_main("zia_url_categories", "zs2")
+        out = render_env_main("zia_url_categories", "zs2",
+                              self._root_env_dir("zia_url_categories", "zs2"))
         self.assertIn("zscaler/zia", out)
         self.assertNotIn("zscaler/zpa", out)
 
     def test_label_is_opaque_string_only(self):
         # any label works; never parsed
         for label in ("zs2", "zscalertwo", "dev", "gov-beta_1"):
-            out = render_env_main("zpa_segment_group", label)
+            out = render_env_main("zpa_segment_group", label,
+                                  self._root_env_dir("zpa_segment_group", label))
             self.assertIn(label, out)
 
     def test_no_backend_block_by_default(self):
-        out = render_env_main("zpa_segment_group", "zs2")
+        out = render_env_main("zpa_segment_group", "zs2",
+                              self._root_env_dir("zpa_segment_group", "zs2"))
         self.assertNotIn('backend "', out)
 
     def test_backend_block_is_partial_with_derived_key_hint(self):
         # backend=azurerm emits an EMPTY (partial) backend block — values
         # come from -backend-config at init; the per-root state key is
         # documented inline so the operator can see the blob layout.
-        out = render_env_main("zpa_segment_group", "zs2", backend="azurerm")
+        out = render_env_main("zpa_segment_group", "zs2",
+                              self._root_env_dir("zpa_segment_group", "zs2"),
+                              backend="azurerm")
         self.assertIn('backend "azurerm" {', out)
         self.assertIn("zs2/zpa_segment_group.tfstate", out)
         # partial: no storage values baked into the public template

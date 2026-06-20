@@ -11,6 +11,7 @@ import os
 import subprocess
 import sys
 
+from tools import deployment
 from tools.registry import generated_types, load_registry
 
 ENVS_ROOT = "envs"
@@ -50,8 +51,11 @@ def expand_resources(selectors):
     return sorted(selected)
 
 
-def render_env_main(resource_type, tenant, backend=None):
+def render_env_main(resource_type, tenant, env_dir, backend=None):
     provider = _provider_of(resource_type)
+    module_src = os.path.relpath(os.path.join("modules", resource_type), env_dir)
+    if not module_src.startswith(("../", "./", "/")):
+        module_src = "./" + module_src  # never a Terraform registry ref
     if backend:
         backend_lines = (
             '  backend "%s" {\n'
@@ -86,12 +90,12 @@ def render_env_main(resource_type, tenant, backend=None):
         "  type = any\n"
         "}\n\n"
         'module "%s" {\n'
-        '  source = "../../../modules/%s"\n'
+        '  source = "%s"\n'
         "  items = var.items\n"
         "}\n"
         % (
             tenant, tenant, provider, provider, backend_lines, provider,
-            resource_type, resource_type,
+            resource_type, module_src,
         )
     )
 
@@ -147,7 +151,7 @@ def _fmt(text):
     return proc.stdout.decode()
 
 
-def generate_env(tenant, out_root=ENVS_ROOT, fmt=True, backend=None,
+def generate_env(tenant, out_root=None, fmt=True, backend=None,
                  selectors=None):
     """Generate (or faithfully regenerate) a tenant's env roots.
 
@@ -156,6 +160,8 @@ def generate_env(tenant, out_root=ENVS_ROOT, fmt=True, backend=None,
     drift gate) reproduces the same roots instead of silently reverting
     to local state.
     """
+    if out_root is None:
+        out_root = os.path.join(deployment.tenant_root(tenant), "envs")
     marker = os.path.join(out_root, tenant, ".backend")
     if backend is None and os.path.exists(marker):
         with open(marker, encoding="utf-8") as f:
@@ -167,7 +173,7 @@ def generate_env(tenant, out_root=ENVS_ROOT, fmt=True, backend=None,
     for resource_type in expand_resources(selectors or []):
         base = os.path.join(out_root, tenant, resource_type)
         os.makedirs(base, exist_ok=True)
-        main_text = render_env_main(resource_type, tenant, backend=backend)
+        main_text = render_env_main(resource_type, tenant, base, backend=backend)
         if fmt:
             main_text = _fmt(main_text)
         with open(os.path.join(base, "main.tf"), "w", encoding="utf-8") as f:
@@ -180,7 +186,7 @@ def generate_env(tenant, out_root=ENVS_ROOT, fmt=True, backend=None,
         # Config existence is evaluated against the repo's config dir regardless
         # of out_root — committed config drives committed tests.
         has_config = os.path.exists(
-            os.path.join("config", tenant, resource_type + ".auto.tfvars.json")
+            os.path.join(deployment.config_dir(tenant), resource_type + ".auto.tfvars.json")
         )
         test_text = render_env_test(resource_type, tenant, has_config=has_config)
         if fmt:
