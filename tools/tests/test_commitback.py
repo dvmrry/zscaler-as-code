@@ -77,6 +77,12 @@ class CommitbackTest(unittest.TestCase):
             "SYSTEM_TEAMPROJECT": "My Project",  # space pins URL encoding
             "BUILD_REPOSITORY_ID": "repo-guid",
             "GIT_CONFIG_NOSYSTEM": "1",
+            # commitback runs `python -m tools.deployment` to resolve the
+            # overlay-aware tenant prefix; in production it runs from the repo
+            # root where tools/ is importable. The scratch repo has no tools/,
+            # so point PYTHONPATH at the real package (the resolver still reads
+            # deployment.json from cwd = self.work, so the overlay is scratch).
+            "PYTHONPATH": REPO_ROOT + os.pathsep + os.environ.get("PYTHONPATH", ""),
         })
         self.env["PATH"] += os.environ.get("PATH", "")
 
@@ -363,6 +369,99 @@ class CommitbackTest(unittest.TestCase):
         out = proc.communicate()[0].decode("utf-8", "replace")
         self.assertEqual(proc.returncode, 0, out)
         self.assertIn("https proxy: unset", out)
+
+    # --- overlay awareness (Task 13) ------------------------------------
+    # commitback resolves the repo-relative tenant prefix via
+    # tools.deployment so that under an overlay (deployment.json
+    # {"overlay": "_local"}) it detects changes at _local/config/<t> and
+    # _local/imports/<t>, not the empty root config/<t>. The committed-path
+    # set, snapshot, and per-type checkout all follow the resolved prefix.
+
+    def _set_overlay(self, overlay):
+        """Write deployment.json in the work tree so the in-script resolver
+        (run with cwd=self.work) reports the overlay prefix."""
+        with open(os.path.join(self.work, "deployment.json"),
+                  "w", encoding="utf-8") as f:
+            f.write('{"overlay": "%s"}\n' % overlay)
+
+    def _stage_types_at(self, tenant, prefix, *types):
+        """Stage config + imports files for `tenant` under the repo-relative
+        `prefix` (e.g. '_local' -> _local/config/<tenant>)."""
+        cfg = os.path.join(self.work, prefix, "config", tenant)
+        imp = os.path.join(self.work, prefix, "imports", tenant)
+        os.makedirs(cfg, exist_ok=True)
+        os.makedirs(imp, exist_ok=True)
+        for rt in types:
+            with open(os.path.join(cfg, rt + ".auto.tfvars.json"),
+                      "w", encoding="utf-8") as f:
+                f.write('{"items": {}}\n')
+            with open(os.path.join(imp, rt + "_imports.tf"),
+                      "w", encoding="utf-8") as f:
+                f.write("# import blocks for %s\n" % rt)
+
+    def test_overlay_change_detected_and_committed(self):
+        self._set_overlay("_local")
+        self._stage_types_at("t1", "_local", "zia_url_categories")
+        code, out = self._run()
+        self.assertEqual(code, 0, out)
+        # the branch is created => the overlay change was detected (a
+        # root-only anchor would see config/t1 empty and exit "nothing")
+        self.assertEqual(self._origin_branches(),
+                         ["bootstrap/t1/zia_url_categories"], out)
+        tree = subprocess.check_output(
+            ["git", "-C", self.origin, "ls-tree", "-r", "--name-only",
+             "bootstrap/t1/zia_url_categories"]).decode("utf-8")
+        self.assertIn("_local/config/t1/zia_url_categories.auto.tfvars.json", tree)
+        self.assertIn("_local/imports/t1/zia_url_categories_imports.tf", tree)
+
+    def test_overlay_root_path_is_not_misdetected(self):
+        # under an overlay, a same-named file at the ROOT config/<t> is not the
+        # tenant's data and must NOT be picked up by the overlay anchor.
+        self._set_overlay("_local")
+        os.makedirs(os.path.join(self.work, "config", "t1"), exist_ok=True)
+        with open(os.path.join(self.work, "config", "t1",
+                               "zia_url_categories.auto.tfvars.json"),
+                  "w", encoding="utf-8") as f:
+            f.write('{"items": {}}\n')
+        code, out = self._run()
+        self.assertEqual(code, 0, out)
+        self.assertIn("nothing to commit", out)
+        self.assertEqual(self._origin_branches(), [])
+
+    def test_regex_special_tenant_dot_is_escaped(self):
+        # a tenant like 'client.one' has a regex-special dot; the porcelain
+        # anchor must be re.escape'd or 'client_one' would also match. With an
+        # overlay the prefix is '_local/config/client.one' (dot in two places).
+        self._set_overlay("_local")
+        self._stage_types_at("client.one", "_local", "zia_url_categories")
+        # a decoy dir whose name only differs by the special char -> if the dot
+        # were a regex wildcard, this would be mis-detected as client.one data.
+        self._stage_types_at("clientXone", "_local", "zia_url_categories")
+        code, out = self._run(TENANT="client.one",
+                              PR_TITLE="bootstrap refresh: client.one")
+        self.assertEqual(code, 0, out)
+        self.assertEqual(self._origin_branches(),
+                         ["bootstrap/client.one/zia_url_categories"], out)
+        tree = subprocess.check_output(
+            ["git", "-C", self.origin, "ls-tree", "-r", "--name-only",
+             "bootstrap/client.one/zia_url_categories"]).decode("utf-8")
+        # only client.one's files rode along; the decoy clientXone did not
+        self.assertIn("_local/config/client.one/", tree)
+        self.assertNotIn("clientXone", tree)
+
+    def test_default_path_unchanged_with_explicit_root_overlay(self):
+        # deployment.json {"overlay": "."} resolves to root: identical to the
+        # no-deployment.json default (the zero-change invariant).
+        self._set_overlay(".")
+        self._stage_types("zia_url_categories")
+        code, out = self._run()
+        self.assertEqual(code, 0, out)
+        self.assertEqual(self._origin_branches(),
+                         ["bootstrap/t1/zia_url_categories"], out)
+        tree = subprocess.check_output(
+            ["git", "-C", self.origin, "ls-tree", "-r", "--name-only",
+             "bootstrap/t1/zia_url_categories"]).decode("utf-8")
+        self.assertIn("config/t1/zia_url_categories.auto.tfvars.json", tree)
 
 
 if __name__ == "__main__":
