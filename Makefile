@@ -116,7 +116,7 @@ test-floor: ## Run unit tests under Python 3.6 in Docker (optional dev check; ne
 		python -m unittest discover -s tools/tests -t . -v
 
 validate: ## Terraform formatting checks
-	$(TF) fmt -check -recursive
+	$(TF) fmt -check -recursive modules envs/demo imports/demo tools/tests tools/schema-extract
 
 ##@ Generation chain
 
