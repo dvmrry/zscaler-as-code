@@ -510,14 +510,14 @@ drift: ## Fetch + transform + report config diff (TENANT=<label> [RESOURCE="<typ
 	@echo "$(TENANT)" | grep -qE '^[A-Za-z0-9_.-]+$$' || { echo "error: TENANT must match [A-Za-z0-9_.-]+ (got '$(TENANT)')"; exit 2; }
 	$(MAKE) fetch TENANT=$(TENANT) $(if $(RESOURCE),RESOURCE="$(RESOURCE)")
 	$(MAKE) transform IN=pulls/$(TENANT) TENANT=$(TENANT) $(if $(RESOURCE),RESOURCE="$(RESOURCE)")
-	@if [ -n "$$(git status --porcelain config/$(TENANT) imports/$(TENANT) 2>/dev/null)" ]; then \
+	@CFG="$$($(PYTHON) -m tools.deployment config-dir $(TENANT))"; \
+	IMP="$$($(PYTHON) -m tools.deployment imports-dir $(TENANT))"; \
+	if [ -n "$$(git status --porcelain "$$CFG" "$$IMP" 2>/dev/null)" ]; then \
 		echo ""; echo "DRIFT DETECTED (tenant differs from committed config):"; \
-		git status --porcelain config/$(TENANT) imports/$(TENANT); \
-		git --no-pager diff --stat config/$(TENANT) 2>/dev/null; \
+		git status --porcelain "$$CFG" "$$IMP"; \
+		git --no-pager diff --stat "$$CFG" 2>/dev/null; \
 		exit 3; \
-	else \
-		echo "no drift: tenant matches committed config"; \
-	fi
+	else echo "no drift: tenant matches committed config"; fi
 
 ##@ Consistency & demo
 

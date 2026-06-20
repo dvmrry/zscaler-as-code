@@ -23,6 +23,11 @@ class SweepRootsTest(unittest.TestCase):
         self.assertEqual(value.split(), ["envs"],
                          "ENV_ROOTS must collapse to one 'envs' token at overlay='.'; got %r" % value)
 
+    def test_drift_detect_uses_resolver(self):
+        src = open("Makefile", encoding="utf-8").read()
+        self.assertIn("tools.deployment config-dir", src)
+        self.assertNotIn("git status --porcelain config/$(TENANT) imports/$(TENANT)", src)
+
 
 if __name__ == "__main__":
     unittest.main()
