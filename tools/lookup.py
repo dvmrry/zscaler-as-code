@@ -12,6 +12,7 @@ import os
 import re
 import sys
 
+from tools import deployment
 from tools.registry import generated_types
 
 UNKNOWN = "<unknown>"
@@ -64,11 +65,15 @@ def check_tenant(tenant):
         )
 
 
-def lookup_path(tenant, referent, config_root="config"):
+def lookup_path(tenant, referent, config_root=None):
+    if config_root is None:
+        return os.path.join(deployment.config_dir(tenant), referent + LOOKUP_SUFFIX)
     return os.path.join(config_root, tenant, referent + LOOKUP_SUFFIX)
 
 
-def config_path(tenant, resource_type, config_root="config"):
+def config_path(tenant, resource_type, config_root=None):
+    if config_root is None:
+        return os.path.join(deployment.config_dir(tenant), resource_type + CONFIG_SUFFIX)
     return os.path.join(config_root, tenant, resource_type + CONFIG_SUFFIX)
 
 
@@ -95,7 +100,7 @@ def render_lookup(mapping):
     return json.dumps(mapping, indent=2, sort_keys=True) + "\n"
 
 
-def write_lookup(tenant, referent, items, config_root="config"):
+def write_lookup(tenant, referent, items, config_root=None):
     source = LOOKUP_SOURCES.get(referent)
     if source is None:
         return None
@@ -119,7 +124,7 @@ def load_json_object(path):
     return data
 
 
-def load_lookup(tenant, referent, config_root="config"):
+def load_lookup(tenant, referent, config_root=None):
     path = lookup_path(tenant, referent, config_root=config_root)
     if not os.path.exists(path):
         return {}
@@ -204,7 +209,7 @@ def _note_missing_lookup(missing_lookups, referent):
         missing_lookups.append(referent)
 
 
-def render_explain(tenant, selectors=None, config_root="config", missing_lookups=None):
+def render_explain(tenant, selectors=None, config_root=None, missing_lookups=None):
     check_tenant(tenant)
     lines = []
     for resource_type in _expand_selectors(selectors or []):
