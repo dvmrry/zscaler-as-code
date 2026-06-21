@@ -1,7 +1,7 @@
 """Overlay-aware tenant path resolution. Single source of truth for where a
-tenant's config/envs/imports live, driven by deployment.json. Stdlib-only,
-Python 3.6-floor. Consumed by both the Makefile (via the CLI verbs) and the
-Python tools so path logic lives in exactly one place.
+tenant's config/envs/imports/lookups live, driven by deployment.json.
+Stdlib-only, Python 3.6-floor. Consumed by both the Makefile (via the CLI
+verbs) and the Python tools so path logic lives in exactly one place.
 
 Absent or empty deployment.json => overlay "." (root; the zero-change default).
 Present-but-malformed deployment.json => raise / exit non-zero (fail loud).
@@ -49,6 +49,10 @@ def envs_dir(tenant):
     return _join(tenant, "envs")
 
 
+def lookups_dir(tenant):
+    return _join(tenant, "lookups")
+
+
 def pulls_dir(tenant):
     return os.path.join("pulls", tenant)  # gitignored staging — always root
 
@@ -58,11 +62,13 @@ def pulls_dir(tenant):
 # the *_dir helpers today, but named so intent is explicit at the call site.
 config_prefix = config_dir
 imports_prefix = imports_dir
+lookups_prefix = lookups_dir
 
 _VERBS = {
     "tenant-root": tenant_root, "config-dir": config_dir,
     "imports-dir": imports_dir, "envs-dir": envs_dir,
-    "config-prefix": config_prefix, "imports-prefix": imports_prefix,
+    "lookups-dir": lookups_dir, "config-prefix": config_prefix,
+    "imports-prefix": imports_prefix, "lookups-prefix": lookups_prefix,
 }
 
 

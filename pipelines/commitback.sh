@@ -74,13 +74,14 @@ TARGET_BRANCH="${TARGET_BRANCH:-main}"
 # makes the whole script follow the tenant's real location.
 CONFIG_DIR="$(python3 -m tools.deployment config-prefix "$TENANT")"
 IMPORTS_DIR="$(python3 -m tools.deployment imports-prefix "$TENANT")"
+LOOKUPS_DIR="$(python3 -m tools.deployment lookups-prefix "$TENANT")"
 
 # --- which resource types changed? --------------------------------------
-say 1/5 "change detection in $CONFIG_DIR + $IMPORTS_DIR"
+say 1/5 "change detection in $CONFIG_DIR + $IMPORTS_DIR + $LOOKUPS_DIR"
 # NB: the program comes from `-c`, not a heredoc - stdin is the piped
 # `git status` output, and a `<<EOF` heredoc would override that pipe
 # (git would then SIGPIPE into a dead reader).
-types="$(git status --porcelain --untracked-files=all -- "$CONFIG_DIR" "$IMPORTS_DIR" | python3 -c '
+types="$(git status --porcelain --untracked-files=all -- "$CONFIG_DIR" "$IMPORTS_DIR" "$LOOKUPS_DIR" | python3 -c '
 import re, sys
 # Anchor on the RESOLVED, repo-relative prefixes (overlay-aware). The porcelain
 # output is repo-root-relative, so these prefixes match it directly. re.escape
@@ -89,7 +90,10 @@ import re, sys
 # "client_one" too.
 cfg_pfx = re.escape(sys.argv[1])
 imp_pfx = re.escape(sys.argv[2])
-cfg = re.compile(r"^%s/(.+?)(?:\.auto\.tfvars|\.lookup)\.json$" % cfg_pfx)
+lookup_pfx = re.escape(sys.argv[3])
+cfg_tfvars = re.compile(r"^%s/([^/]+)\.auto\.tfvars\.json$" % cfg_pfx)
+cfg_lookup_legacy = re.compile(r"^%s/([^/]+)\.lookup\.json$" % cfg_pfx)
+lookup = re.compile(r"^%s/([^/]+)\.lookup\.json$" % lookup_pfx)
 imp = re.compile(r"^%s/(.+?)_(?:imports|moves)\.tf$" % imp_pfx)
 out = set()
 for line in sys.stdin:
@@ -99,12 +103,13 @@ for line in sys.stdin:
     path = line[3:]                       # porcelain: 2 status chars + space
     if " -> " in path:                    # rename: take the new path
         path = path.split(" -> ")[-1]
-    m = cfg.match(path) or imp.match(path)
+    m = (cfg_tfvars.match(path) or lookup.match(path) or
+         cfg_lookup_legacy.match(path) or imp.match(path))
     if m:
         out.add(m.group(1))
 for name in sorted(out):
     print(name)
-' "$CONFIG_DIR" "$IMPORTS_DIR")"
+' "$CONFIG_DIR" "$IMPORTS_DIR" "$LOOKUPS_DIR")"
 if [ -z "$types" ]; then
   say 1/5 "nothing to commit - clean exit"
   exit 0
@@ -135,7 +140,7 @@ git checkout -q -b _commitback_snap
 # Add only the dirs that exist - a config-only first bootstrap may have no
 # imports/<tenant> yet, and `git add` errors (exit 128) on a pathspec that
 # matches nothing.
-for d in "$CONFIG_DIR" "$IMPORTS_DIR"; do
+for d in "$CONFIG_DIR" "$IMPORTS_DIR" "$LOOKUPS_DIR"; do
   [ -e "$d" ] && git add -A -- "$d"
 done
 git -c user.name="$BRANCH_PREFIX-bot" -c user.email="$BRANCH_PREFIX-bot@invalid" \
@@ -222,6 +227,7 @@ process_type() {   # $1 resource type
   # but present in the base -> stage the removal (a resource dropped
   # upstream), so deletions propagate instead of being silently skipped.
   for f in "$CONFIG_DIR/$t.auto.tfvars.json" \
+           "$LOOKUPS_DIR/$t.lookup.json" \
            "$CONFIG_DIR/$t.lookup.json" \
            "$IMPORTS_DIR/${t}_imports.tf" "$IMPORTS_DIR/${t}_moves.tf"; do
     if git cat-file -e "$wip:$f" 2>/dev/null; then

@@ -69,6 +69,7 @@ class LookupTransformTest(unittest.TestCase):
 
     def setUp(self):
         self.addCleanup(shutil.rmtree, os.path.join(REPO_ROOT, "config", self.TENANT), True)
+        self.addCleanup(shutil.rmtree, os.path.join(REPO_ROOT, "lookups", self.TENANT), True)
         self.addCleanup(shutil.rmtree, os.path.join(REPO_ROOT, "imports", self.TENANT), True)
 
     def test_transform_writes_url_category_lookup(self):
@@ -82,12 +83,14 @@ class LookupTransformTest(unittest.TestCase):
             self.assertEqual(transform_main(["zia_url_categories", src, self.TENANT]), 0)
 
             lookup_file = os.path.join(
-                REPO_ROOT, "config", self.TENANT, "zia_url_categories.lookup.json")
+                REPO_ROOT, lookup.lookup_path(self.TENANT, "zia_url_categories"))
             with open(lookup_file, encoding="utf-8") as f:
                 self.assertEqual(
                     f.read(),
                     '{\n  "CUSTOM_01": "Alpha",\n  "CUSTOM_02": "Beta"\n}\n',
                 )
+            self.assertFalse(os.path.exists(os.path.join(
+                REPO_ROOT, lookup.legacy_lookup_path(self.TENANT, "zia_url_categories"))))
 
             config_file = os.path.join(
                 REPO_ROOT, "config", self.TENANT,
@@ -100,7 +103,9 @@ class LookupTransformTest(unittest.TestCase):
     def test_transform_for_referrer_does_not_touch_referent_lookup(self):
         lookup_dir = os.path.join(REPO_ROOT, "config", self.TENANT)
         os.makedirs(lookup_dir, exist_ok=True)
-        lookup_file = os.path.join(lookup_dir, "zia_url_categories.lookup.json")
+        lookup_file = os.path.join(
+            REPO_ROOT, lookup.lookup_path(self.TENANT, "zia_url_categories"))
+        os.makedirs(os.path.dirname(lookup_file), exist_ok=True)
         original = '{"CUSTOM_01": "Alpha"}\n'
         with open(lookup_file, "w", encoding="utf-8") as f:
             f.write(original)
@@ -121,6 +126,24 @@ class LookupTransformTest(unittest.TestCase):
         with open(lookup_file, encoding="utf-8") as f:
             self.assertEqual(f.read(), original)
 
+    def test_transform_removes_legacy_sibling_lookup(self):
+        legacy_file = os.path.join(
+            REPO_ROOT, lookup.legacy_lookup_path(self.TENANT, "zia_url_categories"))
+        os.makedirs(os.path.dirname(legacy_file), exist_ok=True)
+        with open(legacy_file, "w", encoding="utf-8") as f:
+            f.write('{"CUSTOM_00": "Old"}\n')
+        with tempfile.TemporaryDirectory() as td:
+            src = os.path.join(td, "zia_url_categories.json")
+            _write_json(src, [{"id": "CUSTOM_01", "configuredName": "Alpha"}])
+
+            self.assertEqual(transform_main(["zia_url_categories", src, self.TENANT]), 0)
+
+        self.assertFalse(os.path.exists(legacy_file))
+        with open(os.path.join(
+                REPO_ROOT, lookup.lookup_path(self.TENANT, "zia_url_categories")),
+                encoding="utf-8") as f:
+            self.assertIn('"CUSTOM_01": "Alpha"', f.read())
+
 
 class LookupExplainTest(unittest.TestCase):
     def setUp(self):
@@ -136,8 +159,7 @@ class LookupExplainTest(unittest.TestCase):
 
     def _write_lookup(self, tenant, referent, mapping):
         _write_json(
-            os.path.join(self.config_root, tenant,
-                         referent + lookup.LOOKUP_SUFFIX),
+            lookup.lookup_path(tenant, referent, config_root=self.config_root),
             mapping,
         )
 
@@ -193,6 +215,21 @@ class LookupExplainTest(unittest.TestCase):
         )
         self.assertEqual(missing, ["zia_url_categories"])
 
+    def test_explain_reads_legacy_lookup_path(self):
+        self._write_config("t", "zia_url_filtering_rules", {
+            "r": {"name": "R", "url_categories": ["CUSTOM_01"]},
+        })
+        _write_json(
+            lookup.legacy_lookup_path("t", "zia_url_categories",
+                                      config_root=self.config_root),
+            {"CUSTOM_01": "Legacy Name"},
+        )
+
+        out = lookup.render_explain(
+            "t", ["zia_url_filtering_rules"], config_root=self.config_root)
+
+        self.assertIn("Legacy Name (CUSTOM_01)", out)
+
     def test_unmanifested_resource_prints_nothing(self):
         self._write_config("t", "zia_url_categories", {
             "category": {"configured_name": "Category"},
@@ -209,6 +246,7 @@ class LookupCliTest(unittest.TestCase):
 
     def setUp(self):
         self.addCleanup(shutil.rmtree, os.path.join(REPO_ROOT, "config", self.TENANT), True)
+        self.addCleanup(shutil.rmtree, os.path.join(REPO_ROOT, "lookups", self.TENANT), True)
 
     def test_explain_warns_when_lookup_file_is_missing(self):
         _write_json(
@@ -240,6 +278,7 @@ class LookupMakeScopeTest(unittest.TestCase):
         self.pull_dir = tempfile.mkdtemp(prefix="lookuppulls-")
         self.addCleanup(shutil.rmtree, self.pull_dir, True)
         self.addCleanup(shutil.rmtree, os.path.join(REPO_ROOT, "config", self.TENANT), True)
+        self.addCleanup(shutil.rmtree, os.path.join(REPO_ROOT, "lookups", self.TENANT), True)
         self.addCleanup(shutil.rmtree, os.path.join(REPO_ROOT, "imports", self.TENANT), True)
 
     def _make_transform(self, resource):
@@ -262,7 +301,7 @@ class LookupMakeScopeTest(unittest.TestCase):
         code, out = self._make_transform("zia_url_categories")
         self.assertEqual(code, 0, out)
         lookup_file = os.path.join(
-            REPO_ROOT, "config", self.TENANT, "zia_url_categories.lookup.json")
+            REPO_ROOT, lookup.lookup_path(self.TENANT, "zia_url_categories"))
         with open(lookup_file, encoding="utf-8") as f:
             original = f.read()
         self.assertIn('"CUSTOM_01": "Alpha"', original)

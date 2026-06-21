@@ -297,7 +297,8 @@ class CommitbackTest(unittest.TestCase):
 
     def test_lookup_sidecar_is_committed_with_its_resource_type(self):
         self._stage_types("zia_url_categories")
-        with open(os.path.join(self.work, "config/t1/zia_url_categories.lookup.json"),
+        os.makedirs(os.path.join(self.work, "lookups/t1"), exist_ok=True)
+        with open(os.path.join(self.work, "lookups/t1/zia_url_categories.lookup.json"),
                   "w", encoding="utf-8") as f:
             f.write('{"CUSTOM_01": "Readable"}\n')
 
@@ -307,11 +308,12 @@ class CommitbackTest(unittest.TestCase):
         tree = subprocess.check_output(
             ["git", "-C", self.origin, "ls-tree", "-r", "--name-only",
              "bootstrap/t1/zia_url_categories"]).decode("utf-8")
-        self.assertIn("config/t1/zia_url_categories.lookup.json", tree)
+        self.assertIn("lookups/t1/zia_url_categories.lookup.json", tree)
 
     def test_lookup_only_change_detects_its_resource_type(self):
         self._stage_types("zia_url_categories")
-        with open(os.path.join(self.work, "config/t1/zia_url_categories.lookup.json"),
+        os.makedirs(os.path.join(self.work, "lookups/t1"), exist_ok=True)
+        with open(os.path.join(self.work, "lookups/t1/zia_url_categories.lookup.json"),
                   "w", encoding="utf-8") as f:
             f.write('{"CUSTOM_01": "Old"}\n')
         self._git("-C", self.work, "add", "-A")
@@ -319,7 +321,7 @@ class CommitbackTest(unittest.TestCase):
                   "commit", "-q", "-m", "seed lookup")
         self._git("-C", self.work, "push", "-q", "origin", "main")
 
-        with open(os.path.join(self.work, "config/t1/zia_url_categories.lookup.json"),
+        with open(os.path.join(self.work, "lookups/t1/zia_url_categories.lookup.json"),
                   "w", encoding="utf-8") as f:
             f.write('{"CUSTOM_01": "New"}\n')
 
@@ -328,7 +330,7 @@ class CommitbackTest(unittest.TestCase):
         self.assertEqual(self._origin_branches(), ["bootstrap/t1/zia_url_categories"], out)
         blob = subprocess.check_output(
             ["git", "-C", self.origin, "show",
-             "bootstrap/t1/zia_url_categories:config/t1/zia_url_categories.lookup.json"]
+             "bootstrap/t1/zia_url_categories:lookups/t1/zia_url_categories.lookup.json"]
         ).decode("utf-8")
         self.assertEqual(blob, '{"CUSTOM_01": "New"}\n')
 
@@ -413,6 +415,24 @@ class CommitbackTest(unittest.TestCase):
              "bootstrap/t1/zia_url_categories"]).decode("utf-8")
         self.assertIn("_local/config/t1/zia_url_categories.auto.tfvars.json", tree)
         self.assertIn("_local/imports/t1/zia_url_categories_imports.tf", tree)
+
+    def test_overlay_lookup_sidecar_detected_and_committed(self):
+        self._set_overlay("_local")
+        self._stage_types_at("t1", "_local", "zia_url_categories")
+        lookup_dir = os.path.join(self.work, "_local", "lookups", "t1")
+        os.makedirs(lookup_dir, exist_ok=True)
+        with open(os.path.join(lookup_dir, "zia_url_categories.lookup.json"),
+                  "w", encoding="utf-8") as f:
+            f.write('{"CUSTOM_01": "Readable"}\n')
+
+        code, out = self._run()
+        self.assertEqual(code, 0, out)
+        self.assertEqual(self._origin_branches(),
+                         ["bootstrap/t1/zia_url_categories"], out)
+        tree = subprocess.check_output(
+            ["git", "-C", self.origin, "ls-tree", "-r", "--name-only",
+             "bootstrap/t1/zia_url_categories"]).decode("utf-8")
+        self.assertIn("_local/lookups/t1/zia_url_categories.lookup.json", tree)
 
     def test_overlay_root_path_is_not_misdetected(self):
         # under an overlay, a same-named file at the ROOT config/<t> is not the

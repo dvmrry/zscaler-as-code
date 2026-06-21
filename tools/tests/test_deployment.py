@@ -41,11 +41,13 @@ class DeploymentResolverTest(unittest.TestCase):
         self.assertEqual(deployment.config_dir("acme"), os.path.join("_local", "config", "acme"))
         self.assertEqual(deployment.imports_dir("acme"), os.path.join("_local", "imports", "acme"))
         self.assertEqual(deployment.envs_dir("acme"), os.path.join("_local", "envs", "acme"))
+        self.assertEqual(deployment.lookups_dir("acme"), os.path.join("_local", "lookups", "acme"))
 
     def test_demo_always_root_even_with_overlay(self):
         self._write({"overlay": "_local"})
         self.assertEqual(deployment.tenant_root("demo"), ".")
         self.assertEqual(deployment.config_dir("demo"), os.path.join("config", "demo"))
+        self.assertEqual(deployment.lookups_dir("demo"), os.path.join("lookups", "demo"))
 
     def test_pulls_always_root(self):
         self._write({"overlay": "_local"})
@@ -63,6 +65,7 @@ class DeploymentResolverTest(unittest.TestCase):
     def test_prefix_is_repo_relative_string(self):
         self._write({"overlay": "_local"})
         self.assertEqual(deployment.config_prefix("acme"), os.path.join("_local", "config", "acme"))
+        self.assertEqual(deployment.lookups_prefix("acme"), os.path.join("_local", "lookups", "acme"))
 
 
 if __name__ == "__main__":

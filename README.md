@@ -60,6 +60,7 @@ resources, and known non-bulk/adoption holds.
     tools/                     stdlib-only Python (3.6-floor) + overrides
     envs/<tenant>/             root modules, split state
     config/<tenant>/           fictional sample tfvars
+    lookups/<tenant>/          generated readable-name lookup sidecars
     imports/<tenant>/          transform-emitted import blocks
 
 Directories not yet present are created by later build phases.
