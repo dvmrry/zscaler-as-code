@@ -82,6 +82,8 @@ make transform IN=pulls/<label> TENANT=<label>
 
 Produces:
 - `config/<label>/<type>.auto.tfvars.json` — the tenant as typed config
+- `lookups/<label>/<type>.lookup.json` — generated lookup sidecars for readable
+  ID references, when a resource type has one
 - `imports/<label>/<type>_imports.tf` — ready-made import blocks
 
 A drop report is printed listing fields the provider cannot manage. Review

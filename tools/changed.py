@@ -1,12 +1,13 @@
 """Derive (tenant, resource_type) plan targets from a git diff.
 
 The repo layout encodes the mapping: a change to
-config/<tenant>/<type>.auto.tfvars.json (or the matching imports/ or
-envs/ paths) affects exactly one (tenant, type) pair. A change to
-modules/<type>/ affects that type on every tenant that has config for
-it. A change to the shared machinery (tools/, schemas/, Makefile)
-affects everything, so every configured pair is emitted — plans are
-read-only, so over-planning is safe; under-planning is not.
+config/<tenant>/<type>.auto.tfvars.json, its generated
+lookups/<tenant>/<type>.lookup.json sidecar (or the matching imports/ or envs/
+paths) affects exactly one (tenant, type) pair. A change to
+modules/<type>/ affects that type on every tenant that has config for it. A
+change to the shared machinery (tools/, schemas/, Makefile) affects everything,
+so every configured pair is emitted — plans are read-only, so over-planning is
+safe; under-planning is not.
 
 Output: one "tenant resource_type" line per pair, sorted. Empty output
 with exit 0 means the diff touched nothing plannable (docs-only change)
@@ -36,6 +37,7 @@ from tools import deployment
 from tools.registry import derive_entry, derived_types, generated_types
 
 CONFIG_SUFFIX = ".auto.tfvars.json"
+LOOKUP_SUFFIX = ".lookup.json"
 IMPORTS_SUFFIX = "_imports.tf"
 MOVES_SUFFIX = "_moves.tf"
 # Shared machinery whose change invalidates every plannable pair. deployment.json
@@ -153,6 +155,16 @@ def pairs_from_paths(paths, plannable=None, overlay=None):
         parts = path.split("/")
         if path.startswith("config/") and len(parts) == 3 and parts[2].endswith(CONFIG_SUFFIX):
             pair = (parts[1], parts[2][: -len(CONFIG_SUFFIX)])
+            if _ok(pair):
+                pairs.add(pair)
+        elif path.startswith("lookups/") and len(parts) == 3 and parts[2].endswith(LOOKUP_SUFFIX):
+            pair = (parts[1], parts[2][: -len(LOOKUP_SUFFIX)])
+            if _ok(pair):
+                pairs.add(pair)
+        elif path.startswith("config/") and len(parts) == 3 and parts[2].endswith(LOOKUP_SUFFIX):
+            # Legacy pre-lookups lookup sidecars still show up as deletes during
+            # migration and should plan the same resource.
+            pair = (parts[1], parts[2][: -len(LOOKUP_SUFFIX)])
             if _ok(pair):
                 pairs.add(pair)
         elif path.startswith("imports/") and len(parts) == 3 and (

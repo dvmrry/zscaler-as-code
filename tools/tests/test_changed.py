@@ -27,6 +27,18 @@ class PairsFromPathsTest(unittest.TestCase):
         )
         self.assertEqual(out, {("zs2", "zia_rule_labels")})
 
+    def test_lookup_output_change_selects_its_pair(self):
+        out = pairs_from_paths(
+            ["lookups/zs2/zia_url_categories.lookup.json"], PAIRS
+        )
+        self.assertEqual(out, {("zs2", "zia_url_categories")})
+
+    def test_legacy_lookup_change_selects_its_pair(self):
+        out = pairs_from_paths(
+            ["config/zs2/zia_url_categories.lookup.json"], PAIRS
+        )
+        self.assertEqual(out, {("zs2", "zia_url_categories")})
+
     def test_imports_change_selects_its_pair(self):
         out = pairs_from_paths(
             ["imports/zs2/zia_url_categories_imports.tf"], PAIRS

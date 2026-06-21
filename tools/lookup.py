@@ -18,6 +18,7 @@ from tools.registry import generated_types
 UNKNOWN = "<unknown>"
 CONFIG_SUFFIX = ".auto.tfvars.json"
 LOOKUP_SUFFIX = ".lookup.json"
+LOOKUP_DIR = "lookups"
 
 REFERENCES = {
     "zia_url_filtering_rules": {
@@ -67,8 +68,24 @@ def check_tenant(tenant):
 
 def lookup_path(tenant, referent, config_root=None):
     if config_root is None:
+        return os.path.join(deployment.lookups_dir(tenant), referent + LOOKUP_SUFFIX)
+    return os.path.join(config_root, LOOKUP_DIR, tenant, referent + LOOKUP_SUFFIX)
+
+
+def legacy_lookup_path(tenant, referent, config_root=None):
+    if config_root is None:
         return os.path.join(deployment.config_dir(tenant), referent + LOOKUP_SUFFIX)
     return os.path.join(config_root, tenant, referent + LOOKUP_SUFFIX)
+
+
+def read_lookup_path(tenant, referent, config_root=None):
+    path = lookup_path(tenant, referent, config_root=config_root)
+    if os.path.exists(path):
+        return path
+    legacy = legacy_lookup_path(tenant, referent, config_root=config_root)
+    if os.path.exists(legacy):
+        return legacy
+    return path
 
 
 def config_path(tenant, resource_type, config_root=None):
@@ -110,6 +127,9 @@ def write_lookup(tenant, referent, items, config_root=None):
         os.makedirs(directory, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         f.write(render_lookup(build_lookup(items, source["name_field"])))
+    legacy = legacy_lookup_path(tenant, referent, config_root=config_root)
+    if legacy != path and os.path.exists(legacy):
+        os.remove(legacy)
     return path
 
 
@@ -125,7 +145,7 @@ def load_json_object(path):
 
 
 def load_lookup(tenant, referent, config_root=None):
-    path = lookup_path(tenant, referent, config_root=config_root)
+    path = read_lookup_path(tenant, referent, config_root=config_root)
     if not os.path.exists(path):
         return {}
     data = load_json_object(path)
@@ -226,7 +246,7 @@ def render_explain(tenant, selectors=None, config_root=None, missing_lookups=Non
         for field, spec in refs.items():
             referent = spec["referent"]
             if not os.path.exists(
-                    lookup_path(tenant, referent, config_root=config_root)):
+                    read_lookup_path(tenant, referent, config_root=config_root)):
                 _note_missing_lookup(missing_lookups, referent)
             lookups[field] = load_lookup(
                 tenant, referent, config_root=config_root
