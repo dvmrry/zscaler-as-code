@@ -83,6 +83,27 @@ class AdoptionCheckTest(unittest.TestCase):
             "KNOWN-HOLD zia_url_filtering_and_cloud_app_settings: "
             "enable_google_ai_prompt, enable_quillbot_ai_prompt")
 
+    def test_dlp_web_rule_provider_gap_holds_are_accepted(self):
+        _write_json(os.path.join(self.tmp, "zia_dlp_web_rules.json"), [{
+            "id": 1,
+            "name": "DLP",
+            "order": 1,
+            "deeplyNestedContentEnabled": True,
+            "timeoutFailClosedEnabled": False,
+        }])
+        result = adoption_check.check_resource(
+            "zia_dlp_web_rules", "tenant", self.tmp, self.status, write=False)
+        self.assertEqual(result["state"], "known-hold")
+        self.assertEqual(
+            result["drops"],
+            ["deeply_nested_content_enabled", "timeout_fail_closed_enabled"],
+        )
+        self.assertEqual(result["unexpected"], [])
+        self.assertEqual(
+            adoption_check.render_result(result),
+            "KNOWN-HOLD zia_dlp_web_rules: deeply_nested_content_enabled, "
+            "timeout_fail_closed_enabled")
+
     def test_unexpected_drop_fails(self):
         _write_json(os.path.join(self.tmp, "zpa_segment_group.json"), [{
             "id": "1",
