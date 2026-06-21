@@ -40,6 +40,8 @@ class ApplyChainTest(unittest.TestCase):
         # second makedirs still tears down what the first one created.
         self.addCleanup(shutil.rmtree, os.path.join("envs", TENANT), True)
         self.addCleanup(shutil.rmtree, self.config_dir, True)
+        shutil.rmtree(os.path.join("envs", TENANT), ignore_errors=True)
+        shutil.rmtree(self.config_dir, ignore_errors=True)
         os.makedirs(self.root, exist_ok=True)
         os.makedirs(self.config_dir, exist_ok=True)
         with open(os.path.join(self.root, "main.tf"), "w", encoding="utf-8") as f:
