@@ -218,6 +218,16 @@
         "reason": "Live pipeline strict transform returned this provider-missing path; held out of acknowledged_drops pending per-type read/write verification."
       }
     ],
+    "zia_dlp_web_rules": [
+      {
+        "path": "deeply_nested_content_enabled",
+        "reason": "Live pipeline strict transform returned this provider-missing path; the Terraform provider schema and captured Automate contract do not expose a matching zia_dlp_web_rules write field, so it is held out of acknowledged_drops pending provider/contract clarification."
+      },
+      {
+        "path": "timeout_fail_closed_enabled",
+        "reason": "Live pipeline strict transform returned this provider-missing path; the Terraform provider schema and captured Automate contract do not expose a matching zia_dlp_web_rules write field, so it is held out of acknowledged_drops pending provider/contract clarification."
+      }
+    ],
     "zia_end_user_notification": [
       {
         "path": "display_comp_logo",

@@ -1510,6 +1510,27 @@ class DropsCheckGateTest(unittest.TestCase):
         )
         self.assertNotIn("NEW API surface", err)
 
+    def test_dlp_web_rule_provider_gap_fields_are_known_holds(self):
+        raw = [{
+            "id": 1,
+            "name": "DLP",
+            "order": 1,
+            "deeplyNestedContentEnabled": True,
+            "timeoutFailClosedEnabled": False,
+        }]
+        code, err = self._run_main(
+            raw, env_flag=True, resource_type="zia_dlp_web_rules")
+        self.assertEqual(code, 0)
+        self.assertIn(
+            "known-held zia_dlp_web_rules.deeply_nested_content_enabled",
+            err,
+        )
+        self.assertIn(
+            "known-held zia_dlp_web_rules.timeout_fail_closed_enabled",
+            err,
+        )
+        self.assertNotIn("NEW API surface", err)
+
     def test_known_holds_do_not_hide_new_surface(self):
         raw = [{
             "id": 1,
