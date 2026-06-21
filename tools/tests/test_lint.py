@@ -364,6 +364,7 @@ class MainExitCodeTest(unittest.TestCase):
         # the ONLY error is the URL scheme — that one error must gate.
         tenant = "_linttest_tmp_xyzzy"
         config_dir = os.path.join("config", tenant)
+        shutil.rmtree(config_dir, ignore_errors=True)
         os.makedirs(config_dir)
         try:
             items = {"test": {"urls": ["https://example.com"]}}
