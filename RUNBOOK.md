@@ -565,6 +565,23 @@ catalog — before any tenant contact.
    it diffs the ENTIRE new SDK surface against the schemas with
    synthetic data, so fields the bump added are triaged before any
    tenant returns them.
+
+   Current upstream watchlist from the 2026-07-06 review (pins:
+   ZIA `4.7.24`, ZPA `4.4.4`):
+   - `zscaler/terraform-provider-zia#585` is still open for
+     `zia_cloud_app_control_rule` multi-delete order failures; see the
+     troubleshooting row below before retrying a failed delete batch.
+   - ZIA `4.7.26` closed `#583`/`#584` by adding HTTP header profile
+     resources and URL-filtering rule binding blocks. The current pin
+     still treats `http_header_profiles` and
+     `http_header_action_profiles` as dropped API surface; on the next
+     ZIA bump, re-run `make surface APPLY=1` and decide whether to add
+     the new resource types and retire those drops.
+   - ZPA `4.4.5`/`4.4.6` closed `#663`/`#666`: `zpa_private_cloud`
+     landed, and `select_connector_close_to_app` on
+     `zpa_application_segment` is no longer ForceNew upstream. On the
+     next ZPA bump, review the generated module diff and adoption status
+     before enabling new private-cloud roots.
 6. `make test`
 7. `make lock TENANT=<label>` for each committed tenant — version pins
    alone don't pin artifact hashes; the per-root lock files do.
@@ -641,6 +658,7 @@ fetch proves the full set is present and correct.
 | CHECK gate failure in CI | Run `make generate` and commit; never hand-edit `modules/` or `schemas/tfvars/` |
 | `import blocks error: resource already managed` | Delete `_imports.tf` from the env root after first apply (or stage with `STATE_AWARE=1`, which filters these out) |
 | Plan re-orders many/all rules of a type | ZIA `order` has insert-shift semantics: a rule added/removed (console, script, or a partial apply) cascades order changes to every neighbor. Run `make drift TENANT=<label> RESOURCE=<type>`; the backfill PR (with a MASS CHANGE banner) adopts the tenant's CURRENT order. Never apply stale orders over it blindly — that re-shuffles live enforcement |
+| Removing multiple `zia_cloud_app_control_rule` items fails with `Rule is not allowed at order N` | Upstream issue `zscaler/terraform-provider-zia#585`: deleting several cloud-app rules from one category can race the API's order compaction during parallel apply. Do not keep retrying the same failed broad plan. Re-plan a narrow `RESOURCE=zia_cloud_app_control_rule` scope and either split the deletes into one-at-a-time changes or run the apply step with Terraform apply parallelism forced to one, e.g. `TF_CLI_ARGS_apply="-parallelism=1" make apply TENANT=<label> RESOURCE=zia_cloud_app_control_rule [BACKEND_CONFIG=backend.conf]`. Then run drift/backfill so committed order matches the tenant's post-delete order. |
 | De-scoping an item AFTER it was imported (e.g. adding a `skip_if` later) | The item is in state but gone from config — the plan proposes a DESTROY. Never ALLOW_DESTROY for this: `make forget TENANT=<label> RESOURCE=<type> KEY=<config key> [BACKEND_CONFIG=backend.conf]` removes it from state only (run on an agent when workstations lack blob access); the object stays in the tenant, unmanaged |
 | `Error acquiring the state lock` after a KILLED run | The azurerm blob lease never self-expires. Verify no run is active, then `make unlock TENANT=<label> RESOURCE=<type> LOCK_ID=<uuid from the error> BACKEND_CONFIG=backend.conf` — on an agent when workstations lack blob access (`pipelines/azure-pipelines-unlock.example.yml`), or have a storage admin break the blob lease directly |
 | DNS error on `make fetch` token request | Verify `ZSCALER_VANITY_DOMAIN` is your vanity subdomain (not the cloud name); the token endpoint is constructed as `<vanity>.zslogin[<cloud>].net` — a typo causes an immediate DNS resolution failure that the fetch error output attributes to proxy/egress (it is not) |

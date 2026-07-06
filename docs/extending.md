@@ -49,7 +49,7 @@ private fork), plus the existing gitignored areas for anything secret:
   that makes `local.mk` safe.
 - Every template gate is **path-scoped** to the template's own directories:
   - `generate CHECK=1` -> `modules/`, `schemas/`
-  - `check-demo` -> `config/demo/`, `imports/demo/`
+  - `check-demo` -> `config/demo/`, `imports/demo/`, `lookups/demo/`
   - `check-envs` -> `envs/` (root; self-scopes to `demo` once real tenants
     relocate under the overlay)
   - `validate` -> `modules envs/demo imports/demo tools/tests tools/schema-extract`
